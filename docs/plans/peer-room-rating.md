@@ -10,7 +10,7 @@ Request: remove the pre/post (before/after help) split from the teacher view eve
 - **Instructor view.** No phase toggle or "signals: …" header; graph, metrics and concept details read `pre` (the session-page rating) only. `PrePostComparison` stays as the single place before/after shows up ("Before vs after peer help"), with copy explaining where each side comes from. `SessionControls` keeps only *Close session*.
 - **Peer room.** The check-in becomes the same 3-level `ConfidenceSelector` as the session page ("Update your rating"), pre-selected from the server (`rooms.get` returns `myLevel`, the caller's `post` level for the room's concept) so it never goes stale.
 - **Seed/tests/docs.** Seed no longer sets `phase` on the session. Scenario 9 test rewritten: session-page ratings stay `pre`, only room members can write `post`, `post` never changes the graph counts. README, Build_Instructions, MVP_Outline and demo-script updated.
-- **Deployment.** Existing dev-deployment sessions carry `phase`; strip it once (one-off internal mutation pushed temporarily, not committed) so the new schema validates.
+- **Deployment.** Existing sessions on the Vercel-linked production Convex deployment still carry `phase`, so `sessions.phase` stays in the schema as an unused `v.optional` field (nothing reads or writes it); removing it outright fails the schema push.
 
 ## Acceptance
 
