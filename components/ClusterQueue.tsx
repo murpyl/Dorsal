@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RUN_STALE_MS } from "@/lib/aiSchemas";
 import { errorMessage } from "@/lib/errors";
+import { btnPrimary as primary, btnSecondary as secondary } from "@/lib/ui";
 
 type Concept = { _id: Id<"concepts">; label: string };
 type Cluster = {
@@ -21,9 +22,6 @@ type Cluster = {
 };
 type Run = { status: "running" | "ok" | "error"; model: string; latencyMs: number | null; error: string | null; createdAt: number };
 
-const btn = "rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50";
-const primary = `${btn} bg-indigo-600 text-white hover:bg-indigo-700`;
-const secondary = `${btn} border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50`;
 const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 export function ClusterQueue({
@@ -44,6 +42,8 @@ export function ClusterQueue({
   const update = useMutation(api.clusters.update);
   const createManual = useMutation(api.clusters.createManual);
   const hide = useMutation(api.questions.hide);
+  const rooms = useQuery(api.rooms.listInstructor, creds);
+  const createForCluster = useMutation(api.rooms.createForCluster);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Id<"questions">[]>([]);
   const [grouping, setGrouping] = useState(false);
@@ -54,7 +54,7 @@ export function ClusterQueue({
   }, []);
 
   if (data === undefined || questions === undefined) return <p className="text-sm text-zinc-500">Loading questions…</p>;
-  if (data === null || questions === null) return null;
+  if (data === null || questions === null) return <p className="text-sm text-zinc-500">Couldn’t load questions (no instructor access).</p>;
 
   const pending = questions.filter((q) => q.state === "pending");
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;
@@ -127,10 +127,20 @@ export function ClusterQueue({
               concepts={concepts}
               onSave={(patch) => run(() => update({ ...creds, clusterId: c._id, ...patch }))}
               actions={
-                <button onClick={() => run(() => discard({ ...creds, clusterId: c._id }))} className={secondary}>
-                  Unpublish &amp; discard
-                </button>
+                <>
+                  <button
+                    onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: c.conceptIds[0] }))}
+                    disabled={c.conceptIds.length === 0}
+                    className={primary}
+                  >
+                    Open help room
+                  </button>
+                  <button onClick={() => run(() => discard({ ...creds, clusterId: c._id }))} className={secondary}>
+                    Unpublish &amp; discard
+                  </button>
+                </>
               }
+              footer={<ClusterRooms rooms={(rooms ?? []).filter((r) => r.clusterId === c._id)} />}
             />
           ))
         )}
@@ -238,16 +248,33 @@ function ConceptPicker({
   );
 }
 
+function ClusterRooms({ rooms }: { rooms: { _id: string; title: string; memberCount: number; capacity: number; helperCount: number }[] }) {
+  if (rooms.length === 0) return <p className="text-xs text-zinc-500">No help room open for this cluster yet.</p>;
+  return (
+    <ul className="space-y-1 text-xs" aria-label="Help rooms for this cluster">
+      {rooms.map((r) => (
+        <li key={r._id} className="rounded-lg bg-zinc-50 px-3 py-1.5 text-zinc-700">
+          <span className="font-medium">{r.title}</span> · <strong>{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
+          {r.helperCount === 1 ? "" : "s"}
+          {r.memberCount >= r.capacity && <span className="ml-2 text-amber-700">full</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function ClusterCard({
   cluster,
   concepts,
   onSave,
   actions,
+  footer,
 }: {
   cluster: Cluster;
   concepts: Concept[];
   onSave: (patch: { title: string; summary: string; conceptIds: Id<"concepts">[] }) => Promise<boolean>;
   actions: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(cluster.title);
@@ -297,6 +324,7 @@ function ClusterCard({
             <span>{cluster.source === "ai" ? "suggested by Claude" : "grouped manually"}</span>
             {cluster.confidence !== null && <span>model confidence {Math.round(cluster.confidence * 100)}% (not calibrated)</span>}
           </p>
+          {footer}
         </>
       )}
       <details open={cluster.status === "suggested"}>

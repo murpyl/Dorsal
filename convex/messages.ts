@@ -49,15 +49,20 @@ export const listByRoom = query({
       .withIndex("by_room_time", (q) => q.eq("roomId", roomId))
       .order("desc")
       .take(LIST_LIMIT);
-    const aliases = new Map<Id<"participants">, string>();
+    const authors = new Map<Id<"participants">, { alias: string; isSimulated: boolean }>();
     const result = [];
     for (const m of newestFirst.reverse()) {
-      if (!aliases.has(m.authorId)) aliases.set(m.authorId, (await ctx.db.get(m.authorId))?.alias ?? "Left");
+      if (!authors.has(m.authorId)) {
+        const p = await ctx.db.get(m.authorId);
+        authors.set(m.authorId, { alias: p?.alias ?? "Left", isSimulated: p?.isSimulated ?? false });
+      }
+      const author = authors.get(m.authorId)!;
       result.push({
         _id: m._id,
         body: m.body,
         createdAt: m.createdAt,
-        authorAlias: aliases.get(m.authorId)!,
+        authorAlias: author.alias,
+        authorIsSimulated: author.isSimulated,
         isMine: m.authorId === member.participant._id,
       });
     }

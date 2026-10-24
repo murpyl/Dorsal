@@ -6,9 +6,9 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { LOW_SAMPLE } from "@/components/ConceptGraph";
 import { errorMessage } from "@/lib/errors";
-import { LEVELS } from "@/lib/levels";
+import { btnDanger } from "@/lib/ui";
+import { LEVELS, PHASE_LABEL, type Phase } from "@/lib/levels";
 
-type Phase = "pre" | "post";
 type Tally = { counts: Record<(typeof LEVELS)[number]["value"], number>; total: number };
 
 export function SessionControls({
@@ -47,7 +47,7 @@ export function SessionControls({
             onClick={() => guard(() => setPhase({ sessionId, instructorSecret, phase: p }))}
             className={`px-3 py-1.5 font-medium ${phase === p ? "bg-indigo-600 text-white" : "bg-white text-zinc-700 hover:bg-zinc-50"}`}
           >
-            {p === "pre" ? "Pre (before help)" : "Post (after help)"}
+            {PHASE_LABEL[p]}
           </button>
         ))}
       </div>
@@ -55,7 +55,7 @@ export function SessionControls({
         onClick={() => {
           if (confirm("Close this session? Students can no longer send signals or chat.")) guard(() => closeSession({ sessionId, instructorSecret }));
         }}
-        className="rounded-lg border border-red-300 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50"
+        className={btnDanger}
       >
         Close session
       </button>
@@ -107,7 +107,7 @@ function PhaseBar({ phase, tally }: { phase: Phase; tally: Tally }) {
   return (
     <div className="grid grid-cols-[3rem_1fr_7rem] items-center gap-2 text-xs">
       <span className="font-mono uppercase text-zinc-500">{phase}</span>
-      <div className="flex h-3 overflow-hidden rounded-full bg-zinc-100" role="img" aria-label={`${phase}: ${summary}, N = ${tally.total}`}>
+      <div className="flex h-3 overflow-hidden rounded-full bg-zinc-100" role="img" aria-label={`${PHASE_LABEL[phase]}: ${summary}, N = ${tally.total}`}>
         {tally.total > 0 &&
           LEVELS.map((l) => (
             <div key={l.value} className={l.color} style={{ width: `${(tally.counts[l.value] / tally.total) * 100}%` }} />

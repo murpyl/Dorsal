@@ -140,6 +140,10 @@ export const getInstructorView = query({
       .withIndex("by_session", (q) => q.eq("sessionId", id))
       .collect();
     concepts.sort((a, b) => a.order - b.order);
+    const published = await ctx.db
+      .query("clusters")
+      .withIndex("by_session_status", (q) => q.eq("sessionId", id).eq("status", "published"))
+      .collect();
     const conceptCounts = await Promise.all(
       concepts.map(async (c) => {
         const signals = await ctx.db
@@ -148,7 +152,8 @@ export const getInstructorView = query({
           .collect();
         const counts = { confused: 0, partial: 0, can_explain: 0 };
         for (const s of signals) counts[s.level]++;
-        return { _id: c._id, label: c.label, description: c.description, x: c.x, y: c.y, counts, total: signals.length };
+        const openClusters = published.filter((k) => k.conceptIds.includes(c._id)).length;
+        return { _id: c._id, label: c.label, description: c.description, x: c.x, y: c.y, counts, total: signals.length, openClusters };
       }),
     );
     const edges = await ctx.db
@@ -162,6 +167,8 @@ export const getInstructorView = query({
       phase: session.phase,
       activeConceptId: session.activeConceptId ?? null,
       participantCount: participants.length,
+      simulatedCount: participants.filter((p) => p.isSimulated).length,
+      publishedClusterCount: published.length,
       concepts: conceptCounts,
       edges: edges.map((e) => ({ _id: e._id, fromId: e.fromId, toId: e.toId, relation: e.relation })),
     };

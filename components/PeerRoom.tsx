@@ -7,8 +7,9 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { errorMessage } from "@/lib/errors";
-import type { Level } from "@/lib/levels";
+import { PHASE_LABEL, type Level } from "@/lib/levels";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
   { level: "can_explain", label: "I understand now", className: "bg-emerald-600 hover:bg-emerald-700" },
@@ -89,10 +90,12 @@ export function PeerRoom() {
           <h1 className="text-2xl font-semibold">{room.title}</h1>
           <p className="text-sm text-zinc-500">
             Help room · {room.conceptLabel} · {room.members.length} / {room.capacity}
+            {room.clusterTitle && <> · for cluster “{room.clusterTitle}”</>}
             {!open && <span className="ml-2 font-medium text-amber-700">closed</span>}
           </p>
         </div>
         <p className="text-sm text-zinc-600">{room.conceptDescription}</p>
+        <ConnectionStatus />
       </header>
 
       <section className="grid gap-4 md:grid-cols-[14rem_1fr]">
@@ -138,13 +141,18 @@ export function PeerRoom() {
 
         <div className="flex flex-col rounded-xl border border-zinc-200 bg-white">
           <div className="flex-1 space-y-2 overflow-y-auto p-4" style={{ maxHeight: "24rem", minHeight: "16rem" }} aria-live="polite">
-            {!messages || messages.length === 0 ? (
+            {messages === undefined ? (
+              <p className="text-sm text-zinc-500">Loading messages…</p>
+            ) : messages === null || messages.length === 0 ? (
               <p className="text-sm text-zinc-500">No messages yet. Say hi and describe where you got stuck.</p>
             ) : (
               messages.map((m) => (
                 <div key={m._id} className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.isMine ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-900"}`}>
-                    <p className={`text-xs ${m.isMine ? "text-indigo-200" : "text-zinc-500"}`}>{m.isMine ? "You" : m.authorAlias}</p>
+                    <p className={`text-xs ${m.isMine ? "text-indigo-200" : "text-zinc-500"}`}>
+                      {m.isMine ? "You" : m.authorAlias}
+                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-800">simulated</span>}
+                    </p>
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
                   </div>
                 </div>
@@ -174,7 +182,7 @@ export function PeerRoom() {
           How is <span className="text-indigo-700">{room.conceptLabel}</span> going now?
         </h2>
         <p className="text-sm text-zinc-600">
-          This updates your self-reported understanding for the session&apos;s <span className="font-medium">{room.phase}</span> phase. Only
+          This updates your self-reported understanding for the <span className="font-medium">{PHASE_LABEL[room.phase]}</span> phase. Only
           aggregate counts are shown to the instructor.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -195,7 +203,7 @@ export function PeerRoom() {
             </button>
           ))}
         </div>
-        {checkedIn && <p className="text-sm text-emerald-700">Recorded under the {room.phase} phase. You can change it any time.</p>}
+        {checkedIn && <p className="text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>}
       </section>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </main>

@@ -22,7 +22,7 @@ export function ConfidenceSelector({
             aria-pressed={selected}
             disabled={disabled}
             onClick={() => onChange(l.value)}
-            className={`rounded-lg border px-3 py-3 text-sm font-medium transition disabled:opacity-50 ${
+            className={`min-h-14 rounded-lg border px-2 py-3 text-sm leading-tight font-medium transition disabled:opacity-50 sm:text-base ${
               selected
                 ? `${l.color} border-transparent text-white`
                 : "border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50"

@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PublishedClusters } from "@/components/PublishedClusters";
 import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
@@ -38,15 +40,15 @@ export function StudentCockpit() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-xl space-y-4 p-4">
-      <header>
-        <p className="text-sm text-zinc-500">
-          {code} · you are <span className="font-medium">{view.alias}</span> (anonymous to classmates)
+    <main className="mx-auto w-full max-w-xl space-y-4 p-3 sm:p-4">
+      <header className="space-y-1">
+        <p className="text-sm break-words text-zinc-500">
+          {code} · you are <span className="font-medium">{view.alias}</span> (pseudonymous to classmates)
         </p>
-        <h1 className="text-2xl font-semibold">{view.title}</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">{view.title}</h1>
         {view.state === "closed" && <p className="text-amber-600">This session is closed.</p>}
       </header>
-      <QuestionComposer sessionId={view.sessionId} token={token} concepts={view.concepts} activeConceptId={view.activeConceptId} />
+      <ConnectionStatus />
       {ordered.map((c) => (
         <section
           key={c._id}
@@ -64,9 +66,18 @@ export function StudentCockpit() {
           />
         </section>
       ))}
-      <PublishedClusters sessionId={view.sessionId} token={token} />
-      <HelperOptIn sessionId={view.sessionId} token={token} concepts={view.concepts} />
-      <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
+      <ErrorBoundary label="the question box">
+        <QuestionComposer sessionId={view.sessionId} token={token} concepts={view.concepts} activeConceptId={view.activeConceptId} />
+      </ErrorBoundary>
+      <ErrorBoundary label="published clusters">
+        <PublishedClusters sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
+      </ErrorBoundary>
+      <ErrorBoundary label="helper opt-in">
+        <HelperOptIn sessionId={view.sessionId} token={token} concepts={view.concepts} />
+      </ErrorBoundary>
+      <ErrorBoundary label="help rooms">
+        <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
+      </ErrorBoundary>
     </main>
   );
 }

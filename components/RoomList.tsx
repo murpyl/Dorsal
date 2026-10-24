@@ -7,10 +7,80 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { errorMessage } from "@/lib/errors";
+import { btnHelper, btnOutline, btnPrimary, btnSecondary } from "@/lib/ui";
 
 type Concept = { _id: Id<"concepts">; label: string };
 
 export const roomHref = (roomId: Id<"rooms">, code: string) => `/room/${roomId}?code=${encodeURIComponent(code)}`;
+
+export type StudentRoom = {
+  _id: Id<"rooms">;
+  title: string;
+  conceptId: Id<"concepts">;
+  conceptLabel: string;
+  clusterId: Id<"clusters"> | null;
+  clusterTitle: string | null;
+  capacity: number;
+  memberCount: number;
+  helperCount: number;
+  isMember: boolean;
+  myRole: "helper" | "learner" | null;
+};
+
+export const roomSummary = (r: StudentRoom) =>
+  `${r.memberCount} / ${r.capacity} in room · ${r.helperCount} helper${r.helperCount === 1 ? "" : "s"}`;
+
+/** Join / Open / Full control shared by RoomList and PublishedClusters. Joins, then navigates to the room with the ?code= convention. */
+export function RoomJoinButton({
+  room,
+  token,
+  code,
+  asHelper,
+  busy,
+  onBusy,
+  onError,
+}: {
+  room: StudentRoom;
+  token: string;
+  code: string;
+  asHelper: boolean;
+  busy: boolean;
+  onBusy: (b: boolean) => void;
+  onError: (msg: string | null) => void;
+}) {
+  const router = useRouter();
+  const join = useMutation(api.rooms.join);
+  if (room.isMember) {
+    return (
+      <Link href={roomHref(room._id, code)} className={btnPrimary}>
+        Open ({room.myRole})
+      </Link>
+    );
+  }
+  if (room.memberCount >= room.capacity) {
+    return <span className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm text-zinc-500">Full</span>;
+  }
+  return (
+    <button
+      disabled={busy}
+      onClick={async () => {
+        onBusy(true);
+        onError(null);
+        try {
+          await join({ roomId: room._id, token, role: asHelper ? "helper" : "learner" });
+          router.push(roomHref(room._id, code));
+        } catch (err) {
+          onError(errorMessage(err));
+        } finally {
+          onBusy(false);
+        }
+      }}
+      className={btnOutline}
+    >
+      {asHelper ? "Join as helper" : "Join"}
+    </button>
+  );
+}
 
 export function RoomList({
   sessionId,
@@ -27,12 +97,12 @@ export function RoomList({
   const rooms = useQuery(api.rooms.listBySession, { sessionId, token });
   const me = useQuery(api.participants.me, { sessionId, token });
   const createAsHelper = useMutation(api.rooms.createAsHelper);
-  const join = useMutation(api.rooms.join);
   const [conceptId, setConceptId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!rooms || !me) return null;
+  if (rooms === undefined || me === undefined) return <p className="text-sm text-zinc-500">Loading help rooms…</p>;
+  if (rooms === null || me === null) return <p className="text-sm text-zinc-500">Couldn’t load help rooms for this session.</p>;
   const helperConcepts = concepts.filter((c) => me.helperConceptIds.includes(c._id));
   const chosen = helperConcepts.find((c) => c._id === conceptId) ?? helperConcepts[0] ?? null;
 
@@ -82,7 +152,7 @@ export function RoomList({
               </option>
             ))}
           </select>
-          <button disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50">
+          <button disabled={busy} className={btnHelper}>
             Open room
           </button>
         </form>
@@ -92,40 +162,26 @@ export function RoomList({
         <p className="text-sm text-zinc-500">No open help rooms yet.</p>
       ) : (
         <ul className="space-y-2">
-          {rooms.map((r) => {
-            const full = r.memberCount >= r.capacity;
-            const asHelper = me.helperConceptIds.includes(r.conceptId);
-            return (
-              <li key={r._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 p-3 text-sm">
-                <div>
-                  <p className="font-medium">{r.title}</p>
-                  <p className="text-zinc-600">
-                    {r.conceptLabel} · {r.memberCount} / {r.capacity} in room · {r.helperCount} helper{r.helperCount === 1 ? "" : "s"}
-                  </p>
-                </div>
-                {r.isMember ? (
-                  <Link href={roomHref(r._id, code)} className="rounded-lg bg-indigo-600 px-3 py-1 font-medium text-white">
-                    Open ({r.myRole})
-                  </Link>
-                ) : full ? (
-                  <span className="rounded-lg bg-zinc-100 px-3 py-1 text-zinc-500">Full</span>
-                ) : (
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      run(async () => {
-                        await join({ roomId: r._id, token, role: asHelper ? "helper" : "learner" });
-                        return r._id;
-                      })
-                    }
-                    className="rounded-lg border border-indigo-600 px-3 py-1 font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
-                  >
-                    {asHelper ? "Join as helper" : "Join"}
-                  </button>
-                )}
-              </li>
-            );
-          })}
+          {rooms.map((r) => (
+            <li key={r._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 p-3 text-sm">
+              <div>
+                <p className="font-medium">{r.title}</p>
+                <p className="text-zinc-600">
+                  {r.conceptLabel} · {roomSummary(r)}
+                </p>
+                {r.clusterTitle && <p className="text-xs text-zinc-500">For cluster “{r.clusterTitle}”</p>}
+              </div>
+              <RoomJoinButton
+                room={r}
+                token={token}
+                code={code}
+                asHelper={me.helperConceptIds.includes(r.conceptId)}
+                busy={busy}
+                onBusy={setBusy}
+                onError={setError}
+              />
+            </li>
+          ))}
         </ul>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -184,11 +240,15 @@ export function RoomStatus({
               </option>
             ))}
           </select>
-          <button className="rounded-lg bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-700">Open help room</button>
+          <button className={btnPrimary}>Open help room</button>
         </form>
       )}
-      {!rooms || rooms.length === 0 ? (
-        <p className="text-sm text-zinc-500">No open rooms.</p>
+      {rooms === undefined ? (
+        <p className="text-sm text-zinc-500">Loading rooms…</p>
+      ) : rooms === null ? (
+        <p className="text-sm text-zinc-500">Couldn’t load rooms (no instructor access).</p>
+      ) : rooms.length === 0 ? (
+        <p className="text-sm text-zinc-500">No open rooms. Open one from a published cluster above or pick a topic here.</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {rooms.map((r) => (
@@ -200,10 +260,11 @@ export function RoomStatus({
                   {r.helperCount === 1 ? "" : "s"}
                   {r.memberCount >= r.capacity && <span className="ml-2 text-amber-700">full</span>}
                 </p>
+                {r.clusterTitle && <p className="text-xs text-zinc-500">For cluster “{r.clusterTitle}”</p>}
               </div>
               <button
                 onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}
-                className="rounded-lg border border-zinc-300 px-3 py-1 hover:bg-zinc-50"
+                className={btnSecondary}
               >
                 Close room
               </button>
