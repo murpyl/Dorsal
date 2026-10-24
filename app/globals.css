@@ -94,6 +94,7 @@
   --level-explain: oklch(0.56 0.13 158);
 }
 
+/* Deep-water variant: same shark, lights off. */
 .dark {
   --background: oklch(0.2 0.045 255);
   --foreground: oklch(0.96 0.01 240);
