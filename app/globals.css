@@ -91,9 +91,9 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --elevation-soft: var(--elevation-soft);
-  --elevation-soft-lg: var(--elevation-soft-lg);
-  --elevation-moss: var(--elevation-moss);
+  --shadow-soft: var(--elevation-soft);
+  --shadow-soft-lg: var(--elevation-soft-lg);
+  --shadow-moss: var(--elevation-moss);
 }
 
 :root {
