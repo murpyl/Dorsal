@@ -4,14 +4,14 @@ import type { Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
 import { phase } from "./schema";
 
-const SEED_CONCEPTS = [
+export const SEED_CONCEPTS = [
   { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
   { label: "Recursive call", description: "Calling the function on a smaller version of the problem.", x: 260, y: 0 },
   { label: "Call stack & frames", description: "Each call gets its own frame; frames stack up until a base case.", x: 520, y: 0 },
   { label: "Return values", description: "How results flow back up the stack and combine.", x: 780, y: 0 },
   { label: "Tree recursion", description: "A function that makes more than one recursive call.", x: 520, y: 160 },
 ];
-const SEED_EDGES: [number, number][] = [
+export const SEED_EDGES: [number, number][] = [
   [0, 1],
   [1, 2],
   [2, 3],

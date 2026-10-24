@@ -15,6 +15,7 @@ import type * as messages from "../messages.js";
 import type * as participants from "../participants.js";
 import type * as questions from "../questions.js";
 import type * as rooms from "../rooms.js";
+import type * as seed from "../seed.js";
 import type * as sessions from "../sessions.js";
 import type * as signals from "../signals.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   participants: typeof participants;
   questions: typeof questions;
   rooms: typeof rooms;
+  seed: typeof seed;
   sessions: typeof sessions;
   signals: typeof signals;
 }>;
