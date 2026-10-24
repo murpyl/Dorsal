@@ -159,7 +159,7 @@ export function AsciiOcean() {
     let last = 0;
     let raf = 0;
     const tick = (now: number) => {
-      if (now - last >= 1000 / FPS) {
+      if (last === 0 || now - last >= 1000 / FPS) {
         last = now;
         setText(current && size.cols ? current.frame((now - start) / 1000, size.cols, size.rows) : "");
       }
@@ -174,6 +174,17 @@ export function AsciiOcean() {
     localStorage.setItem(STORAGE_KEY, id);
   };
   const color = SCENES.find((s) => s.id === scene)?.color;
+  const options = [...SCENES, { id: "off", name: "Off" }];
+  const checkedIndex = Math.max(0, options.findIndex((s) => s.id === scene));
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    const next = step ? (checkedIndex + step + options.length) % options.length : e.key === "Home" ? 0 : e.key === "End" ? options.length - 1 : null;
+    if (next === null) return;
+    e.preventDefault();
+    pick(options[next].id);
+    (e.currentTarget.children[next] as HTMLElement | undefined)?.focus();
+  };
 
   return (
     <>
@@ -187,14 +198,16 @@ export function AsciiOcean() {
       <div
         role="radiogroup"
         aria-label="Background animation"
+        onKeyDown={onKeyDown}
         className="fixed right-2 bottom-2 z-20 flex max-w-[calc(100vw-1rem)] flex-wrap justify-end gap-0.5 rounded-full bg-card/80 p-1 text-[11px] ring-1 ring-border/70 backdrop-blur sm:right-3 sm:bottom-3 sm:gap-1 sm:text-xs"
       >
-        {[...SCENES, { id: "off", name: "Off" }].map((s) => (
+        {options.map((s, i) => (
           <button
             key={s.id}
             type="button"
             role="radio"
             aria-checked={scene === s.id}
+            tabIndex={i === checkedIndex ? 0 : -1}
             onClick={() => pick(s.id)}
             className={cn(
               "pressable rounded-full px-2 py-1 font-medium sm:px-2.5 text-muted-foreground hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 outline-none",
