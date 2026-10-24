@@ -76,16 +76,20 @@ export default function InstructorMock() {
   const [groupTitle, setGroupTitle] = useState<string | null>(null);
   const { toast, show, dismiss } = useToast();
 
-  const active = concepts.find((c) => c._id === activeId)!;
-  const selected = concepts.find((c) => c._id === selectedId) ?? null;
+  const tally = (c: Concept) => (phase === "post" ? c.post : c.counts);
+  const shown: Concept[] = concepts.map((c) => {
+    const t = tally(c);
+    return { ...c, counts: t, total: t.confused + t.partial + t.can_explain };
+  });
+  const active = shown.find((c) => c._id === activeId)!;
+  const selected = shown.find((c) => c._id === selectedId) ?? null;
   const pending = fixtureQuestions.filter((q) => q.state === "pending" && !hidden.includes(q._id) && !clusters.some((c) => c.status === "published" && c.questionIds.includes(q._id)));
   const suggested = clusters.filter((c) => c.status === "suggested");
   const published = clusters.filter((c) => c.status === "published");
   const openRooms = rooms.filter((r) => r.status === "open");
-  const tally = (c: Concept) => (phase === "post" ? c.post : c.counts);
-  const responses = concepts.reduce((s, c) => s + tally(c).confused + tally(c).partial + tally(c).can_explain, 0);
-  const confused = concepts.reduce((s, c) => s + tally(c).confused, 0);
-  const graphConcepts = concepts.map((c) => ({ ...c, openClusters: published.filter((p) => p.conceptIds.includes(c._id)).length }));
+  const responses = shown.reduce((s, c) => s + c.total, 0);
+  const confused = shown.reduce((s, c) => s + c.counts.confused, 0);
+  const graphConcepts = shown.map((c) => ({ ...c, openClusters: published.filter((p) => p.conceptIds.includes(c._id)).length }));
   const counts: Partial<Record<Section, number>> = { questions: pending.length + suggested.length, rooms: openRooms.length };
 
   const makeCurrent = (id: string) => {
@@ -103,7 +107,7 @@ export default function InstructorMock() {
     if (!title || picked.length === 0) return;
     const qs = fixtureQuestions.filter((q) => picked.includes(q._id));
     const conceptIds = Array.from(new Set(qs.map((q) => q.conceptId)));
-    setClusters((cs) => [{ _id: `c${cs.length + 1}`, title, summary: qs[0].content, conceptIds, questionIds: picked, status: "suggested", source: "manual", confidence: null, helperCount: 0 }, ...cs]);
+    setClusters((cs) => [{ _id: `manual-${Date.now()}`, title, summary: qs[0].content, conceptIds, questionIds: picked, status: "suggested", source: "manual", confidence: null, helperCount: 0 }, ...cs]);
     setPicked([]);
     setGroupTitle(null);
     show({ text: `Grouped ${qs.length} questions as “${title}” — review and publish it` });
@@ -129,7 +133,7 @@ export default function InstructorMock() {
                 size="icon-sm"
                 aria-label={copied ? "Link copied" : "Copy join link"}
                 onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/join/${session.code}`).then(() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/mock/sidebar-shell/student`).then(() => {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 1500);
                   });
@@ -294,10 +298,10 @@ export default function InstructorMock() {
                     {openRooms.filter((r) => r.capacity - r.members.length <= 1).map((r) => (
                       <AttentionRow key={r._id} icon={Users} onClick={() => setSection("rooms")} title={`Room “${r.title}” is ${r.members.length >= r.capacity ? "full" : "nearly full"}`} detail={`${r.members.length} / ${r.capacity} · consider opening a second room`} />
                     ))}
-                    {concepts.filter((c) => c.total < LOW_SAMPLE).map((c) => (
+                    {shown.filter((c) => c.total < LOW_SAMPLE).map((c) => (
                       <AttentionRow key={c._id} icon={AlertTriangle} onClick={() => { setSelectedId(c._id); setSection("graph"); }} title={`${c.label}: low sample`} detail={`N = ${c.total} · colour is tentative`} />
                     ))}
-                    {concepts.filter((c) => c.total >= LOW_SAMPLE && c.counts.confused / c.total >= 0.45).map((c) => (
+                    {shown.filter((c) => c.total >= LOW_SAMPLE && c.counts.confused / c.total >= 0.45).map((c) => (
                       <AttentionRow key={c._id} icon={AlertTriangle} onClick={() => { setSelectedId(c._id); setSection("graph"); }} title={`${c.label}: ${Math.round((c.counts.confused / c.total) * 100)}% confused`} detail={`${c.counts.confused} of ${c.total}${c._id === activeId ? " · current topic" : ""}`} tone="warn" />
                     ))}
                   </CardContent>

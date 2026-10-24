@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, SendHorizonal, Users, X } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import {
@@ -21,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { clusters, conceptById, me, roomMessages, rooms, session } from "../fixtures";
+import { type Room, clusters, conceptById, me, roomMessages, rooms, session } from "../fixtures";
 import { Avatar, MockBanner, relTime } from "../ui";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
@@ -29,11 +30,37 @@ const CHECK_INS: { level: Level; label: string; className: string }[] = [
   { level: "confused", label: "Still confused", className: "bg-rose-600 text-white hover:bg-rose-700" },
 ];
 
-export default function RoomMock() {
-  const room = rooms[0];
+function resolveRoom(params: URLSearchParams): Room {
+  const id = params.get("room");
+  if (id === "new") {
+    const conceptId = params.get("concept") ?? me.helperConceptIds[0];
+    return {
+      _id: "new",
+      title: `${conceptById(conceptId).label} walk-through`,
+      conceptId,
+      clusterId: null,
+      capacity: 6,
+      members: [{ alias: me.alias, role: "helper", isMe: true }],
+      status: "open",
+      openedMinutesAgo: 0,
+    };
+  }
+  return rooms.find((r) => r._id === id) ?? rooms[0];
+}
+
+export default function RoomMockPage() {
+  return (
+    <Suspense fallback={null}>
+      <RoomMock />
+    </Suspense>
+  );
+}
+
+function RoomMock() {
+  const room = resolveRoom(useSearchParams());
   const concept = conceptById(room.conceptId);
   const cluster = clusters.find((c) => c._id === room.clusterId) ?? null;
-  const [messages, setMessages] = useState(roomMessages);
+  const [messages, setMessages] = useState(room._id === rooms[0]._id ? roomMessages : []);
   const [draft, setDraft] = useState("");
   const [membersOpen, setMembersOpen] = useState(false);
   const [checkIn, setCheckIn] = useState<Level | null>(null);
@@ -116,7 +143,7 @@ export default function RoomMock() {
         <section className="flex min-w-0 flex-1 flex-col" aria-label="Chat">
           <div className="flex-1 space-y-2 overflow-y-auto px-4 py-4" aria-live="polite">
             <p className="mx-auto w-fit rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-              Room opened {relTime(room.openedMinutesAgo)} · {helpers.length} helper, {room.members.length - helpers.length} learners · helpers volunteered, not a verified credential
+              Room opened {relTime(room.openedMinutesAgo)} · {helpers.length} helper{helpers.length === 1 ? "" : "s"}, {room.members.length - helpers.length} learner{room.members.length - helpers.length === 1 ? "" : "s"} · helpers volunteered, not a verified credential
             </p>
             {messages.map((m, i) => {
               const member = room.members.find((x) => x.alias === m.alias);
