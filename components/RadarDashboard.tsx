@@ -21,12 +21,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, newSecret, taSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
 import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
 import { TA_NAME_MAX } from "@/lib/staff";
 import { cn } from "@/lib/utils";
+
+type DashTab = "concept" | "questions" | "rooms" | "results" | "staff";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -41,6 +44,7 @@ export function RadarDashboard() {
   const setActiveConcept = useMutation(api.sessions.setActiveConcept);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<DashTab>("concept");
 
   if (secret === null || view === null)
     return (
@@ -81,21 +85,22 @@ export function RadarDashboard() {
   }
 
   return (
-    <main className="w-full space-y-6 px-4 py-5 pb-12 md:px-8">
-      <header className="enter flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
+    <main className="flex w-full flex-col gap-3 px-3 py-3 md:px-5 lg:h-dvh lg:overflow-hidden">
+      <header className="enter flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Brand />
           <div>
             <p className="text-sm text-muted-foreground">{view.role === "ta" ? `TA · ${view.taName}` : "Instructor"}</p>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{view.title}</h1>
+            <h1 className="truncate text-xl font-semibold tracking-tight">{view.title}</h1>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <JoinCode code={view.code} />
           <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} state={view.state} />
         </div>
       </header>
       <ConnectionStatus />
+      <div className="grid shrink-0 gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
       <PushPromptForm
         concepts={view.concepts}
         activeConceptId={view.activeConceptId}
@@ -103,155 +108,167 @@ export function RadarDashboard() {
         onPush={makeCurrent}
         error={error}
       />
+        <section className="grid grid-cols-5 gap-2" aria-label="Session metrics">
+          <Stat label="Participants" value={view.participantCount} detail={view.simulatedCount > 0 ? `${view.simulatedCount} simulated` : undefined} />
+          <Stat label="Answered now" value={`${view.answeredCount}/${view.participantCount}`} detail={`${participation}%`} />
+          <Stat label="Responses" value={responses} />
+          <Stat label="Confused" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
+          <Stat label="Open clusters" value={view.publishedClusterCount} />
+        </section>
+      </div>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4" aria-label="Session metrics">
-        <Metric
-          i={0}
-          label="Participants"
-          value={view.participantCount}
-          detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
-        />
-        <Metric
-          i={1}
-          label="Participation"
-          value={`${view.answeredCount} / ${view.participantCount}`}
-          detail={`${participation}% answered the current prompt${view.simulatedCount > 0 ? ` · incl. ${view.simulatedCount} simulated` : ""}`}
-        />
-        <Metric i={2} label="Responses" value={responses} />
-        <Metric i={3} label="Confused responses" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
-        <Metric i={4} label="Open clusters" value={view.publishedClusterCount} detail="published" />
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]">
+        <section className="flex min-h-0 flex-col gap-3" aria-label="Concept graph">
         <ConceptGraph
           concepts={view.concepts}
           edges={view.edges}
           activeConceptId={view.activeConceptId}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={(id) => {
+            setSelectedId(id);
+            setTab("concept");
+          }}
+          className="min-h-72 flex-1"
         />
-        <Card aria-label="Concept details" className="h-fit lg:sticky lg:top-4">
-          {selected ? (
-            <>
-              <CardHeader>
-                {selected._id === view.activeConceptId && <Badge className="mb-1 w-fit">Current topic</Badge>}
-                <CardTitle className="text-lg" render={<h2 />}>{selected.label}</CardTitle>
-                <CardDescription>{selected.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <DistributionBar tally={selected} />
-                  <ul className="space-y-1 text-sm">
-                    {LEVELS.map((l) => (
-                      <li key={l.value} className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-2">
-                          <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
-                          {l.label}
-                        </span>
-                        <span className="tabular-nums">
-                          <strong>{selected.counts[l.value]}</strong>
-                          <span className="text-muted-foreground"> / {selected.total}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {selected.total < LOW_SAMPLE && (
-                    <p className="text-sm text-amber-700">
-                      {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
-                    </p>
-                  )}
-                </div>
-                {selected._id !== view.activeConceptId && (
-                  <Button className="w-full" onClick={() => makeCurrent(selected._id)}>
-                    Make current topic
-                  </Button>
-                )}
-                <InlineError message={error} />
-                <Separator />
-                <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
-              </CardContent>
-            </>
-          ) : (
-            <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
-              <MousePointerClick className="size-5" aria-hidden />
-              Click a concept (or Tab to it and press Enter) to see its signal breakdown.
-            </CardContent>
-          )}
-        </Card>
-      </section>
+          <div className="max-h-56 shrink-0 overflow-y-auto px-1">
+          <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
+            <div>
+              <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
+                Per-concept distribution
+              </h2>
+              <p className="text-sm text-muted-foreground">Text alternative to the graph colours.</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
+              {view.concepts.map((c) => {
+                const active = c._id === view.activeConceptId;
+                return (
+                  <Card key={c._id} size="sm" className={cn(active && "ring-2 ring-foreground/80")}>
+                    <CardHeader>
+                      <CardTitle className="flex flex-wrap items-center gap-2" render={<h3 />}>
+                        {c.label}
+                        {active && <Badge>current topic</Badge>}
+                        {coverage(c._id) === "covered" && (
+                          <Badge variant="outline" className="font-normal text-muted-foreground">
+                            covered · {c.total} answered
+                          </Badge>
+                        )}
+                        {coverage(c._id) === "upcoming" && (
+                          <Badge variant="ghost" className="font-normal text-muted-foreground/70">
+                            not yet covered
+                          </Badge>
+                        )}
+                        {c.openClusters > 0 && (
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                            {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription className="tabular-nums">
+                        N = {c.total}
+                        {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <DistributionBar tally={c} />
+                      <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {LEVELS.map((l) => (
+                          <span key={l.value} className="flex items-center gap-1.5 tabular-nums">
+                            <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
+                            {l.label}: <strong className="text-foreground">{c.counts[l.value]}</strong> / {c.total}
+                          </span>
+                        ))}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+          </div>
+        </section>
 
-      <ErrorBoundary label="the cluster queue">
-        <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
-      </ErrorBoundary>
-
-      <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
-        <div>
-          <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
-            Per-concept distribution
-          </h2>
-          <p className="text-sm text-muted-foreground">Text alternative to the graph colours.</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {view.concepts.map((c) => {
-            const active = c._id === view.activeConceptId;
-            return (
-              <Card key={c._id} size="sm" className={cn(active && "ring-2 ring-foreground/80")}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-2 rounded-xl bg-card p-2 ring-1 ring-foreground/10">
+          <TabsList className="w-full shrink-0">
+            <TabsTrigger value="concept">Concept</TabsTrigger>
+            <TabsTrigger value="questions">Questions</TabsTrigger>
+            <TabsTrigger value="rooms">Rooms</TabsTrigger>
+            <TabsTrigger value="results">Before/after</TabsTrigger>
+            {view.role === "instructor" && <TabsTrigger value="staff">TAs</TabsTrigger>}
+          </TabsList>
+          <TabsContent value="concept" className="min-h-0 overflow-y-auto">
+          <Card aria-label="Concept details" className="ring-0">
+            {selected ? (
+              <>
                 <CardHeader>
-                  <CardTitle className="flex flex-wrap items-center gap-2" render={<h3 />}>
-                    {c.label}
-                    {active && <Badge>current topic</Badge>}
-                    {coverage(c._id) === "covered" && (
-                      <Badge variant="outline" className="font-normal text-muted-foreground">
-                        covered · {c.total} answered
-                      </Badge>
-                    )}
-                    {coverage(c._id) === "upcoming" && (
-                      <Badge variant="ghost" className="font-normal text-muted-foreground/70">
-                        not yet covered
-                      </Badge>
-                    )}
-                    {c.openClusters > 0 && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-                        {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="tabular-nums">
-                    N = {c.total}
-                    {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
-                  </CardDescription>
+                  {selected._id === view.activeConceptId && <Badge className="mb-1 w-fit">Current topic</Badge>}
+                  <CardTitle className="text-lg" render={<h2 />}>{selected.label}</CardTitle>
+                  <CardDescription>{selected.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <DistributionBar tally={c} />
-                  <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    {LEVELS.map((l) => (
-                      <span key={l.value} className="flex items-center gap-1.5 tabular-nums">
-                        <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
-                        {l.label}: <strong className="text-foreground">{c.counts[l.value]}</strong> / {c.total}
-                      </span>
-                    ))}
-                  </p>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <DistributionBar tally={selected} />
+                    <ul className="space-y-1 text-sm">
+                      {LEVELS.map((l) => (
+                        <li key={l.value} className="flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-2">
+                            <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
+                            {l.label}
+                          </span>
+                          <span className="tabular-nums">
+                            <strong>{selected.counts[l.value]}</strong>
+                            <span className="text-muted-foreground"> / {selected.total}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {selected.total < LOW_SAMPLE && (
+                      <p className="text-sm text-amber-700">
+                        {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
+                      </p>
+                    )}
+                  </div>
+                  {selected._id !== view.activeConceptId && (
+                    <Button className="w-full" onClick={() => makeCurrent(selected._id)}>
+                      Make current topic
+                    </Button>
+                  )}
+                  <InlineError message={error} />
+                  <Separator />
+                  <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
                 </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2" aria-label="Peer help comparison and help rooms">
-        <ErrorBoundary label="the peer help comparison">
-          <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
-        </ErrorBoundary>
-        <ErrorBoundary label="help rooms">
-          <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} role={view.role} />
-        </ErrorBoundary>
-      </section>
-
-      {view.role === "instructor" && (
-        <ErrorBoundary label="TAs">
-          <TaManager sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
-        </ErrorBoundary>
-      )}
+              </>
+            ) : (
+              <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                <MousePointerClick className="size-5" aria-hidden />
+                Click a concept (or Tab to it and press Enter) to see its signal breakdown.
+              </CardContent>
+            )}
+          </Card>
+          </TabsContent>
+          <TabsContent value="questions" className="min-h-0 overflow-y-auto px-1">
+          <ErrorBoundary label="the cluster queue">
+            <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+          </ErrorBoundary>
+          </TabsContent>
+          <TabsContent value="rooms" className="min-h-0 overflow-y-auto">
+            <ErrorBoundary label="help rooms">
+              <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} role={view.role} />
+            </ErrorBoundary>
+          </TabsContent>
+          <TabsContent value="results" className="min-h-0 overflow-y-auto">
+            <ErrorBoundary label="the peer help comparison">
+              <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+            </ErrorBoundary>
+          </TabsContent>
+          {view.role === "instructor" && (
+            <TabsContent value="staff" className="min-h-0 overflow-y-auto">
+              <ErrorBoundary label="TAs">
+                <TaManager sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+              </ErrorBoundary>
+            </TabsContent>
+          )}
+        </Tabs>
+      </div>
     </main>
   );
 }
@@ -384,15 +401,13 @@ function JoinCode({ code }: { code: string }) {
   );
 }
 
-function Metric({ i, label, value, detail, tone }: { i: number; label: string; value: number | string; detail?: string; tone?: "warn" }) {
+function Stat({ label, value, detail, tone }: { label: string; value: number | string; detail?: string; tone?: "warn" }) {
   return (
-    <Card size="sm" className="enter" style={{ "--i": i } as React.CSSProperties}>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className={cn("mt-1 text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</p>
-        {detail && <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>}
-      </CardContent>
-    </Card>
+    <div className="min-w-0 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+      <p className="truncate text-xs text-muted-foreground">{label}</p>
+      <p className={cn("text-xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</p>
+      {detail && <p className="truncate text-[11px] text-muted-foreground">{detail}</p>}
+    </div>
   );
 }
 

@@ -104,12 +104,14 @@ export function ConceptGraph({
   activeConceptId,
   selectedId,
   onSelect,
+  className,
 }: {
   concepts: GraphConcept[];
   edges: GraphEdge[];
   activeConceptId: string | null;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  className?: string;
 }) {
   const nodes = useMemo<ConceptNode[]>(
     () =>
@@ -147,7 +149,7 @@ export function ConceptGraph({
   );
 
   return (
-    <figure className="flex flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10">
+    <figure className={cn("flex flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10", className)}>
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Self-reported understanding</span>
         <span className="flex items-center gap-1.5">
@@ -179,7 +181,7 @@ export function ConceptGraph({
           Text version: per-concept distribution
         </a>
       </figcaption>
-      <div className="h-80 lg:h-[26rem]">
+      <div className="h-80 lg:h-auto lg:min-h-0 lg:flex-1">
         <ReactFlow
           nodes={nodes}
           edges={flowEdges}

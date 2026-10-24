@@ -90,8 +90,8 @@ export function PeerRoom() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 p-4 pb-12">
-      <header className="enter space-y-3">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 p-3 sm:p-4 md:h-dvh md:overflow-hidden">
+      <header className="enter shrink-0 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Brand />
           <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={backHref} />}>
@@ -117,8 +117,9 @@ export function PeerRoom() {
         <ConnectionStatus />
       </header>
 
-      <section className="grid gap-4 md:grid-cols-[14rem_1fr]">
-        <Card size="sm" aria-labelledby="members" className="h-fit">
+      <section className="grid min-h-0 flex-1 gap-3 md:grid-cols-[18rem_1fr]">
+        <div className="flex min-h-0 flex-col gap-3 md:overflow-y-auto">
+        <Card size="sm" aria-labelledby="members" className="h-fit shrink-0">
           <CardHeader>
             <CardTitle id="members" render={<h2 />}>In this room</CardTitle>
           </CardHeader>
@@ -167,9 +168,32 @@ export function PeerRoom() {
             </div>
           </CardContent>
         </Card>
+      {room.myRole !== "ta" && (
+        <Card aria-labelledby="check-in">
+          <CardHeader>
+            <CardTitle id="check-in" render={<h2 />}>
+              Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
+            </CardTitle>
+            <CardDescription>
+              How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
+              your session page. Only aggregate counts are shown to the instructor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
+            {room.myLevel && (
+              <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+                <CheckCircle2 className="size-4" aria-hidden />
+                Rating saved. You can change it any time.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+        </div>
 
-        <Card className="gap-0 py-0">
-          <div className="flex-1 space-y-2 overflow-y-auto p-4" style={{ maxHeight: "24rem", minHeight: "16rem" }} aria-live="polite">
+        <Card className="min-h-[24rem] gap-0 py-0 md:min-h-0">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4" aria-live="polite">
             {messages === undefined ? (
               <div className="space-y-2">
                 <Skeleton className="h-10 w-2/3" />
@@ -213,29 +237,6 @@ export function PeerRoom() {
           </form>
         </Card>
       </section>
-
-      {room.myRole !== "ta" && (
-        <Card aria-labelledby="check-in">
-          <CardHeader>
-            <CardTitle id="check-in" render={<h2 />}>
-              Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
-            </CardTitle>
-            <CardDescription>
-              How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
-              your session page. Only aggregate counts are shown to the instructor.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
-            {room.myLevel && (
-              <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
-                <CheckCircle2 className="size-4" aria-hidden />
-                Rating saved. You can change it any time.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
       <InlineError message={error} />
     </main>
   );
