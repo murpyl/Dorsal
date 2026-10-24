@@ -201,7 +201,7 @@ export default function FocusFlowStudent() {
                           </span>
                         </span>
                         {r.isMember ? (
-                          <Button size="sm" nativeButton={false} render={<Link href="/mock/focus-flow/room" />}>
+                          <Button size="sm" nativeButton={false} render={<Link href={`/mock/focus-flow/room?room=${r._id}`} />}>
                             Open ({r.myRole})
                             <ArrowRight data-icon="inline-end" aria-hidden />
                           </Button>

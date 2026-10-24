@@ -293,15 +293,22 @@ export const rooms: Room[] = [
   },
 ];
 
-export const roomMembers: Member[] = [
+export const roomMembersById: Record<string, Member[]> = {
+  r1: [
   { alias: "brisk-heron", role: "helper", isMe: false, isSimulated: true },
   { alias: "calm-walrus", role: "helper", isMe: false, isSimulated: true },
   { alias: "quiet-otter", role: "learner", isMe: true, isSimulated: false },
   { alias: "mellow-fox", role: "learner", isMe: false, isSimulated: true },
   { alias: "sunny-lynx", role: "learner", isMe: false, isSimulated: true },
-];
+  ],
+  r2: [
+    { alias: "keen-puffin", role: "helper", isMe: false, isSimulated: true },
+    { alias: "dusty-moth", role: "learner", isMe: false, isSimulated: true },
+  ],
+};
 
-export const roomMessages: Message[] = [
+export const roomMessagesById: Record<string, Message[]> = {
+  r1: [
   { _id: "m1", authorAlias: "brisk-heron", body: "hey all — where are people stuck? picking the base case, or knowing when to recurse?", isMine: false, time: "10:40" },
   {
     _id: "m2",
@@ -332,7 +339,12 @@ export const roomMessages: Message[] = [
     time: "10:42",
   },
   { _id: "m6", authorAlias: "sunny-lynx", body: "ohh ok that reframing helps. can there be two base cases though? like fib has 0 and 1", isMine: false, time: "10:44" },
-];
+  ],
+  r2: [
+    { _id: "n1", authorAlias: "keen-puffin", body: "hi! so without a base case the function never stops calling itself — Python gives up after ~1000 frames with RecursionError", isMine: false, time: "10:43" },
+    { _id: "n2", authorAlias: "dusty-moth", body: "ok so the error isn't a bug in recursion, it's just the missing stop condition?", isMine: false, time: "10:44" },
+  ],
+};
 
 /** Pre vs post tallies for the comparison view (post phase has just started for two concepts). */
 export const prePost = concepts.map((c) => ({
@@ -346,6 +358,13 @@ export const prePost = concepts.map((c) => ({
         ? tally(2, 4, 5)
         : tally(0, 0, 0),
 }));
+
+/** Concepts with the tally for one phase swapped in (post phase has only two concepts with responses so far). */
+export const conceptsForPhase = (phase: Phase): Concept[] =>
+  concepts.map((c) => {
+    const row = prePost.find((r) => r.conceptId === c._id)!;
+    return { ...c, ...row[phase] };
+  });
 
 /** Reverse-chronological live feed for the instructor's right column. */
 export type FeedItem =

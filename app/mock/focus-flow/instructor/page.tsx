@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs } from "@base-ui/react/tabs";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Check, Copy, DoorOpen, EyeOff, Inbox, MessageSquareText, Presentation, Radio, Sparkles } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { ConceptGraph, LOW_SAMPLE, understandingScore } from "@/components/ConceptGraph";
@@ -29,8 +29,8 @@ import {
   type Cluster,
   type FeedItem,
   clusters as initialClusters,
-  concepts,
   conceptById,
+  conceptsForPhase,
   edges,
   feed as initialFeed,
   prePost,
@@ -56,17 +56,24 @@ export default function FocusFlowInstructor() {
   const [grouping, setGrouping] = useState(false);
   const [running, setRunning] = useState(false);
 
+  const nextId = useRef(100);
+  const newId = (prefix: string) => `${prefix}${nextId.current++}`;
+
   const graphConcepts = useMemo(
-    () => concepts.map((c) => ({ ...c, openClusters: clusters.filter((k) => k.status === "published" && k.conceptIds.includes(c._id)).length })),
-    [clusters],
+    () =>
+      conceptsForPhase(phase).map((c) => ({
+        ...c,
+        openClusters: clusters.filter((k) => k.status === "published" && k.conceptIds.includes(c._id)).length,
+      })),
+    [clusters, phase],
   );
   const selected = graphConcepts.find((c) => c._id === selectedId) ?? null;
-  const responses = concepts.reduce((s, c) => s + c.total, 0);
-  const confused = concepts.reduce((s, c) => s + c.counts.confused, 0);
+  const responses = graphConcepts.reduce((s, c) => s + c.total, 0);
+  const confused = graphConcepts.reduce((s, c) => s + c.counts.confused, 0);
   const published = clusters.filter((k) => k.status === "published");
   const suggested = clusters.filter((k) => k.status === "suggested");
   const pendingIds = feed.flatMap((f) => (f.kind === "question" && f.question.state === "pending" && !hidden.includes(f.question._id) ? [f.question._id] : []));
-  const openRooms = rooms.filter((r) => r.memberCount > 0);
+  const openRooms = rooms;
 
   const visible = feed.filter((f) => {
     if (f.kind === "question" && hidden.includes(f.question._id)) return false;
@@ -84,7 +91,7 @@ export default function FocusFlowInstructor() {
   const discard = (k: Cluster) => setClusters((ks) => ks.filter((x) => x._id !== k._id));
   const openRoom = (k: Cluster) => {
     const room = {
-      _id: `r${rooms.length + 1}`,
+      _id: newId("r"),
       title: k.title,
       conceptId: k.conceptIds[0],
       clusterId: k._id,
@@ -295,7 +302,7 @@ export default function FocusFlowInstructor() {
                         variant="ghost"
                         onClick={() => {
                           const room = {
-                            _id: `r${rooms.length + 1}`,
+                            _id: newId("r"),
                             title: c.label,
                             conceptId: c._id,
                             clusterId: null,
@@ -482,7 +489,7 @@ export default function FocusFlowInstructor() {
                   onCancel={() => setGrouping(false)}
                   onCreate={(title) => {
                     const k: Cluster = {
-                      _id: `k${clusters.length + 1}`,
+                      _id: newId("k"),
                       title,
                       summary: "",
                       conceptIds: [...new Set(picked.map((id) => questionById(id).conceptId))],
@@ -494,7 +501,14 @@ export default function FocusFlowInstructor() {
                       time: "10:47",
                     };
                     setClusters((ks) => [...ks, k]);
-                    setFeed((f) => [{ kind: "published", time: "10:47", cluster: k }, ...f]);
+                    setFeed((f) => [
+                      { kind: "published", time: "10:47", cluster: k },
+                      ...f.map((item) =>
+                        item.kind === "question" && picked.includes(item.question._id)
+                          ? { ...item, question: { ...item.question, state: "clustered" as const } }
+                          : item,
+                      ),
+                    ]);
                     setPicked([]);
                     setGrouping(false);
                   }}

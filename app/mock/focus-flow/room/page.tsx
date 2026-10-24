@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, SendHorizonal } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import { ArrowLeft, CheckCircle2, LogOut, SendHorizonal } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,19 +12,29 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { clusters, conceptById, roomMembers, roomMessages, rooms, session, type Message } from "../fixtures";
+import { clusters, conceptById, roomMembersById, roomMessagesById, rooms, session, type Message } from "../fixtures";
 
-const room = rooms[0];
-const concept = conceptById(room.conceptId)!;
-const cluster = clusters.find((k) => k._id === room.clusterId) ?? null;
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
   { level: "can_explain", label: "I understand now", className: "bg-teal-700 text-white hover:bg-teal-800" },
   { level: "confused", label: "Still confused", className: "bg-rose-600 text-white hover:bg-rose-700" },
 ];
 
-export default function FocusFlowRoom() {
-  const [messages, setMessages] = useState<Message[]>(roomMessages);
+export default function FocusFlowRoomPage() {
+  return (
+    <Suspense fallback={null}>
+      <FocusFlowRoom />
+    </Suspense>
+  );
+}
+
+function FocusFlowRoom() {
+  const roomId = useSearchParams().get("room") ?? rooms[0]._id;
+  const room = rooms.find((r) => r._id === roomId) ?? rooms[0];
+  const concept = conceptById(room.conceptId)!;
+  const cluster = clusters.find((k) => k._id === room.clusterId) ?? null;
+  const roomMembers = roomMembersById[room._id] ?? [];
+  const [messages, setMessages] = useState<Message[]>(roomMessagesById[room._id] ?? []);
   const [draft, setDraft] = useState("");
   const [checkedIn, setCheckedIn] = useState<Level | null>(null);
   const [left, setLeft] = useState(false);
@@ -99,7 +110,11 @@ export default function FocusFlowRoom() {
             </p>
           </div>
         </div>
-        <Brand className="hidden sm:inline-flex" />
+        <Button variant="outline" size="sm" className="md:hidden" onClick={() => setLeft(true)}>
+          <LogOut data-icon="inline-start" aria-hidden />
+          Leave
+        </Button>
+        <Brand className="hidden md:inline-flex" />
       </header>
 
       <section className="grid min-h-0 flex-1 gap-3 md:grid-cols-[1fr_17rem]">
