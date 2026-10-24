@@ -215,7 +215,9 @@
   }
   [data-slot="button"]:active:not(:disabled),
   [data-slot="toggle-group-item"]:active:not(:disabled),
-  .pressable:active:not(:disabled) {
+  .pressable:active:not(:disabled),
+  [data-slot="button"][class*="shadow-"]:active:not(:disabled),
+  .pressable[class*="shadow-"]:active:not(:disabled) {
     transform: none;
   }
 }
