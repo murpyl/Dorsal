@@ -4,7 +4,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { api } from "@/convex/_generated/api";
-import { MAX_PROMPT_LENGTH } from "@/convex/sessions";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
@@ -15,6 +14,7 @@ import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
+import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
 import { btnPrimary } from "@/lib/ui";
 
 export function RadarDashboard() {

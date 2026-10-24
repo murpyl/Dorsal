@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
+import { MAX_PROMPT_LENGTH } from "../lib/prompt";
 
 export const SEED_CONCEPTS = [
   { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
@@ -19,8 +20,6 @@ export const SEED_EDGES: [number, number][] = [
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 /** Previously-current concept ids in the order they first became current, excluding the current one. */
-export const MAX_PROMPT_LENGTH = 200;
-
 export function coveredConceptIds(session: Doc<"sessions">) {
   return (session.activeHistory ?? []).map((h) => h.conceptId).filter((id) => id !== session.activeConceptId);
 }
