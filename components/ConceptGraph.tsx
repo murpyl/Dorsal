@@ -27,11 +27,11 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-/** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
+/** Clay → ochre → moss on the understanding score (oklch hue 36 → 135); soft fill, earthy accent bar. */
 export function scoreColors(score: number | null) {
   if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
-  const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  const hue = Math.round(36 + score * 99);
+  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.56 0.11 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
