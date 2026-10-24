@@ -84,7 +84,25 @@ export function ConceptGraph({
   );
 
   return (
-    <div className="h-80 rounded-xl border border-zinc-200 bg-white">
+    <figure className="flex flex-col rounded-xl border border-zinc-200 bg-white">
+      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-zinc-200 px-3 py-2 text-xs text-zinc-600">
+        <span className="font-semibold text-zinc-800">Self-reported understanding</span>
+        <span className="flex items-center gap-1">
+          confused
+          <span
+            className="inline-block h-2 w-16 rounded-full"
+            style={{ background: "linear-gradient(to right, hsl(0 75% 60%), hsl(65 75% 60%), hsl(130 75% 60%))" }}
+            aria-hidden
+          />
+          can explain
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-3 rounded border border-zinc-500 bg-zinc-200" aria-hidden /> no responses
+        </span>
+        <span>dashed border = N &lt; {LOW_SAMPLE}</span>
+        <span>Student confidence, not measured mastery</span>
+      </figcaption>
+      <div className="h-80">
       <ReactFlow
         nodes={nodes}
         edges={flowEdges}
@@ -98,6 +116,7 @@ export function ConceptGraph({
       >
         <Background />
       </ReactFlow>
-    </div>
+      </div>
+    </figure>
   );
 }
