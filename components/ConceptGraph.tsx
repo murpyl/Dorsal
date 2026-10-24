@@ -63,10 +63,10 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
         }
       }}
       className={cn(
-        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         low ? "border-dashed border-neutral-300" : "border-neutral-200",
         active && "ring-4 ring-foreground/15 border-foreground",
-        selected && "border-foreground shadow-md",
+        selected && "border-foreground",
       )}
       style={{ background: fill }}
       data-testid="concept-node"
@@ -74,7 +74,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}

@@ -8,7 +8,7 @@ export function Brand({ className }: { className?: string }) {
       href="/"
       className={cn("inline-flex items-center gap-2 font-heading text-base font-semibold text-foreground", className)}
     >
-      <span className="grid size-8 place-items-center rounded-[12px] bg-card text-blahaj shadow-plush ring-1 ring-border/70">
+      <span className="grid size-8 place-items-center rounded-[12px] bg-card text-blahaj ring-1 ring-border/70">
         <svg viewBox="0 0 24 24" className="size-6" aria-hidden fill="none">
           <path d="M5 14 1.2 9.2c2 .9 3.4 2.1 4.6 3.6M5 14l-3.8 4.8c2-.9 3.4-2.1 4.6-3.6" fill="currentColor" fillOpacity="0.95" />
           <path d="M11.2 10.8c.5-3.2 1.9-5.4 4.2-7.1.3 3 .1 5.5-.4 7.3Z" fill="currentColor" fillOpacity="0.95" />
