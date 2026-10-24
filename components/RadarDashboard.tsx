@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
-import { Check, Copy, MousePointerClick } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Check, Copy, Megaphone, MousePointerClick } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Brand } from "@/components/Brand";
@@ -18,10 +18,13 @@ import { RoomStatus } from "@/components/RoomList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
+import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
 import { cn } from "@/lib/utils";
 
 export function RadarDashboard() {
@@ -46,13 +49,18 @@ export function RadarDashboard() {
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
+  const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
+  const coverage = (id: string) =>
+    id === view.activeConceptId ? "current" : view.coveredConceptIds.includes(id as Id<"concepts">) ? "covered" : "upcoming";
 
-  async function makeCurrent(conceptId: Id<"concepts">) {
+  async function makeCurrent(conceptId: Id<"concepts">, question?: string) {
     setError(null);
     try {
-      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId });
+      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId, question });
+      return true;
     } catch (err) {
       setError(errorMessage(err));
+      return false;
     }
   }
 
@@ -72,17 +80,30 @@ export function RadarDashboard() {
         </div>
       </header>
       <ConnectionStatus />
+      <PushPromptForm
+        concepts={view.concepts}
+        activeConceptId={view.activeConceptId}
+        activePrompt={view.activePrompt}
+        onPush={makeCurrent}
+        error={error}
+      />
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" aria-label="Session metrics">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4" aria-label="Session metrics">
         <Metric
           i={0}
           label="Participants"
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
         />
-        <Metric i={1} label="Responses" value={responses} />
-        <Metric i={2} label="Confused responses" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
-        <Metric i={3} label="Open clusters" value={view.publishedClusterCount} detail="published" />
+        <Metric
+          i={1}
+          label="Participation"
+          value={`${view.answeredCount} / ${view.participantCount}`}
+          detail={`${participation}% answered the current prompt${view.simulatedCount > 0 ? ` · incl. ${view.simulatedCount} simulated` : ""}`}
+        />
+        <Metric i={2} label="Responses" value={responses} />
+        <Metric i={3} label="Confused responses" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
+        <Metric i={4} label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
@@ -163,6 +184,16 @@ export function RadarDashboard() {
                   <CardTitle className="flex flex-wrap items-center gap-2" render={<h3 />}>
                     {c.label}
                     {active && <Badge>current topic</Badge>}
+                    {coverage(c._id) === "covered" && (
+                      <Badge variant="outline" className="font-normal text-muted-foreground">
+                        covered · {c.total} answered
+                      </Badge>
+                    )}
+                    {coverage(c._id) === "upcoming" && (
+                      <Badge variant="ghost" className="font-normal text-muted-foreground/70">
+                        not yet covered
+                      </Badge>
+                    )}
                     {c.openClusters > 0 && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-900">
                         {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
@@ -229,16 +260,95 @@ function JoinCode({ code }: { code: string }) {
   );
 }
 
-function Metric({ i, label, value, detail, tone }: { i: number; label: string; value: number; detail?: string; tone?: "warn" }) {
+function Metric({ i, label, value, detail, tone }: { i: number; label: string; value: number | string; detail?: string; tone?: "warn" }) {
   return (
     <Card size="sm" className="enter" style={{ "--i": i } as React.CSSProperties}>
       <CardContent>
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-1 flex items-baseline gap-1.5">
-          <span className={cn("text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-destructive")}>{value}</span>
-          {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
-        </p>
+        <p className={cn("mt-1 text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-destructive")}>{value}</p>
+        {detail && <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+/** Instructor/TA pushes the next prompt: pick a concept and optionally type a one-line question students see under it. */
+function PushPromptForm({
+  concepts,
+  activeConceptId,
+  activePrompt,
+  onPush,
+  error,
+}: {
+  concepts: { _id: Id<"concepts">; label: string }[];
+  activeConceptId: Id<"concepts"> | null;
+  activePrompt: string | undefined;
+  onPush: (conceptId: Id<"concepts">, question?: string) => Promise<boolean>;
+  error: string | null;
+}) {
+  const [conceptId, setConceptId] = useState<string>("");
+  const [question, setQuestion] = useState("");
+  const [busy, setBusy] = useState(false);
+  const target = conceptId || activeConceptId || concepts[0]?._id || "";
+  const items = concepts.map((c) => ({ value: c._id, label: c._id === activeConceptId ? `${c.label} (current)` : c.label }));
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!target) return;
+    setBusy(true);
+    const ok = await onPush(target as Id<"concepts">, question.trim() || undefined);
+    setBusy(false);
+    if (ok) setQuestion("");
+  }
+
+  return (
+    <form onSubmit={submit} aria-label="Push prompt" className="enter">
+      <Card className="ring-foreground/20">
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-sm">
+              <span className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground uppercase">
+                <Megaphone className="size-3.5" aria-hidden /> Push prompt
+              </span>
+              <Select items={items} value={target} onValueChange={(v) => v && setConceptId(v)}>
+                <SelectTrigger aria-label="Concept to push" className="min-w-56 bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {items.map((it) => (
+                    <SelectItem key={it.value} value={it.value}>
+                      {it.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="min-w-0 flex-1 text-sm">
+              <span className="sr-only">Question (optional)</span>
+              <Input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                maxLength={MAX_PROMPT_LENGTH}
+                placeholder="Optional question, e.g. Why does fib(1) not recurse?"
+                className="bg-background"
+              />
+            </label>
+            <Button type="submit" disabled={busy || !target}>
+              Push prompt
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {activePrompt ? (
+              <>
+                Students now see: <span className="font-medium text-foreground">{activePrompt}</span>
+              </>
+            ) : (
+              "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one. Ratings are per concept, so a new question on the same concept keeps its existing answers."
+            )}
+          </p>
+          <InlineError message={error} />
+        </CardContent>
+      </Card>
+    </form>
   );
 }
