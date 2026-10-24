@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
+import { phase } from "./schema";
 
 const SEED_CONCEPTS = [
   { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
@@ -175,5 +176,24 @@ export const setActiveConcept = mutation({
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
     await ctx.db.patch(sessionId, { activeConceptId: conceptId });
+  },
+});
+
+export const setPhase = mutation({
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), phase },
+  handler: async (ctx, { sessionId, instructorSecret, phase }) => {
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) throw new ConvexError("Instructor access required");
+    if (session.state !== "open") throw new ConvexError("Session is closed");
+    if (session.phase !== phase) await ctx.db.patch(sessionId, { phase });
+  },
+});
+
+export const close = mutation({
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string() },
+  handler: async (ctx, { sessionId, instructorSecret }) => {
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) throw new ConvexError("Instructor access required");
+    if (session.state !== "closed") await ctx.db.patch(sessionId, { state: "closed" });
   },
 });
