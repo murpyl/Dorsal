@@ -7,6 +7,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { errorMessage } from "@/lib/errors";
+import { btnHelper, btnOutline, btnPrimary, btnSecondary } from "@/lib/ui";
 
 type Concept = { _id: Id<"concepts">; label: string };
 
@@ -51,7 +52,7 @@ export function RoomJoinButton({
   const join = useMutation(api.rooms.join);
   if (room.isMember) {
     return (
-      <Link href={roomHref(room._id, code)} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+      <Link href={roomHref(room._id, code)} className={btnPrimary}>
         Open ({room.myRole})
       </Link>
     );
@@ -74,7 +75,7 @@ export function RoomJoinButton({
           onBusy(false);
         }
       }}
-      className="rounded-lg border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+      className={btnOutline}
     >
       {asHelper ? "Join as helper" : "Join"}
     </button>
@@ -151,7 +152,7 @@ export function RoomList({
               </option>
             ))}
           </select>
-          <button disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-1 font-medium text-white disabled:opacity-50">
+          <button disabled={busy} className={btnHelper}>
             Open room
           </button>
         </form>
@@ -239,7 +240,7 @@ export function RoomStatus({
               </option>
             ))}
           </select>
-          <button className="rounded-lg bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-700">Open help room</button>
+          <button className={btnPrimary}>Open help room</button>
         </form>
       )}
       {rooms === undefined ? (
@@ -263,7 +264,7 @@ export function RoomStatus({
               </div>
               <button
                 onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}
-                className="rounded-lg border border-zinc-300 px-3 py-1 hover:bg-zinc-50"
+                className={btnSecondary}
               >
                 Close room
               </button>

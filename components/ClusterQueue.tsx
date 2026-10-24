@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RUN_STALE_MS } from "@/lib/aiSchemas";
 import { errorMessage } from "@/lib/errors";
+import { btnPrimary as primary, btnSecondary as secondary } from "@/lib/ui";
 
 type Concept = { _id: Id<"concepts">; label: string };
 type Cluster = {
@@ -21,9 +22,6 @@ type Cluster = {
 };
 type Run = { status: "running" | "ok" | "error"; model: string; latencyMs: number | null; error: string | null; createdAt: number };
 
-const btn = "rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50";
-const primary = `${btn} bg-indigo-600 text-white hover:bg-indigo-700`;
-const secondary = `${btn} border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50`;
 const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 export function ClusterQueue({

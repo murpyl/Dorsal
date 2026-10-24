@@ -13,7 +13,8 @@ import { PrePostComparison, SessionControls } from "@/components/PrePostComparis
 import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
-import { LEVELS } from "@/lib/levels";
+import { LEVELS, PHASE_LABEL } from "@/lib/levels";
+import { btnPrimary } from "@/lib/ui";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -47,7 +48,7 @@ export function RadarDashboard() {
     <main className="w-full space-y-6 px-4 py-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-zinc-500">Instructor · phase {view.phase}</p>
+          <p className="text-sm text-zinc-500">Instructor · signals: {PHASE_LABEL[view.phase]}</p>
           <h1 className="text-3xl font-semibold">{view.title}</h1>
         </div>
         <div className="text-right">
@@ -102,7 +103,7 @@ export function RadarDashboard() {
               ) : (
                 <button
                   onClick={() => makeCurrent(selected._id)}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700"
+                  className={btnPrimary}
                 >
                   Make current topic
                 </button>

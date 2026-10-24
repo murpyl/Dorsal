@@ -9,7 +9,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { errorMessage } from "@/lib/errors";
-import type { Level } from "@/lib/levels";
+import { PHASE_LABEL, type Level } from "@/lib/levels";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
   { level: "can_explain", label: "I understand now", className: "bg-emerald-600 hover:bg-emerald-700" },
@@ -182,7 +182,7 @@ export function PeerRoom() {
           How is <span className="text-indigo-700">{room.conceptLabel}</span> going now?
         </h2>
         <p className="text-sm text-zinc-600">
-          This updates your self-reported understanding for the session&apos;s <span className="font-medium">{room.phase}</span> phase. Only
+          This updates your self-reported understanding for the <span className="font-medium">{PHASE_LABEL[room.phase]}</span> phase. Only
           aggregate counts are shown to the instructor.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -203,7 +203,7 @@ export function PeerRoom() {
             </button>
           ))}
         </div>
-        {checkedIn && <p className="text-sm text-emerald-700">Recorded under the {room.phase} phase. You can change it any time.</p>}
+        {checkedIn && <p className="text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>}
       </section>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </main>

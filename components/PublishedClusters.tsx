@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { RoomJoinButton, roomHref, roomSummary } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
+import { btnHelper, chip } from "@/lib/ui";
 
 export function PublishedClusters({
   sessionId,
@@ -62,7 +63,7 @@ export function PublishedClusters({
                 {c.summary && <p className="text-sm text-zinc-600">{c.summary}</p>}
                 <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
                   {c.conceptLabels.map((label, i) => (
-                    <span key={c.conceptIds[i]} className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
+                    <span key={c.conceptIds[i]} className={chip}>
                       {label}
                     </span>
                   ))}
@@ -98,7 +99,7 @@ export function PublishedClusters({
                   <button
                     disabled={busy}
                     onClick={() => openRoom(c._id, helperConceptId)}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    className={btnHelper}
                   >
                     Open a room as helper ({concepts.find((k) => k._id === helperConceptId)?.label ?? "this topic"})
                   </button>
