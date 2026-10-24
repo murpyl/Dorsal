@@ -23,7 +23,7 @@ export const LEVELS = [
 ] as const;
 
 export type Phase = "pre" | "post";
-/** One wording for the signal phase everywhere (header, controls, comparison, room check-in). */
-export const PHASE_LABEL: Record<Phase, string> = { pre: "Before help (pre)", post: "After help (post)" };
+/** `pre` = rating on the session page; `post` = rating updated inside a peer help room. Only the comparison panel shows these. */
+export const PHASE_LABEL: Record<Phase, string> = { pre: "Before peer help", post: "After peer help" };
 
 export type Level = (typeof LEVELS)[number]["value"];
