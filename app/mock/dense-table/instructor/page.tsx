@@ -221,13 +221,13 @@ export default function InstructorDenseTable() {
             </AlertDialog>
             <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-1">
               <div className="text-right leading-none">
-                <p className="text-[10px] text-muted-foreground">join at /join/{SESSION.code}</p>
+                <p className="text-[10px] text-muted-foreground">join code · copy opens the student mock</p>
                 <p className={cn("font-mono font-bold tracking-[0.2em]", projector ? "text-3xl" : "text-xl")}>{SESSION.code}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={copied ? "Link copied" : "Copy join link"}
+                aria-label={copied ? "Link copied" : "Copy link to the student mock"}
                 onClick={() => {
                   navigator.clipboard
                     .writeText(`${window.location.origin}/mock/dense-table/student`)
