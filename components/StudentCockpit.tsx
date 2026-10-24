@@ -16,11 +16,9 @@ import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
 import { RoomList } from "@/components/RoomList";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
-import { cn } from "@/lib/utils";
 
 export function StudentCockpit() {
   const code = useParams<{ code: string }>().code.toUpperCase();
@@ -46,9 +44,7 @@ export function StudentCockpit() {
 
   const sendSignal = (conceptId: Id<"concepts">, level: Level) =>
     upsert({ sessionId: view.sessionId, token, conceptId, level }).catch((err) => setError(errorMessage(err)));
-  const ordered = [...view.concepts].sort(
-    (a, b) => Number(b._id === view.activeConceptId) - Number(a._id === view.activeConceptId),
-  );
+  const current = view.concepts.find((c) => c._id === view.activeConceptId) ?? null;
 
   return (
     <main className="mx-auto w-full max-w-xl space-y-4 p-3 pb-12 sm:p-4">
@@ -73,38 +69,35 @@ export function StudentCockpit() {
       </header>
       <ConnectionStatus />
 
-      <section className="space-y-3" aria-label="Concepts">
-        {ordered.map((c, i) => {
-          const active = c._id === view.activeConceptId;
-          return (
-            <Card
-              key={c._id}
-              className={cn("enter", active && "ring-2 ring-foreground/80")}
-              style={{ "--i": i + 1 } as React.CSSProperties}
-            >
-              <CardHeader>
-                {active && (
-                  <Badge className="mb-1 w-fit">
-                    <span className="relative flex size-1.5" aria-hidden>
-                      <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground/70 motion-reduce:hidden" />
-                      <span className="relative inline-flex size-1.5 rounded-full bg-primary-foreground" />
-                    </span>
-                    Current topic
-                  </Badge>
-                )}
-                <CardTitle render={<h2 />}>{c.label}</CardTitle>
-                <CardDescription>{c.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ConfidenceSelector
-                  value={c.myLevel}
-                  disabled={view.state !== "open"}
-                  onChange={(level) => sendSignal(c._id, level)}
-                />
-              </CardContent>
-            </Card>
-          );
-        })}
+      <section aria-label="Current topic" aria-live="polite" className="py-2">
+        {current ? (
+          <div key={current._id} className="enter space-y-4">
+            <p className="flex items-center gap-2 text-xs font-semibold tracking-wider text-primary uppercase">
+              <span className="relative flex size-2" aria-hidden>
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 motion-reduce:hidden" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              Live now
+            </p>
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-semibold text-balance sm:text-3xl">{current.label}</h2>
+              <p className="text-pretty text-muted-foreground">{current.description}</p>
+            </div>
+            <ConfidenceSelector
+              value={current.myLevel}
+              disabled={view.state !== "open"}
+              onChange={(level) => sendSignal(current._id, level)}
+            />
+            <p className="text-xs text-muted-foreground">
+              You only see the topic being covered right now; this changes as the instructor moves on.
+            </p>
+          </div>
+        ) : (
+          <div className="enter space-y-1 py-10 text-center">
+            <p className="font-heading text-lg font-medium">Waiting for the instructor to start a topic…</p>
+            <p className="text-sm text-muted-foreground">This page updates live, nothing to refresh.</p>
+          </div>
+        )}
       </section>
 
       <ErrorBoundary label="the question box">
