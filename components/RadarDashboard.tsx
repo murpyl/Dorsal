@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
@@ -14,6 +14,7 @@ import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
+import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
 import { btnPrimary } from "@/lib/ui";
 
 export function RadarDashboard() {
@@ -34,13 +35,18 @@ export function RadarDashboard() {
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
+  const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
+  const coverage = (id: string) =>
+    id === view.activeConceptId ? "current" : view.coveredConceptIds.includes(id as Id<"concepts">) ? "covered" : "upcoming";
 
-  async function makeCurrent(conceptId: Id<"concepts">) {
+  async function makeCurrent(conceptId: Id<"concepts">, question?: string) {
     setError(null);
     try {
-      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId });
+      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId, question });
+      return true;
     } catch (err) {
       setError(errorMessage(err));
+      return false;
     }
   }
 
@@ -58,12 +64,24 @@ export function RadarDashboard() {
         </div>
       </header>
       <ConnectionStatus />
+      <PushPromptForm
+        concepts={view.concepts}
+        activeConceptId={view.activeConceptId}
+        activePrompt={view.activePrompt}
+        onPush={makeCurrent}
+        error={error}
+      />
 
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="Session metrics">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-5" aria-label="Session metrics">
         <Metric
           label="Participants"
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
+        />
+        <Metric
+          label="Participation"
+          value={`${view.answeredCount} / ${view.participantCount}`}
+          detail={`${participation}% answered the current prompt${view.simulatedCount > 0 ? ` · incl. ${view.simulatedCount} simulated` : ""}`}
         />
         <Metric label="Responses" value={responses} />
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
@@ -133,7 +151,13 @@ export function RadarDashboard() {
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-medium">
                 {c.label}
-                {c._id === view.activeConceptId && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
+                {coverage(c._id) === "current" && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
+                {coverage(c._id) === "covered" && (
+                  <span className="ml-2 text-xs font-normal text-zinc-500">
+                    covered · {c.total} answered
+                  </span>
+                )}
+                {coverage(c._id) === "upcoming" && <span className="ml-2 text-xs font-normal text-zinc-400">not yet covered</span>}
                 {c.openClusters > 0 && (
                   <span className="ml-2 text-xs font-normal text-amber-700">
                     {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
@@ -177,13 +201,82 @@ export function RadarDashboard() {
   );
 }
 
-function Metric({ label, value, detail }: { label: string; value: number; detail?: string }) {
+function Metric({ label, value, detail }: { label: string; value: number | string; detail?: string }) {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4">
       <p className="text-sm text-zinc-500">{label}</p>
-      <p className="text-3xl font-semibold">
-        {value} {detail && <span className="text-base font-normal text-zinc-500">{detail}</span>}
-      </p>
+      <p className="text-3xl font-semibold">{value}</p>
+      {detail && <p className="text-sm text-zinc-500">{detail}</p>}
     </div>
+  );
+}
+
+/** Instructor/TA pushes the next prompt: pick a concept and optionally type a one-line question students see under it. */
+function PushPromptForm({
+  concepts,
+  activeConceptId,
+  activePrompt,
+  onPush,
+  error,
+}: {
+  concepts: { _id: Id<"concepts">; label: string }[];
+  activeConceptId: Id<"concepts"> | null;
+  activePrompt: string | undefined;
+  onPush: (conceptId: Id<"concepts">, question?: string) => Promise<boolean>;
+  error: string | null;
+}) {
+  const [conceptId, setConceptId] = useState<string>("");
+  const [question, setQuestion] = useState("");
+  const [busy, setBusy] = useState(false);
+  const target = conceptId || activeConceptId || concepts[0]?._id || "";
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!target) return;
+    setBusy(true);
+    const ok = await onPush(target as Id<"concepts">, question.trim() || undefined);
+    setBusy(false);
+    if (ok) setQuestion("");
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50 p-4" aria-label="Push prompt">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-sm">
+          <span className="block text-xs font-semibold uppercase tracking-wide text-indigo-600">Push prompt</span>
+          <select value={target} onChange={(e) => setConceptId(e.target.value)} className="mt-1 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm">
+            {concepts.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.label}
+                {c._id === activeConceptId ? " (current)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0 flex-1 text-sm">
+          <span className="sr-only">Question (optional)</span>
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            maxLength={MAX_PROMPT_LENGTH}
+            placeholder="Optional question, e.g. Why does fib(1) not recurse?"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <button type="submit" disabled={busy || !target} className={btnPrimary}>
+          Push prompt
+        </button>
+      </div>
+      <p className="text-xs text-zinc-600">
+        {activePrompt ? (
+          <>
+            Students now see: <span className="font-medium text-indigo-900">{activePrompt}</span>
+          </>
+        ) : (
+          "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one. Ratings are per concept, so a new question on the same concept keeps its existing answers."
+        )}
+      </p>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </form>
   );
 }
