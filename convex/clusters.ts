@@ -246,7 +246,8 @@ export const listForConcept = query({
 async function detachRooms(ctx: MutationCtx, sessionId: Id<"sessions">, clusterId: Id<"clusters">, keepConceptIds: Id<"concepts">[]) {
   const rooms = await ctx.db.query("rooms").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
   for (const room of rooms) {
-    if (room.clusterId === clusterId && !keepConceptIds.includes(room.conceptId)) await ctx.db.patch(room._id, { clusterId: undefined });
+    if (room.status !== "open" || room.clusterId !== clusterId || keepConceptIds.includes(room.conceptId)) continue;
+    await ctx.db.patch(room._id, { clusterId: undefined });
   }
 }
 

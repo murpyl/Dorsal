@@ -91,8 +91,8 @@ export const createForCluster = mutation({
     if (session.state !== "open") throw new ConvexError("Session is closed");
     const concept = await requireConcept(ctx, sessionId, conceptId);
     const cluster = await requirePublishedCluster(ctx, sessionId, clusterId);
-    const trimmed = (title ?? cluster?.title ?? concept.label).trim().slice(0, 80).trim();
-    if (!trimmed) throw new ConvexError("Title must be 1–80 characters");
+    const trimmed = (title ?? cluster?.title.trim().slice(0, 80) ?? concept.label).trim();
+    if (!trimmed || trimmed.length > 80) throw new ConvexError("Title must be 1–80 characters");
     const cap = capacity ?? DEFAULT_CAPACITY;
     if (!Number.isInteger(cap) || cap < MIN_CAPACITY || cap > MAX_CAPACITY)
       throw new ConvexError(`Capacity must be a whole number between ${MIN_CAPACITY} and ${MAX_CAPACITY}`);
