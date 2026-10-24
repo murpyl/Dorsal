@@ -52,6 +52,13 @@
   --color-neutral-800: #332e29;
   --color-neutral-900: #1d1a16;
   --color-neutral-950: #120f0c;
+  /* Indigo (used by the lesson setup form) is re-inked: solid ink for fills, oxblood for links. */
+  --color-indigo-50: #f6f1e7;
+  --color-indigo-100: #efeadf;
+  --color-indigo-500: #8c2727;
+  --color-indigo-600: #1d1a16;
+  --color-indigo-700: #74201f;
+  --color-indigo-800: #5c1a19;
   /* No drop shadows anywhere: surfaces are separated by hairlines and paper tone. */
   --shadow-2xs: 0 0 #0000;
   --shadow-xs: 0 0 #0000;
