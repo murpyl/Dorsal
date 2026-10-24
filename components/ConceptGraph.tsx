@@ -3,6 +3,7 @@
 import { Background, BackgroundVariant, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo } from "react";
+import { LEVELS } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
 export const LOW_SAMPLE = 5;
@@ -90,6 +91,16 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
           </p>
         </div>
       </div>
+      {total > 0 && (
+        <p className="mt-1.5 flex items-center gap-3 pl-3 text-sm font-semibold tabular-nums" aria-hidden>
+          {LEVELS.map((l) => (
+            <span key={l.value} className={cn("flex items-center gap-1", l.text)} title={`${l.label}: ${counts[l.value]}`}>
+              <span className={cn("inline-block size-2 rounded-full", l.dot)} />
+              {counts[l.value]}
+            </span>
+          ))}
+        </p>
+      )}
       {active && <p className="mt-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">current topic</p>}
       <Handle type="source" position={Position.Right} className="opacity-0" />
     </div>
@@ -177,9 +188,15 @@ export function ConceptGraph({
           published question clusters on this concept
         </span>
         <span>Student confidence, not measured mastery</span>
-        <a href="#per-concept" className="text-foreground underline underline-offset-3 hover:text-muted-foreground">
-          Text version: per-concept distribution
-        </a>
+        <span className="flex items-center gap-2 font-medium">
+          {LEVELS.map((l) => (
+            <span key={l.value} className={cn("flex items-center gap-1", l.text)}>
+              <span className={cn("inline-block size-2 rounded-full", l.dot)} aria-hidden />
+              {l.label}
+            </span>
+          ))}
+          <span className="font-normal text-muted-foreground">counts per node</span>
+        </span>
       </figcaption>
       <div className="h-80 lg:h-auto lg:min-h-0 lg:flex-1">
         <ReactFlow

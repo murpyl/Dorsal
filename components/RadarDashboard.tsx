@@ -70,8 +70,6 @@ export function RadarDashboard() {
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
   const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
-  const coverage = (id: string) =>
-    id === view.activeConceptId ? "current" : view.coveredConceptIds.includes(id as Id<"concepts">) ? "covered" : "upcoming";
 
   async function makeCurrent(conceptId: Id<"concepts">, question?: string) {
     setError(null);
@@ -118,7 +116,7 @@ export function RadarDashboard() {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]">
-        <section className="flex min-h-0 flex-col gap-5" aria-label="Concept graph">
+        <section className="flex min-h-0 flex-col" aria-label="Concept graph">
         <ConceptGraph
           concepts={view.concepts}
           edges={view.edges}
@@ -130,61 +128,6 @@ export function RadarDashboard() {
           }}
           className="min-h-72 flex-1"
         />
-          <div className="max-h-56 shrink-0 overflow-y-auto px-1">
-          <section className="space-y-4" id="per-concept" aria-labelledby="per-concept-heading">
-            <div>
-              <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
-                Per-concept distribution
-              </h2>
-              <p className="text-sm text-muted-foreground">Text alternative to the graph colours.</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-              {view.concepts.map((c) => {
-                const active = c._id === view.activeConceptId;
-                return (
-                  <Card key={c._id} size="sm" className={cn(active && "ring-2 ring-foreground/80")}>
-                    <CardHeader>
-                      <CardTitle className="flex flex-wrap items-center gap-2" render={<h3 />}>
-                        {c.label}
-                        {active && <Badge>current topic</Badge>}
-                        {coverage(c._id) === "covered" && (
-                          <Badge variant="outline" className="font-normal text-muted-foreground">
-                            covered · {c.total} answered
-                          </Badge>
-                        )}
-                        {coverage(c._id) === "upcoming" && (
-                          <Badge variant="ghost" className="font-normal text-muted-foreground/70">
-                            not yet covered
-                          </Badge>
-                        )}
-                        {c.openClusters > 0 && (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-                            {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription className="tabular-nums">
-                        N = {c.total}
-                        {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <DistributionBar tally={c} />
-                      <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {LEVELS.map((l) => (
-                          <span key={l.value} className="flex items-center gap-1.5 tabular-nums">
-                            <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
-                            {l.label}: <strong className="text-foreground">{c.counts[l.value]}</strong> / {c.total}
-                          </span>
-                        ))}
-                      </p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </section>
-          </div>
         </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
