@@ -1,12 +1,14 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
+import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
-
-const LOW_SAMPLE = 5;
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -15,6 +17,9 @@ export function RadarDashboard() {
     api.sessions.getInstructorView,
     secret ? { sessionId, instructorSecret: secret } : "skip",
   );
+  const setActiveConcept = useMutation(api.sessions.setActiveConcept);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (secret === null || view === null)
     return <p className="p-8 text-red-600">No instructor access for this session on this device.</p>;
@@ -22,6 +27,16 @@ export function RadarDashboard() {
 
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
+  const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
+
+  async function makeCurrent(conceptId: Id<"concepts">) {
+    setError(null);
+    try {
+      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId });
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 p-6">
@@ -40,6 +55,56 @@ export function RadarDashboard() {
         <Metric label="Participants" value={view.participantCount} />
         <Metric label="Responses" value={responses} />
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-[1fr_18rem]">
+        <ConceptGraph
+          concepts={view.concepts}
+          edges={view.edges}
+          activeConceptId={view.activeConceptId}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+        <aside className="rounded-xl border border-zinc-200 bg-white p-4 text-sm" aria-label="Concept details">
+          {selected ? (
+            <div className="space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold">{selected.label}</h2>
+                <p className="text-zinc-600">{selected.description}</p>
+              </div>
+              <ul className="space-y-1">
+                {LEVELS.map((l) => (
+                  <li key={l.value} className="flex items-center gap-2">
+                    <span className={`inline-block h-3 w-3 rounded-full ${l.color}`} aria-hidden />
+                    {l.label}: <strong>{selected.counts[l.value]}</strong> / {selected.total}
+                  </li>
+                ))}
+              </ul>
+              {selected.total < LOW_SAMPLE && (
+                <p className="text-amber-700">
+                  {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
+                </p>
+              )}
+              {selected._id === view.activeConceptId ? (
+                <p className="font-medium text-indigo-700">Current topic</p>
+              ) : (
+                <button
+                  onClick={() => makeCurrent(selected._id)}
+                  className="rounded-lg bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700"
+                >
+                  Make current topic
+                </button>
+              )}
+              {error && <p className="text-red-600">{error}</p>}
+              <div className="border-t border-zinc-200 pt-3">
+                <h3 className="font-medium">Question clusters</h3>
+                <p className="text-zinc-500">None published for this concept yet.</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-zinc-500">Click a concept to see its signal breakdown.</p>
+          )}
+        </aside>
       </section>
 
       <section className="space-y-3">

@@ -147,9 +147,13 @@ export const getInstructorView = query({
           .collect();
         const counts = { confused: 0, partial: 0, can_explain: 0 };
         for (const s of signals) counts[s.level]++;
-        return { _id: c._id, label: c.label, counts, total: signals.length };
+        return { _id: c._id, label: c.label, description: c.description, x: c.x, y: c.y, counts, total: signals.length };
       }),
     );
+    const edges = await ctx.db
+      .query("conceptEdges")
+      .withIndex("by_session", (q) => q.eq("sessionId", id))
+      .collect();
     return {
       title: session.title,
       code: session.code,
@@ -158,6 +162,18 @@ export const getInstructorView = query({
       activeConceptId: session.activeConceptId ?? null,
       participantCount: participants.length,
       concepts: conceptCounts,
+      edges: edges.map((e) => ({ _id: e._id, fromId: e.fromId, toId: e.toId, relation: e.relation })),
     };
+  },
+});
+
+export const setActiveConcept = mutation({
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts") },
+  handler: async (ctx, { sessionId, instructorSecret, conceptId }) => {
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) throw new ConvexError("Instructor access required");
+    const concept = await ctx.db.get(conceptId);
+    if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
+    await ctx.db.patch(sessionId, { activeConceptId: conceptId });
   },
 });
