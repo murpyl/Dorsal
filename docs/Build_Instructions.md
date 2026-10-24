@@ -50,7 +50,8 @@ The Claude-calling module must run in a Convex **Node.js action** (`"use node";`
 
 ```text
 app/
-  page.tsx                      # create/join landing page
+  page.tsx                      # join landing page; links to instructor/new
+  instructor/new/page.tsx       # lesson setup: upload notes → suggested concepts → edit → create session
   join/[code]/page.tsx          # student cockpit
   instructor/[sessionId]/page.tsx
   room/[roomId]/page.tsx
@@ -85,7 +86,7 @@ lib/
 |---|---|---|
 | `sessions` | title, code, state, instructorSecretHash, activeConceptId, createdAt | by_code |
 | `participants` | sessionId, tokenHash, alias, helperConceptIds, isSimulated, createdAt | by_session, by_token_hash |
-| `concepts` | sessionId, label, description, order, x, y (fixed React Flow position; no layout library) | by_session |
+| `concepts` | sessionId, label, description, order, x, y (fixed React Flow position, computed once at creation with dagre) | by_session |
 | `conceptEdges` | sessionId, fromId, toId, relation | by_session |
 | `signals` | sessionId, conceptId, participantId, level, phase, updatedAt | by_concept_phase, by_participant_concept_phase |
 | `questions` | sessionId, conceptId, participantId, content, state (`pending` \| `clustered` \| `hidden`), createdAt | by_session_state, by_concept |
@@ -93,7 +94,8 @@ lib/
 | `rooms` | sessionId, conceptId, clusterId?, status, capacity | by_session, by_concept |
 | `roomMembers` | roomId, participantId, role, joinedAt | by_room, by_room_participant |
 | `messages` | roomId, authorId, body, createdAt | by_room_time |
-| `aiRuns` | sessionId, operation, model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session |
+| `aiRuns` | sessionId? (unset for `inferConcepts`), operation (`clusterQuestions` \| `inferConcepts`), model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session, by_operation_time |
+| `uploadGrants` | createdAt (one row per issued lesson upload URL; purged after 1 h) | by_createdAt |
 
 Pre/post is per signal, not per session: the session page writes `pre`, and a rating updated inside a help room (`signals.roomCheckIn`) is the only `post` input. The help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
 
@@ -107,7 +109,10 @@ Implement these minimal functions (names can be adjusted consistently throughout
 
 | Function | Type | Behavior |
 |---|---|---|
-| `sessions.create` | mutation | Instructor creates session + join code |
+| `sessions.create` | mutation | Instructor creates session + join code with their reviewed concepts (`{ label, description, prerequisites: index[] }`, 1–12, acyclic) |
+| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material (global cap: 100 issued URLs per 10 min, counted in `uploadGrants`) |
+| `lessons.purgeStaleUploads` | internal mutation (cron, 15 min) | Deletes uploads older than 1 h that never reached `claude.inferConcepts` |
+| `claude.inferConcepts` | action | Pre-session: suggest concepts + prerequisites from uploaded material (one Claude call, validated, files deleted after, global rate limit via `aiRuns`) |
 | `sessions.join` | mutation | Validates code; creates/reuses participant |
 | `sessions.getStudentView` | query | Active topic and safe session data |
 | `sessions.getInstructorView` | query | Instructor credential required; returns detailed aggregate state |
@@ -140,7 +145,7 @@ Stretch functions (build only after Phase 5): `claude.proposeConceptLinks`, `cla
 
 ### Phase 1 — Working live core (first priority)
 
-- Create a session with five preloaded recursion concepts and four edges.
+- Create a session from instructor-reviewed concepts: upload lecture material, Claude suggests concepts and prerequisites, the instructor edits them before the session exists (manual entry if the call fails). The simulated demo (`seed:reset`) keeps the five recursion concepts and four edges.
 - Build `/join/[code]` with participant join and confidence selector.
 - Implement `signals.upsert` using a Convex mutation, enforcing unique participant/concept/phase key.
 - Build instructor radar with live `useQuery` subscriptions; expose **counts and denominators** prominently.
@@ -222,7 +227,7 @@ Example expected model response:
 
 ## 6. Suggested UI details
 
-**Student:** Current topic at top; three large confidence buttons; anonymous question field; list of published misconception clusters; `Get peer help` action; small accessible graph.
+**Student:** One card for the current topic ("Prompt N of 5" with the instructor's optional pushed question, switches live when the instructor makes another concept current); three large confidence buttons; a collapsed list of already-covered concepts for revising earlier answers (never-covered concepts are not answerable); anonymous question field; list of published misconception clusters; `Get peer help` action; small accessible graph.
 
 **Instructor:** Four metric cards (active participants, responses, currently confused, open clusters), compact distribution chart per concept, interactive graph, moderation queue, live help-room status.
 
