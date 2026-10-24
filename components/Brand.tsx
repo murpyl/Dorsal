@@ -6,7 +6,7 @@ export function Brand({ className }: { className?: string }) {
   return (
     <Link
       href="/"
-      className={cn("inline-flex items-center gap-2 font-heading text-base font-semibold text-foreground", className)}
+      className={cn("inline-flex items-center gap-2.5 font-heading text-base font-semibold text-foreground", className)}
     >
       <span className="grid size-8 place-items-center rounded-[12px] bg-card text-blahaj ring-1 ring-border/70">
         <svg viewBox="0 0 24 24" className="size-6" aria-hidden fill="none">

@@ -138,7 +138,7 @@ export default function NewSession() {
   }, [concepts]);
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 p-6">
+    <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-10 sm:px-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">New session</h1>
         <Link href="/" className="text-sm text-indigo-700 underline">
@@ -146,7 +146,7 @@ export default function NewSession() {
         </Link>
       </div>
 
-      <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-5">
+      <section className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6">
         <h2 className="font-medium">1. Lesson material</h2>
         <label className="block text-sm">
           <span className="font-medium">Session title</span>
@@ -219,7 +219,7 @@ export default function NewSession() {
       </section>
 
       {concepts.length > 0 && (
-        <section id="per-concept" className="space-y-3 rounded-xl border border-zinc-200 bg-white p-5">
+        <section id="per-concept" className="space-y-4 rounded-xl border border-zinc-200 bg-white p-6">
           <div>
             <h2 className="font-medium">2. Review concepts</h2>
             <p className="text-xs text-zinc-600">
@@ -227,12 +227,12 @@ export default function NewSession() {
               on. The first concept starts as the current topic.
             </p>
           </div>
-          <ol className="space-y-3">
+          <ol className="space-y-4">
             {concepts.map((c, i) => {
               const options = concepts.map((o, j) => ({ o, j })).filter(({ j }) => canAddPrerequisite(concepts, i, j));
               return (
-                <li key={c.key} className="space-y-2 rounded-lg border border-zinc-200 p-3">
-                  <div className="flex items-start gap-2">
+                <li key={c.key} className="space-y-3 rounded-lg border border-zinc-200 p-4">
+                  <div className="flex items-start gap-3">
                     <span className="mt-2 w-5 text-sm text-zinc-500">{i + 1}.</span>
                     <div className="flex-1 space-y-2">
                       <input
@@ -312,7 +312,7 @@ export default function NewSession() {
             selectedId={null}
             onSelect={() => {}}
           />
-          <div className="flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-4">
             <button
               type="button"
               onClick={onCreate}

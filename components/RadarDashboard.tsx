@@ -48,7 +48,7 @@ export function RadarDashboard() {
 
   if (secret === null || view === null)
     return (
-      <main className="mx-auto w-full max-w-xl p-8">
+      <main className="mx-auto w-full max-w-xl p-10">
         <InlineError message={taSecret ? "Your TA access to this session was revoked." : "No instructor access for this session on this device."} />
         {taSecret && instructorSecret && (
           <Button
@@ -85,22 +85,22 @@ export function RadarDashboard() {
   }
 
   return (
-    <main className="flex w-full flex-col gap-3 px-3 py-3 md:px-5 lg:h-dvh lg:overflow-hidden">
-      <header className="enter flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+    <main className="flex w-full flex-col gap-5 p-4 md:p-6 lg:h-dvh lg:overflow-hidden">
+      <header className="enter flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <Brand />
           <div>
             <p className="text-sm text-muted-foreground">{view.role === "ta" ? `TA · ${view.taName}` : "Instructor"}</p>
             <h1 className="truncate text-xl font-semibold tracking-tight">{view.title}</h1>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <JoinCode code={view.code} />
           <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} state={view.state} />
         </div>
       </header>
       <ConnectionStatus />
-      <div className="grid shrink-0 gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+      <div className="grid shrink-0 gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
       <PushPromptForm
         concepts={view.concepts}
         activeConceptId={view.activeConceptId}
@@ -108,7 +108,7 @@ export function RadarDashboard() {
         onPush={makeCurrent}
         error={error}
       />
-        <section className="grid grid-cols-5 gap-2" aria-label="Session metrics">
+        <section className="grid grid-cols-5 gap-3" aria-label="Session metrics">
           <Stat label="Participants" value={view.participantCount} detail={view.simulatedCount > 0 ? `${view.simulatedCount} simulated` : undefined} />
           <Stat label="Answered now" value={`${view.answeredCount}/${view.participantCount}`} detail={`${participation}%`} />
           <Stat label="Responses" value={responses} />
@@ -117,8 +117,8 @@ export function RadarDashboard() {
         </section>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]">
-        <section className="flex min-h-0 flex-col gap-3" aria-label="Concept graph">
+      <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)]">
+        <section className="flex min-h-0 flex-col gap-5" aria-label="Concept graph">
         <ConceptGraph
           concepts={view.concepts}
           edges={view.edges}
@@ -131,14 +131,14 @@ export function RadarDashboard() {
           className="min-h-72 flex-1"
         />
           <div className="max-h-56 shrink-0 overflow-y-auto px-1">
-          <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
+          <section className="space-y-4" id="per-concept" aria-labelledby="per-concept-heading">
             <div>
               <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
                 Per-concept distribution
               </h2>
               <p className="text-sm text-muted-foreground">Text alternative to the graph colours.</p>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
               {view.concepts.map((c) => {
                 const active = c._id === view.activeConceptId;
                 return (
@@ -168,7 +168,7 @@ export function RadarDashboard() {
                         {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="space-y-3">
                       <DistributionBar tally={c} />
                       <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         {LEVELS.map((l) => (
@@ -187,7 +187,7 @@ export function RadarDashboard() {
           </div>
         </section>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-2 rounded-xl bg-card p-2 ring-1 ring-foreground/10">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
           <TabsList className="w-full shrink-0">
             <TabsTrigger value="concept">Concept</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -204,10 +204,10 @@ export function RadarDashboard() {
                   <CardTitle className="text-lg" render={<h2 />}>{selected.label}</CardTitle>
                   <CardDescription>{selected.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
+                <CardContent className="space-y-5">
+                  <div className="space-y-3">
                     <DistributionBar tally={selected} />
-                    <ul className="space-y-1 text-sm">
+                    <ul className="space-y-1.5 text-sm">
                       {LEVELS.map((l) => (
                         <li key={l.value} className="flex items-center justify-between gap-2">
                           <span className="flex items-center gap-2">
@@ -238,7 +238,7 @@ export function RadarDashboard() {
                 </CardContent>
               </>
             ) : (
-              <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+              <CardContent className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
                 <MousePointerClick className="size-5" aria-hidden />
                 Click a concept (or Tab to it and press Enter) to see its signal breakdown.
               </CardContent>
@@ -316,7 +316,7 @@ function TaManager({ sessionId, instructorSecret }: { sessionId: Id<"sessions">;
           their access.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <form onSubmit={onInvite} className="flex flex-wrap items-center gap-2 text-sm">
           <label htmlFor="ta-name">Add TA</label>
           <Input
@@ -333,7 +333,7 @@ function TaManager({ sessionId, instructorSecret }: { sessionId: Id<"sessions">;
           </Button>
         </form>
         {fresh && (
-          <div className="space-y-1.5 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
+          <div className="space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm">
             <p>
               Send this link to <strong>{fresh.name}</strong>. It won’t be shown again.
             </p>
@@ -353,9 +353,9 @@ function TaManager({ sessionId, instructorSecret }: { sessionId: Id<"sessions">;
         {tas === undefined ? null : tas === null || tas.length === 0 ? (
           <p className="text-sm text-muted-foreground">No TAs yet.</p>
         ) : (
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-3 text-sm">
             {tas.map((t) => (
-              <li key={t._id} className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
+              <li key={t._id} className="flex items-center justify-between gap-3 rounded-lg border bg-background p-4">
                 <span className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-sky-100 text-sky-900">
                     TA
@@ -379,7 +379,7 @@ function JoinCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   const href = typeof window === "undefined" ? `/join/${code}` : `${window.location.origin}/join/${code}`;
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-2.5 ring-1 ring-foreground/5">
+    <div className="flex items-center gap-4 rounded-xl border bg-card px-5 py-3 ring-1 ring-foreground/5">
       <div className="text-right">
         <p className="text-xs text-muted-foreground">Students join at /join/{code}</p>
         <p className="font-mono text-3xl font-bold tracking-[0.25em] sm:text-4xl">{code}</p>
@@ -403,7 +403,7 @@ function JoinCode({ code }: { code: string }) {
 
 function Stat({ label, value, detail, tone }: { label: string; value: number | string; detail?: string; tone?: "warn" }) {
   return (
-    <div className="min-w-0 rounded-xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+    <div className="min-w-0 rounded-xl bg-card px-4 py-3 ring-1 ring-foreground/10">
       <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className={cn("text-xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</p>
       {detail && <p className="truncate text-[11px] text-muted-foreground">{detail}</p>}
@@ -443,10 +443,10 @@ function PushPromptForm({
   return (
     <form onSubmit={submit} aria-label="Push prompt" className="enter">
       <Card className="ring-foreground/20">
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-end gap-2">
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
             <label className="text-sm">
-              <span className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground uppercase">
+              <span className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-foreground uppercase">
                 <Megaphone className="size-3.5" aria-hidden /> Push prompt
               </span>
               <Select items={items} value={target} onValueChange={(v) => v && setConceptId(v)}>

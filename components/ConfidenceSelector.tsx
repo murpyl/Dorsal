@@ -13,7 +13,7 @@ export function ConfidenceSelector({
   disabled?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2" role="group" aria-label="How well do you understand this?">
+    <div className="grid grid-cols-3 gap-3" role="group" aria-label="How well do you understand this?">
       {LEVELS.map((l) => {
         const selected = value === l.value;
         return (

@@ -22,7 +22,7 @@ export function TaLanding() {
 
   if (secret === "")
     return (
-      <main className="mx-auto w-full max-w-xl p-8">
+      <main className="mx-auto w-full max-w-xl p-10">
         <InlineError message="This TA link is incomplete. Ask the instructor to copy it again." />
       </main>
     );
