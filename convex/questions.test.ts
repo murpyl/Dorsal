@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
+import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
 
 const SECRET = "instructor-secret-0123456789abcdef0123456789abcdef";
@@ -11,7 +12,7 @@ const QUESTION = "When the base case returns, how do we get back to the first ca
 
 async function setup() {
   const t = convexTest(schema, modules);
-  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET });
+  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET, concepts: RECURSION_LESSON });
   await t.mutation(api.sessions.join, { code, token: TOKEN_A });
   await t.mutation(api.sessions.join, { code, token: TOKEN_B });
   const concepts = await t.run((ctx) =>
@@ -100,7 +101,7 @@ describe("questions (scenario 3: raw questions stay in the instructor queue unti
     await expect(submit({ content: "   " })).rejects.toThrow();
     await expect(submit({ content: "x".repeat(501) })).rejects.toThrow();
     await expect(submit({ token: TOKEN_A.replace("a", "x") })).rejects.toThrow();
-    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET });
+    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET, concepts: RECURSION_LESSON });
     const [foreign] = await t.run((ctx) =>
       ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", other.sessionId)).collect(),
     );

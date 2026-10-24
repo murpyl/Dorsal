@@ -47,7 +47,7 @@ For the hackathon, use **anonymous per-session participation tokens** (stored cl
 - Room size cap and member-only access; instructor can close a room.
 
 ### 4. Concept graph
-- Nodes are instructor-seeded concepts, not a graph invented entirely by an LLM.
+- Nodes are instructor-reviewed concepts: Claude suggests them from the uploaded lecture material and the instructor edits, adds or removes them (and their prerequisites) before the session is created. Never a graph the LLM invents unreviewed.
 - Directed edges represent `prerequisite_for`, `related_to`, or `frequently_confused_with`.
 - Node size or border = sample count; fill = aggregate understanding; unresolved issue count = marker.
 - Clicking a node opens signal distribution, grouped questions, help rooms, and pre/post change.
@@ -55,7 +55,7 @@ For the hackathon, use **anonymous per-session participation tokens** (stored cl
 
 ## Scoping: hackathon MVP versus later
 
-**Must ship:** session join; 3-state signal; anonymous question submission; live instructor counts; Claude clustering (one AI call, with manual fallback) whose output also maps clusters to concept nodes; concept graph with 5 seeded nodes; opt-in helpers and capacity-limited peer rooms with chat; pre/post signal comparison; role permissions; one coherent demo flow.
+**Must ship:** session join; 3-state signal; anonymous question submission; live instructor counts; Claude clustering (one AI call, with manual fallback) whose output also maps clusters to concept nodes; concept graph from instructor-reviewed lesson concepts (5 seeded nodes in the demo); opt-in helpers and capacity-limited peer rooms with chat; pre/post signal comparison; role permissions; one coherent demo flow.
 
 **Stretch (only after the full demo flow works end-to-end):** `claude.proposeConceptLinks` (new graph edges); `claude.suggestPeerHelp`; Microsoft-style instructor intervention agent; cluster merge/split; 1-question comprehension checks; end-of-session summary export; scheduled room expiry; shared rich text explanation; graph auto-suggestions requiring instructor approval; student quiz validation; historical graph across lectures; accessible voice input; Notability sketch/diagram import when supported by a legitimate workflow.
 

@@ -50,7 +50,8 @@ The Claude-calling module must run in a Convex **Node.js action** (`"use node";`
 
 ```text
 app/
-  page.tsx                      # create/join landing page
+  page.tsx                      # join landing page; links to instructor/new
+  instructor/new/page.tsx       # lesson setup: upload notes → suggested concepts → edit → create session
   join/[code]/page.tsx          # student cockpit
   instructor/[sessionId]/page.tsx
   room/[roomId]/page.tsx
@@ -93,7 +94,7 @@ lib/
 | `rooms` | sessionId, conceptId, clusterId?, status, capacity | by_session, by_concept |
 | `roomMembers` | roomId, participantId, role, joinedAt | by_room, by_room_participant |
 | `messages` | roomId, authorId, body, createdAt | by_room_time |
-| `aiRuns` | sessionId, operation, model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session |
+| `aiRuns` | sessionId? (unset for `inferConcepts`), operation (`clusterQuestions` \| `inferConcepts`), model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session, by_operation_time |
 
 Pre/post is per signal, not per session: the session page writes `pre`, and a rating updated inside a help room (`signals.roomCheckIn`) is the only `post` input. The help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
 
@@ -107,7 +108,9 @@ Implement these minimal functions (names can be adjusted consistently throughout
 
 | Function | Type | Behavior |
 |---|---|---|
-| `sessions.create` | mutation | Instructor creates session + join code |
+| `sessions.create` | mutation | Instructor creates session + join code with their reviewed concepts (`{ label, description, prerequisites: index[] }`, 1–12, acyclic) |
+| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material |
+| `claude.inferConcepts` | action | Pre-session: suggest concepts + prerequisites from uploaded material (one Claude call, validated, files deleted after, global rate limit via `aiRuns`) |
 | `sessions.join` | mutation | Validates code; creates/reuses participant |
 | `sessions.getStudentView` | query | Active topic and safe session data |
 | `sessions.getInstructorView` | query | Instructor credential required; returns detailed aggregate state |
@@ -140,7 +143,7 @@ Stretch functions (build only after Phase 5): `claude.proposeConceptLinks`, `cla
 
 ### Phase 1 — Working live core (first priority)
 
-- Create a session with five preloaded recursion concepts and four edges.
+- Create a session from instructor-reviewed concepts: upload lecture material, Claude suggests concepts and prerequisites, the instructor edits them before the session exists (manual entry if the call fails). The simulated demo (`seed:reset`) keeps the five recursion concepts and four edges.
 - Build `/join/[code]` with participant join and confidence selector.
 - Implement `signals.upsert` using a Convex mutation, enforcing unique participant/concept/phase key.
 - Build instructor radar with live `useQuery` subscriptions; expose **counts and denominators** prominently.

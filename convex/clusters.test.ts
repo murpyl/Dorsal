@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
 import { sanitizeClusterSuggestions, type ClusterInput } from "../lib/aiSchemas";
 
@@ -84,7 +85,7 @@ describe("sanitizeClusterSuggestions (scenario 4: model output is validated agai
 
 async function setup() {
   const t = convexTest(schema, modules);
-  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET });
+  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET, concepts: RECURSION_LESSON });
   await t.mutation(api.sessions.join, { code, token: TOKEN_A });
   const concepts = await t.run((ctx) =>
     ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect(),
@@ -104,7 +105,7 @@ describe("clusters.saveSuggestions never stores IDs outside the session's pendin
     const q1 = await ask("How does the stack unwind?");
     const q2 = await ask("Where do frames go?");
     const q3 = await ask("Why return?", 3);
-    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET });
+    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET, concepts: RECURSION_LESSON });
     await t.mutation(api.sessions.join, { code: other.code, token: TOKEN_A });
     const otherConcepts = await t.run((ctx) =>
       ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", other.sessionId)).collect(),

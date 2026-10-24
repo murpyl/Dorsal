@@ -11,6 +11,7 @@
 import type * as claude from "../claude.js";
 import type * as clusters from "../clusters.js";
 import type * as credentials from "../credentials.js";
+import type * as lessons from "../lessons.js";
 import type * as messages from "../messages.js";
 import type * as participants from "../participants.js";
 import type * as questions from "../questions.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   claude: typeof claude;
   clusters: typeof clusters;
   credentials: typeof credentials;
+  lessons: typeof lessons;
   messages: typeof messages;
   participants: typeof participants;
   questions: typeof questions;
