@@ -6,6 +6,8 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
+import { PrePostComparison, SessionControls } from "@/components/PrePostComparison";
+import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
@@ -48,6 +50,7 @@ export function RadarDashboard() {
         <div className="text-right">
           <p className="text-sm text-zinc-500">Students join at /join/{view.code}</p>
           <p className="font-mono text-4xl font-bold tracking-widest">{view.code}</p>
+          <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} phase={view.phase} state={view.state} />
         </div>
       </header>
 
@@ -137,6 +140,11 @@ export function RadarDashboard() {
             </p>
           </div>
         ))}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+        <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
       </section>
     </main>
   );

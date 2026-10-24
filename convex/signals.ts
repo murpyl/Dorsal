@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
-import { mutation } from "./_generated/server";
-import { requireParticipant } from "./credentials";
+import { mutation, query } from "./_generated/server";
+import { getInstructorSession, requireParticipant } from "./credentials";
 import { level } from "./schema";
 
 export const upsert = mutation({
@@ -30,5 +30,35 @@ export const upsert = mutation({
         updatedAt: Date.now(),
       });
     }
+  },
+});
+
+export const prePostByConcept = query({
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string() },
+  handler: async (ctx, { sessionId, instructorSecret }) => {
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) return null;
+    const concepts = await ctx.db
+      .query("concepts")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .collect();
+    concepts.sort((a, b) => a.order - b.order);
+    const tally = async (conceptId: typeof concepts[number]["_id"], phase: "pre" | "post") => {
+      const signals = await ctx.db
+        .query("signals")
+        .withIndex("by_concept_phase", (q) => q.eq("conceptId", conceptId).eq("phase", phase))
+        .collect();
+      const counts = { confused: 0, partial: 0, can_explain: 0 };
+      for (const s of signals) counts[s.level]++;
+      return { counts, total: signals.length };
+    };
+    return Promise.all(
+      concepts.map(async (c) => ({
+        conceptId: c._id,
+        label: c.label,
+        pre: await tally(c._id, "pre"),
+        post: await tally(c._id, "post"),
+      })),
+    );
   },
 });
