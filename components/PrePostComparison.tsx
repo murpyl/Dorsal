@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { errorMessage } from "@/lib/errors";
 import { LEVELS, PHASE_LABEL, type Phase } from "@/lib/levels";
 
@@ -30,15 +29,12 @@ type Tally = { counts: Record<(typeof LEVELS)[number]["value"], number>; total: 
 export function SessionControls({
   sessionId,
   instructorSecret,
-  phase,
   state,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
-  phase: Phase;
   state: "open" | "closed";
 }) {
-  const setPhase = useMutation(api.sessions.setPhase);
   const closeSession = useMutation(api.sessions.close);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -61,22 +57,6 @@ export function SessionControls({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-      <ToggleGroup
-        aria-label="Signal phase"
-        variant="outline"
-        spacing={0}
-        value={[phase]}
-        onValueChange={(v) => {
-          const next = v[0] as Phase | undefined;
-          if (next && next !== phase) guard(() => setPhase({ sessionId, instructorSecret, phase: next }));
-        }}
-      >
-        {(["pre", "post"] as const).map((p) => (
-          <ToggleGroupItem key={p} value={p} className="bg-background data-pressed:bg-primary data-pressed:text-primary-foreground">
-            {PHASE_LABEL[p]}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogTrigger render={<Button variant="destructive" />}>Close session</AlertDialogTrigger>
         <AlertDialogContent>
@@ -111,8 +91,9 @@ export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: 
       <CardHeader>
         <CardTitle id="pre-post" render={<h2 />}>Before vs after peer help</CardTitle>
         <CardDescription>
-          Self-reported understanding per phase. Each bar shows its own N; the two phases are separate response sets. A shift here
-          measures what students <em>say</em>, not verified learning gains.
+          Self-reported understanding. <em>Before</em> is each student&apos;s rating on the session page; <em>after</em> is the rating
+          they update inside a peer help room. Each bar shows its own N; the two are separate response sets. A shift here measures what
+          students <em>say</em>, not verified learning gains.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -171,7 +152,7 @@ function PhaseBar({ phase, tally }: { phase: Phase; tally: Tally }) {
   const summary = LEVELS.map((l) => `${l.label} ${tally.counts[l.value]}`).join(", ");
   return (
     <div className="grid grid-cols-[3rem_1fr_7rem] items-center gap-2 text-xs">
-      <span className="font-mono uppercase text-muted-foreground">{phase}</span>
+      <span className="text-muted-foreground">{phase === "pre" ? "Before" : "After"}</span>
       <div role="img" aria-label={`${PHASE_LABEL[phase]}: ${summary}, N = ${tally.total}`}>
         <DistributionBar tally={tally} />
       </div>

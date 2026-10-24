@@ -83,7 +83,7 @@ lib/
 
 | Table | Fields | Essential indexes |
 |---|---|---|
-| `sessions` | title, code, state, phase (`pre` \| `post`), instructorSecretHash, activeConceptId, createdAt | by_code |
+| `sessions` | title, code, state, instructorSecretHash, activeConceptId, createdAt | by_code |
 | `participants` | sessionId, tokenHash, alias, helperConceptIds, isSimulated, createdAt | by_session, by_token_hash |
 | `concepts` | sessionId, label, description, order, x, y (fixed React Flow position; no layout library) | by_session |
 | `conceptEdges` | sessionId, fromId, toId, relation | by_session |
@@ -95,7 +95,7 @@ lib/
 | `messages` | roomId, authorId, body, createdAt | by_room_time |
 | `aiRuns` | sessionId, operation, model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session |
 
-Pre/post is a single session-level `phase` flipped by the instructor (`sessions.setPhase`); the help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
+Pre/post is per signal, not per session: the session page writes `pre`, and a rating updated inside a help room (`signals.roomCheckIn`) is the only `post` input. The help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
 
 Use real Convex IDs (`v.id`) for relationships. Store only a hash of access secrets, but note that a hash alone is insufficient unless every protected backend query/mutation verifies the supplied credential or authenticated identity. **For a hackathon, a single private instructor secret per session is acceptable only as a disclosed demo compromise**. For a real deployment, add a supported auth provider with instructor/course permissions. Avoid pretending client-side role flags are secure.
 
@@ -112,7 +112,8 @@ Implement these minimal functions (names can be adjusted consistently throughout
 | `sessions.getStudentView` | query | Active topic and safe session data |
 | `sessions.getInstructorView` | query | Instructor credential required; returns detailed aggregate state |
 | `concepts.listGraph` | query | Node/edge data with privacy-safe aggregates |
-| `signals.upsert` | mutation | Upserts one level per participant/concept/phase |
+| `signals.upsert` | mutation | Upserts the session-page level (`pre`) per participant/concept |
+| `signals.roomCheckIn` | mutation | Room member upserts their after-help level (`post`) for the room's concept |
 | `questions.submit` | mutation | Anonymous question, length limit, rate limit |
 | `questions.listInstructor` | query | Protected raw questions for review |
 | `clusters.suggest` | internal mutation | Save validated AI suggestions |
@@ -121,7 +122,6 @@ Implement these minimal functions (names can be adjusted consistently throughout
 | `rooms.join` | mutation | Atomically enforce room capacity + no duplicate membership |
 | `messages.send` | mutation | Member-only, capped length, throttled |
 | `messages.listByRoom` | query | Room-member-only content |
-| `sessions.setPhase` | mutation | Instructor switches `pre` → `post`; new signals are written under the new phase |
 | `participants.setHelper` | mutation | Student opts in/out as helper for specific concepts |
 | `questions.hide` | mutation | Instructor hides an inappropriate question |
 | `clusters.requestSuggestions` | mutation | Instructor credential; inserts an `aiRuns` row and schedules `claude.clusterQuestions` |
@@ -193,7 +193,7 @@ Example expected model response:
 - Instructor or helper starts a room associated with the published cluster.
 - Build member list and real-time text messages. Check room membership on read/write.
 - Apply capacity and duplicate-membership rules transactionally.
-- `I understand now` / `Still confused` in the room write a signal under the session's current phase (instructor switches to `post` first).
+- Room members update their rating in the room (same 3 levels); that writes the `post` signal for the room's concept. The instructor view shows before/after only in the peer-help comparison.
 - Build before/after comparison, with sample counts and a note that confidence is not proof of learning.
 
 **Acceptance:** Two browser profiles join one room and exchange messages; instructor sees the help room active and graph reflects new signals.
