@@ -9,6 +9,7 @@
  */
 
 import type * as credentials from "../credentials.js";
+import type * as participants from "../participants.js";
 import type * as sessions from "../sessions.js";
 import type * as signals from "../signals.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   credentials: typeof credentials;
+  participants: typeof participants;
   sessions: typeof sessions;
   signals: typeof signals;
 }>;
