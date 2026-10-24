@@ -22,7 +22,8 @@ const TABS: { id: Tab; label: string; icon: typeof ListChecks }[] = [
   { id: "help", label: "Help", icon: HandHelping },
 ];
 const MAX_LENGTH = 500;
-const ROOM_HREF = "/mock/projector/room";
+const roomHref = (roomId: string) => `/mock/projector/room?room=${roomId}`;
+const newRoomHref = (conceptId: string) => `/mock/projector/room?concept=${conceptId}`;
 
 export default function StudentProjectorMock() {
   const [tab, setTab] = useState<Tab>("topics");
@@ -329,7 +330,12 @@ function AskPanel({ id, labelledBy, helping }: { id: string; labelledBy: string;
                     </div>
                   ))}
                   {canHelp && clusterRooms.length === 0 && (
-                    <Button size="sm" className="bg-teal-700 text-white hover:bg-teal-800" nativeButton={false} render={<Link href={ROOM_HREF} />}>
+                    <Button
+                      size="sm"
+                      className="bg-teal-700 text-white hover:bg-teal-800"
+                      nativeButton={false}
+                      render={<Link href={newRoomHref(c.conceptIds.find((cid) => helping.includes(cid))!)} />}
+                    >
                       Open a room as helper
                     </Button>
                   )}
@@ -452,7 +458,7 @@ function HelpPanel({
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" className="bg-teal-700 text-white hover:bg-teal-800" nativeButton={false} render={<Link href={ROOM_HREF} />}>
+              <Button size="sm" className="bg-teal-700 text-white hover:bg-teal-800" nativeButton={false} render={<Link href={newRoomHref(chosen._id)} />}>
                 Open room
               </Button>
             </form>
@@ -467,14 +473,14 @@ function RoomButton({ room, asHelper, wide }: { room: (typeof rooms)[number]; as
   const cls = wide ? "w-full" : undefined;
   if (room.isMember)
     return (
-      <Button size={wide ? "lg" : "sm"} className={cls} nativeButton={false} render={<Link href={ROOM_HREF} />}>
+      <Button size={wide ? "lg" : "sm"} className={cls} nativeButton={false} render={<Link href={roomHref(room._id)} />}>
         Open room ({room.myRole})
         <ArrowRight data-icon="inline-end" aria-hidden />
       </Button>
     );
   if (room.members.length >= room.capacity) return <Badge variant="secondary">Full</Badge>;
   return (
-    <Button size={wide ? "lg" : "sm"} variant="outline" className={cls} nativeButton={false} render={<Link href={ROOM_HREF} />}>
+    <Button size={wide ? "lg" : "sm"} variant="outline" className={cls} nativeButton={false} render={<Link href={roomHref(room._id)} />}>
       {asHelper ? "Join as helper" : "Join"}
     </Button>
   );

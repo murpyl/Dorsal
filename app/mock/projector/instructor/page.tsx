@@ -34,7 +34,6 @@ import {
   conceptById,
   edges,
   labelsFor,
-  pendingQuestions,
   questionById,
   questions,
   rooms as fixtureRooms,
@@ -77,9 +76,13 @@ export default function InstructorProjectorMock() {
 
   const published = clusters.filter((c) => c.status === "published");
   const suggested = clusters.filter((c) => c.status === "suggested");
-  const pending = pendingQuestions.filter((q) => !hidden.includes(q._id));
+  const clusteredIds = new Set(published.flatMap((c) => c.questionIds));
+  const pending = questions.filter((q) => q.state !== "hidden" && !hidden.includes(q._id) && !clusteredIds.has(q._id));
+  // The graph and metrics follow the selected signal phase; the comparison panel keeps both tallies.
   const concepts = fixtureConcepts.map((c) => ({
     ...c,
+    counts: phase === "pre" ? c.counts : c.post,
+    total: phase === "pre" ? c.total : c.postTotal,
     openClusters: published.filter((k) => k.conceptIds.includes(c._id)).length,
   }));
   const responses = concepts.reduce((s, c) => s + c.total, 0);
@@ -186,7 +189,7 @@ export default function InstructorProjectorMock() {
 
         <section className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border bg-card px-5 py-3" aria-label="Session metrics">
           <Metric label="Joined" value={session.participantCount} />
-          <Metric label="Responses" value={responses} detail="this phase" />
+          <Metric label="Responses" value={responses} detail={phase === "pre" ? "before help" : "after help"} />
           <Metric
             label="Confused"
             value={`${Math.round((confused / Math.max(responses, 1)) * 100)}%`}
@@ -466,6 +469,7 @@ export default function InstructorProjectorMock() {
                 {drawerTab === "queue" && (
                   <QueuePanel
                     pending={pending}
+                    clusteredIds={clusteredIds}
                     selected={selectedQs}
                     onToggle={(id) => setSelectedQs((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
                     onHide={(id) => setHidden((h) => [...h, id])}
@@ -478,7 +482,7 @@ export default function InstructorProjectorMock() {
                 {drawerTab === "clusters" && (
                   <ClustersPanel suggested={suggested} published={published} rooms={rooms} onPublish={publish} onDiscard={discard} onOpenRoom={(c) => openRoom(c.conceptIds[0], c)} />
                 )}
-                {drawerTab === "prepost" && <PrePostPanel concepts={concepts} />}
+                {drawerTab === "prepost" && <PrePostPanel concepts={fixtureConcepts} />}
                 {drawerTab === "session" && (
                   <SessionPanel
                     phase={phase}
@@ -578,18 +582,20 @@ function RoomOpener({ onOpen }: { onOpen: (conceptId: string) => void }) {
 
 function QueuePanel({
   pending,
+  clusteredIds,
   selected,
   onToggle,
   onHide,
   onSuggest,
 }: {
   pending: typeof questions;
+  clusteredIds: Set<string>;
   selected: string[];
   onToggle: (id: string) => void;
   onHide: (id: string) => void;
   onSuggest: () => void;
 }) {
-  const rows = questions.filter((q) => q.state !== "hidden" && (q.state === "clustered" || pending.some((p) => p._id === q._id)));
+  const rows = questions.filter((q) => clusteredIds.has(q._id) || pending.some((p) => p._id === q._id));
   const picked = selected.filter((id) => pending.some((p) => p._id === id));
   return (
     <div className="space-y-4">
@@ -612,7 +618,7 @@ function QueuePanel({
       </div>
       <ul className="divide-y rounded-xl border bg-background">
         {rows.map((q) => {
-          const isPending = q.state === "pending";
+          const isPending = !clusteredIds.has(q._id);
           const checked = selected.includes(q._id);
           return (
             <li key={q._id} className={cn("flex items-start gap-3 p-3 text-sm", checked && "bg-muted/60")}>
@@ -622,7 +628,7 @@ function QueuePanel({
                 <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="secondary">{conceptById[q.conceptId].label}</Badge>
                   <span className="tabular-nums">{q.createdAt}</span>
-                  {q.state === "clustered" && <span className="text-teal-800">in a published cluster</span>}
+                  {!isPending && <span className="text-teal-800">in a published cluster</span>}
                 </p>
               </div>
               {isPending && (

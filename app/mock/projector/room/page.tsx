@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useState } from "react";
 import { ArrowLeft, CheckCircle2, SendHorizonal, Users } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { type Message, conceptById, messages as fixtureMessages, rooms, session } from "../fixtures";
+import { type Message, type Room, conceptById, messages as fixtureMessages, rooms, session } from "../fixtures";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
   { level: "can_explain", label: "I understand now", className: "bg-teal-700 text-white hover:bg-teal-800" },
@@ -19,10 +20,44 @@ const CHECK_INS: { level: Level; label: string; className: string }[] = [
 ];
 const STUDENT_HREF = "/mock/projector/student";
 
-export default function RoomProjectorMock() {
-  const room = rooms[0];
+export default function RoomProjectorMockPage() {
+  return (
+    <Suspense fallback={null}>
+      <RoomProjectorMock />
+    </Suspense>
+  );
+}
+
+/** `?room=<id>` opens a fixture room; `?concept=<id>` opens a fresh room the student just created as helper. */
+function resolveRoom(params: URLSearchParams): { room: Room; messages: Message[] } {
+  const conceptId = params.get("concept");
+  if (conceptId && conceptById[conceptId]) {
+    return {
+      room: {
+        _id: `new-${conceptId}`,
+        title: conceptById[conceptId].label,
+        conceptId,
+        clusterId: null,
+        capacity: 6,
+        members: [{ alias: session.me.alias, role: "helper", isMe: true }],
+        isMember: true,
+        myRole: "helper",
+      },
+      messages: [],
+    };
+  }
+  const room = rooms.find((r) => r._id === params.get("room")) ?? rooms[0];
+  return {
+    room: room.isMember ? room : { ...room, isMember: true, myRole: "learner", members: [...room.members, { alias: session.me.alias, role: "learner", isMe: true }] },
+    messages: room._id === rooms[0]._id ? fixtureMessages : [],
+  };
+}
+
+function RoomProjectorMock() {
+  const resolved = resolveRoom(useSearchParams());
+  const room = resolved.room;
   const concept = conceptById[room.conceptId];
-  const [messages, setMessages] = useState<Message[]>(fixtureMessages);
+  const [messages, setMessages] = useState<Message[]>(resolved.messages);
   const [draft, setDraft] = useState("");
   const [checkedIn, setCheckedIn] = useState<Level | null>(null);
   const [changing, setChanging] = useState(false);
@@ -162,6 +197,11 @@ export default function RoomProjectorMock() {
           </section>
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4" aria-live="polite">
+            {messages.length === 0 && (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                {room.myRole === "helper" ? "You opened this room. Say hi — classmates can join from their Help tab." : "No messages yet. Say hi and describe where you got stuck."}
+              </p>
+            )}
             {messages.map((m, i) => (
               <div key={m._id} className={cn("enter flex", m.isMine ? "justify-end" : "justify-start")} style={{ "--i": Math.min(i, 6) } as React.CSSProperties}>
                 <div
