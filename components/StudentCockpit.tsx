@@ -20,7 +20,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
-import { cn } from "@/lib/utils";
 
 const NEW_PROMPT_CUE_MS = 3000;
 
