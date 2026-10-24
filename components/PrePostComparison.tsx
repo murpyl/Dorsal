@@ -109,7 +109,7 @@ export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: 
   return (
     <Card aria-labelledby="pre-post">
       <CardHeader>
-        <CardTitle id="pre-post">Before vs after peer help</CardTitle>
+        <CardTitle id="pre-post" render={<h2 />}>Before vs after peer help</CardTitle>
         <CardDescription>
           Self-reported understanding per phase. Each bar shows its own N; the two phases are separate response sets. A shift here
           measures what students <em>say</em>, not verified learning gains.

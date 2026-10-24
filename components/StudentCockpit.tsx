@@ -92,7 +92,7 @@ export function StudentCockpit() {
                     Current topic
                   </Badge>
                 )}
-                <CardTitle>{c.label}</CardTitle>
+                <CardTitle render={<h2 />}>{c.label}</CardTitle>
                 <CardDescription>{c.description}</CardDescription>
               </CardHeader>
               <CardContent>

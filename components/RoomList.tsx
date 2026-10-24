@@ -160,7 +160,7 @@ export function RoomList({
   return (
     <Card className="enter" aria-labelledby="help-rooms">
       <CardHeader>
-        <CardTitle id="help-rooms">Peer help rooms</CardTitle>
+        <CardTitle id="help-rooms" render={<h2 />}>Peer help rooms</CardTitle>
         <CardDescription>
           Small live chat rooms (max {rooms[0]?.capacity ?? 6} people) on one topic. Join only if you want to; you can leave any time.
         </CardDescription>
@@ -248,7 +248,7 @@ export function RoomStatus({
   return (
     <Card aria-labelledby="room-status">
       <CardHeader>
-        <CardTitle id="room-status">Help rooms (live)</CardTitle>
+        <CardTitle id="room-status" render={<h2 />}>Help rooms (live)</CardTitle>
         <CardDescription>Open a room from a published cluster, or pick a topic here.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

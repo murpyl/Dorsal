@@ -54,7 +54,7 @@ export function QuestionComposer({
     <form onSubmit={onSubmit} className="enter">
     <Card>
       <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-        <CardTitle>Ask a question</CardTitle>
+        <CardTitle render={<h2 />}>Ask a question</CardTitle>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           about
           <Select items={items} value={conceptId ?? ""} onValueChange={(v) => v && setPicked(v as Id<"concepts">)}>

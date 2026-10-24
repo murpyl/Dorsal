@@ -62,7 +62,7 @@ export default function Home() {
             <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
               <GraduationCap className="size-4.5" aria-hidden />
             </span>
-            <CardTitle>Join as a student</CardTitle>
+            <CardTitle render={<h2 />}>Join as a student</CardTitle>
             <CardDescription>Enter the six-letter code shown on the lecture screen.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -94,7 +94,7 @@ export default function Home() {
             <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
               <Presentation className="size-4.5" aria-hidden />
             </span>
-            <CardTitle>Start a session</CardTitle>
+            <CardTitle render={<h2 />}>Start a session</CardTitle>
             <CardDescription>For instructors. You get a code to share and a live dashboard.</CardDescription>
           </CardHeader>
           <CardContent>

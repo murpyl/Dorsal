@@ -98,7 +98,7 @@ export function RadarDashboard() {
             <>
               <CardHeader>
                 {selected._id === view.activeConceptId && <Badge className="mb-1 w-fit">Current topic</Badge>}
-                <CardTitle className="text-lg">{selected.label}</CardTitle>
+                <CardTitle className="text-lg" render={<h2 />}>{selected.label}</CardTitle>
                 <CardDescription>{selected.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -160,7 +160,7 @@ export function RadarDashboard() {
             return (
               <Card key={c._id} size="sm" className={cn(active && "ring-2 ring-foreground/80")}>
                 <CardHeader>
-                  <CardTitle className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="flex flex-wrap items-center gap-2" render={<h3 />}>
                     {c.label}
                     {active && <Badge>current topic</Badge>}
                     {c.openClusters > 0 && (

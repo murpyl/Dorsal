@@ -165,7 +165,7 @@ export function ClusterQueue({
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Moderation queue ({pending.length} pending)</CardTitle>
+            <CardTitle render={<h3 />}>Moderation queue ({pending.length} pending)</CardTitle>
             <Button size="sm" variant="outline" onClick={() => setGrouping(true)} disabled={selectedQuestions.length === 0}>
               Group selected ({selectedQuestions.length}) into a cluster
             </Button>
@@ -347,7 +347,7 @@ function ClusterCard({
         </CardContent>
       ) : (
         <CardHeader>
-          <CardTitle>{cluster.title}</CardTitle>
+          <CardTitle render={<h4 />}>{cluster.title}</CardTitle>
           {cluster.summary && <CardDescription>{cluster.summary}</CardDescription>}
           <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
             <Button size="xs" variant="ghost" onClick={startEdit}>

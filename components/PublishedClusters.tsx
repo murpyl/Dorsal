@@ -48,7 +48,7 @@ export function PublishedClusters({
   return (
     <Card className="enter" aria-labelledby="published-clusters">
       <CardHeader>
-        <CardTitle id="published-clusters">What the class is asking</CardTitle>
+        <CardTitle id="published-clusters" render={<h2 />}>What the class is asking</CardTitle>
         <CardDescription>Groups of pseudonymous questions your instructor has reviewed and published.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

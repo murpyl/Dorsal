@@ -44,7 +44,7 @@ export function HelperOptIn({
   return (
     <Card className="enter" aria-labelledby="helper-opt-in">
       <CardHeader>
-        <CardTitle id="helper-opt-in">Volunteer as a peer helper</CardTitle>
+        <CardTitle id="helper-opt-in" render={<h2 />}>Volunteer as a peer helper</CardTitle>
         <CardDescription>
           Tick the topics you feel comfortable explaining. This is your own call, not a test or an AI rating. Nobody is enrolled
           or contacted automatically: classmates only see you as <span className="font-medium text-foreground">{me.alias}</span>{" "}

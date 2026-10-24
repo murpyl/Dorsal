@@ -120,7 +120,7 @@ export function PeerRoom() {
       <section className="grid gap-4 md:grid-cols-[14rem_1fr]">
         <Card size="sm" aria-labelledby="members" className="h-fit">
           <CardHeader>
-            <CardTitle id="members">In this room</CardTitle>
+            <CardTitle id="members" render={<h2 />}>In this room</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <ul className="space-y-1.5">
@@ -211,7 +211,7 @@ export function PeerRoom() {
 
       <Card aria-labelledby="check-in">
         <CardHeader>
-          <CardTitle id="check-in">
+          <CardTitle id="check-in" render={<h2 />}>
             How is <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span> going now?
           </CardTitle>
           <CardDescription>
