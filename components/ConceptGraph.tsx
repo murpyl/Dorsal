@@ -27,7 +27,7 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-/** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
+/** Rose → amber → teal on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
   if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
   // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
@@ -154,13 +154,18 @@ export function ConceptGraph({
           confused
           <span
             className="inline-block h-1.5 w-16 rounded-full"
-            style={{ background: "linear-gradient(to right, hsl(0 72% 48%), hsl(65 72% 48%), hsl(130 72% 48%))" }}
+            style={{ background: `linear-gradient(to right, ${scoreColors(0).accent}, ${scoreColors(0.5).accent}, ${scoreColors(1).accent})` }}
             aria-hidden
           />
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded border border-neutral-300 bg-neutral-100" aria-hidden /> no responses
+          <span
+            className="inline-block size-3 rounded border"
+            style={{ background: scoreColors(null).fill, borderColor: scoreColors(null).accent }}
+            aria-hidden
+          />{" "}
+          no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
