@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules } from "./test.setup";
 
@@ -51,7 +51,7 @@ describe("questions (scenario 3: raw questions stay in the instructor queue unti
     const runId = await t.run((ctx) =>
       ctx.db.insert("aiRuns", { sessionId, operation: "clusterQuestions", model: "test", status: "running", createdAt: Date.now() }),
     );
-    await t.mutation(api.clusters.saveSuggestions, {
+    await t.mutation(internal.clusters.saveSuggestions, {
       sessionId,
       runId,
       latencyMs: 5,
