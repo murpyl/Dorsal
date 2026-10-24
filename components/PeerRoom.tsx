@@ -180,7 +180,7 @@ export function PeerRoom() {
         </p>
         <ConfidenceSelector
           value={room.myLevel}
-          disabled={room.sessionState !== "open"}
+          disabled={!open}
           onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))}
         />
         {room.myLevel && <p className="text-sm text-emerald-700">Rating saved. You can change it any time.</p>}

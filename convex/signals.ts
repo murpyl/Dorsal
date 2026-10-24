@@ -38,7 +38,7 @@ export const roomCheckIn = mutation({
   args: { roomId: v.id("rooms"), token: v.string(), level },
   handler: async (ctx, { roomId, token, level }) => {
     const room = await ctx.db.get(roomId);
-    if (!room) throw new ConvexError("Room not found");
+    if (!room || room.status !== "open") throw new ConvexError("Room not found or closed");
     const session = await ctx.db.get(room.sessionId);
     if (!session || session.state !== "open") throw new ConvexError("Session not found or closed");
     const participant = await requireParticipant(ctx, room.sessionId, token);

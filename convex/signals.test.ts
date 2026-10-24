@@ -118,6 +118,10 @@ describe("pre/post (scenario 9: phases never merge)", () => {
     expect(comparison.map((c) => c.label)).toEqual(concepts.map((c) => c.label));
     expect(await t.query(api.signals.prePostByConcept, { sessionId, instructorSecret: TOKEN_A })).toBeNull();
 
+    await t.mutation(api.rooms.close, { roomId, token: TOKEN_B });
+    await expect(t.mutation(api.signals.roomCheckIn, { roomId, token: TOKEN_A, level: "confused" })).rejects.toThrow(/closed/);
+    expect((await prePost()).post).toEqual({ counts: { confused: 0, partial: 0, can_explain: 1 }, total: 1 });
+
     await t.mutation(api.sessions.close, creds);
     await expect(t.mutation(api.signals.upsert, { sessionId, token: TOKEN_A, conceptId, level: "partial" })).rejects.toThrow();
     await expect(t.mutation(api.signals.roomCheckIn, { roomId, token: TOKEN_A, level: "confused" })).rejects.toThrow();
