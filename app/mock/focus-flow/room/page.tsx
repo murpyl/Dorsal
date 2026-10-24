@@ -29,11 +29,15 @@ export default function FocusFlowRoomPage() {
 }
 
 function FocusFlowRoom() {
-  const roomId = useSearchParams().get("room") ?? rooms[0]._id;
-  const room = rooms.find((r) => r._id === roomId) ?? rooms[0];
+  const params = useSearchParams();
+  const room = rooms.find((r) => r._id === params.get("room")) ?? rooms[0];
   const concept = conceptById(room.conceptId)!;
   const cluster = clusters.find((k) => k._id === room.clusterId) ?? null;
-  const roomMembers = roomMembersById[room._id] ?? [];
+  const fixtureMembers = roomMembersById[room._id] ?? [];
+  const joinedAs = params.get("as") === "helper" ? "helper" : "learner";
+  const roomMembers = fixtureMembers.some((m) => m.isMe)
+    ? fixtureMembers
+    : [...fixtureMembers, { alias: session.me.alias, role: joinedAs, isMe: true, isSimulated: false } as const];
   const [messages, setMessages] = useState<Message[]>(roomMessagesById[room._id] ?? []);
   const [draft, setDraft] = useState("");
   const [checkedIn, setCheckedIn] = useState<Level | null>(null);
