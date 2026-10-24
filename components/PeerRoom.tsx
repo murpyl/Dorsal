@@ -9,6 +9,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { Brand } from "@/components/Brand";
+import { ConfidenceSelector } from "@/components/ConfidenceSelector";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { InlineError } from "@/components/InlineError";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -19,13 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
-import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-
-const CHECK_INS: { level: Level; label: string; className: string }[] = [
-  { level: "can_explain", label: "I understand now", className: "bg-emerald-600 text-white hover:bg-emerald-700" },
-  { level: "confused", label: "Still confused", className: "bg-red-500 text-white hover:bg-red-600" },
-];
 
 export function PeerRoom() {
   const roomId = useParams<{ roomId: string }>().roomId as Id<"rooms">;
@@ -37,12 +32,11 @@ export function PeerRoom() {
   const send = useMutation(api.messages.send);
   const leave = useMutation(api.rooms.leave);
   const close = useMutation(api.rooms.close);
-  const upsert = useMutation(api.signals.upsert);
+  const checkIn = useMutation(api.signals.roomCheckIn);
   const router = useRouter();
 
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [checkIn, setCheckIn] = useState<{ level: Level; phase: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -68,7 +62,6 @@ export function PeerRoom() {
     );
 
   const open = room.status === "open" && room.sessionState === "open";
-  const checkedIn = checkIn?.phase === room.phase ? checkIn.level : null;
 
   async function guard(action: () => Promise<unknown>) {
     setError(null);
@@ -212,36 +205,20 @@ export function PeerRoom() {
       <Card aria-labelledby="check-in">
         <CardHeader>
           <CardTitle id="check-in" render={<h2 />}>
-            How is <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span> going now?
+            Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
           </CardTitle>
           <CardDescription>
-            This updates your self-reported understanding for the <span className="font-medium text-foreground">{PHASE_LABEL[room.phase]}</span>{" "}
-            phase. Only aggregate counts are shown to the instructor.
+            How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
+            your session page. Only aggregate counts are shown to the instructor.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {CHECK_INS.map((c) => (
-              <Button
-                key={c.level}
-                size="lg"
-                disabled={room.sessionState !== "open"}
-                aria-pressed={checkedIn === c.level}
-                onClick={() =>
-                  guard(async () => {
-                    await upsert({ sessionId: room.sessionId, token: token!, conceptId: room.conceptId, level: c.level });
-                    setCheckIn({ level: c.level, phase: room.phase });
-                  })
-                }
-                className={cn(c.className, checkedIn === c.level && "ring-2 ring-foreground ring-offset-2 ring-offset-background")}
-              >
-                {checkedIn === c.level && <CheckCircle2 data-icon="inline-start" aria-hidden />}
-                {c.label}
-              </Button>
-            ))}
-          </div>
-          {checkedIn && (
-            <p className="enter text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>
+          <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
+          {room.myLevel && (
+            <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+              <CheckCircle2 className="size-4" aria-hidden />
+              Rating saved. You can change it any time.
+            </p>
           )}
         </CardContent>
       </Card>
