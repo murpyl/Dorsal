@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { ArrowUp, CheckCircle2, DoorOpen, Frown, HandHelping, Layers, Meh, MessageSquarePlus, Send, Smile, Users } from "lucide-react";
 import { Brand } from "@/components/Brand";
@@ -293,7 +294,7 @@ export default function StudentMock() {
                                   {room.members.length}/{room.capacity} · {room.members.filter((m) => m.role === "helper").length} helper
                                 </span>
                               </span>
-                              <Button size="sm" disabled={full && !room.members.some((m) => m.isMe)}>
+                              <Button size="sm" disabled={full && !room.members.some((m) => m.isMe)} nativeButton={false} render={<Link href="/mock/sidebar-shell/room" />}>
                                 {room.members.some((m) => m.isMe) ? "Open" : full ? "Full" : "Join"}
                                 <DoorOpen data-icon="inline-end" aria-hidden />
                               </Button>
@@ -304,7 +305,7 @@ export default function StudentMock() {
                             </p>
                           )}
                           {canHelp && (
-                            <Button variant="outline" size="sm" className="w-full">
+                            <Button variant="outline" size="sm" className="w-full" nativeButton={false} render={<Link href="/mock/sidebar-shell/room" />}>
                               <HandHelping data-icon="inline-start" aria-hidden />
                               Open a room as helper ({fixtureConcepts.find((k) => k._id === canHelp)?.label})
                             </Button>
@@ -331,7 +332,7 @@ export default function StudentMock() {
                         {r.members.some((m) => m.isMe) && " · you're in"}
                       </p>
                     </div>
-                    <Button size="sm" variant={r.members.some((m) => m.isMe) ? "default" : "outline"} disabled={r.members.length >= r.capacity && !r.members.some((m) => m.isMe)}>
+                    <Button size="sm" variant={r.members.some((m) => m.isMe) ? "default" : "outline"} disabled={r.members.length >= r.capacity && !r.members.some((m) => m.isMe)} nativeButton={false} render={<Link href="/mock/sidebar-shell/room" />}>
                       {r.members.some((m) => m.isMe) ? "Open" : r.members.length >= r.capacity ? "Full" : "Join"}
                     </Button>
                   </li>

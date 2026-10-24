@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, ChevronDown, SendHorizonal, Users, X } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import {
@@ -40,6 +40,10 @@ export default function RoomMock() {
   const [bannerOpen, setBannerOpen] = useState(true);
   const helpers = room.members.filter((m) => m.role === "helper");
   const myRole = room.members.find((m) => m.isMe)?.role ?? "learner";
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [messages.length]);
 
   function onSend(e: FormEvent) {
     e.preventDefault();
@@ -133,6 +137,7 @@ export default function RoomMock() {
                 </div>
               );
             })}
+            <div ref={endRef} />
           </div>
 
           {bannerOpen && (

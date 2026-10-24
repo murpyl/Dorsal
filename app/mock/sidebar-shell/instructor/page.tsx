@@ -40,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LEVELS, PHASE_LABEL, type Phase } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 import {
+  type Concept,
   aiRun,
   type Cluster,
   clusters as fixtureClusters,
@@ -71,6 +72,8 @@ export default function InstructorMock() {
   const [picked, setPicked] = useState<string[]>([]);
   const [rooms, setRooms] = useState<Room[]>(fixtureRooms);
   const [copied, setCopied] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [groupTitle, setGroupTitle] = useState<string | null>(null);
   const { toast, show, dismiss } = useToast();
 
   const active = concepts.find((c) => c._id === activeId)!;
@@ -79,8 +82,9 @@ export default function InstructorMock() {
   const suggested = clusters.filter((c) => c.status === "suggested");
   const published = clusters.filter((c) => c.status === "published");
   const openRooms = rooms.filter((r) => r.status === "open");
-  const responses = concepts.reduce((s, c) => s + c.total, 0);
-  const confused = concepts.reduce((s, c) => s + c.counts.confused, 0);
+  const tally = (c: Concept) => (phase === "post" ? c.post : c.counts);
+  const responses = concepts.reduce((s, c) => s + tally(c).confused + tally(c).partial + tally(c).can_explain, 0);
+  const confused = concepts.reduce((s, c) => s + tally(c).confused, 0);
   const graphConcepts = concepts.map((c) => ({ ...c, openClusters: published.filter((p) => p.conceptIds.includes(c._id)).length }));
   const counts: Partial<Record<Section, number>> = { questions: pending.length + suggested.length, rooms: openRooms.length };
 
@@ -93,6 +97,17 @@ export default function InstructorMock() {
     show({ text: "Cluster published — students see it under Help now", action: { label: "Open a room", onClick: () => setSection("rooms") } });
   };
   const discard = (id: string) => setClusters((cs) => cs.filter((c) => c._id !== id));
+  const edit = (id: string, title: string, summary: string) => setClusters((cs) => cs.map((c) => (c._id === id ? { ...c, title, summary } : c)));
+  const groupPicked = () => {
+    const title = groupTitle?.trim();
+    if (!title || picked.length === 0) return;
+    const qs = fixtureQuestions.filter((q) => picked.includes(q._id));
+    const conceptIds = Array.from(new Set(qs.map((q) => q.conceptId)));
+    setClusters((cs) => [{ _id: `c${cs.length + 1}`, title, summary: qs[0].content, conceptIds, questionIds: picked, status: "suggested", source: "manual", confidence: null, helperCount: 0 }, ...cs]);
+    setPicked([]);
+    setGroupTitle(null);
+    show({ text: `Grouped ${qs.length} questions as “${title}” — review and publish it` });
+  };
   const openRoom = (conceptId: string, clusterId: string | null, title: string) => {
     setRooms((rs) => [{ _id: `r${rs.length + 1}`, title, conceptId, clusterId, capacity: 6, members: [], status: "open", openedMinutesAgo: 0 }, ...rs]);
     show({ text: `Room “${title}” opened · students can join from Help` });
@@ -114,8 +129,10 @@ export default function InstructorMock() {
                 size="icon-sm"
                 aria-label={copied ? "Link copied" : "Copy join link"}
                 onClick={() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
+                  navigator.clipboard.writeText(`${window.location.origin}/join/${session.code}`).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  });
                 }}
               >
                 {copied ? <Check className="text-teal-700" aria-hidden /> : <Copy aria-hidden />}
@@ -166,14 +183,14 @@ export default function InstructorMock() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-teal-500/60 motion-reduce:hidden" />
               <span className="relative inline-flex size-2 rounded-full bg-teal-600" />
             </span>
-            Live · {session.participantCount} in session · {session.startedMinutesAgo} min
+            {closed ? "Closed" : "Live"} · {session.participantCount} in session · {session.startedMinutesAgo} min
           </p>
           <p className="flex items-start gap-1.5">
             <EyeOff className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             Projector-safe: Overview, Graph, Results. Questions shows raw student text.
           </p>
           <AlertDialog>
-            <AlertDialogTrigger render={<Button variant="destructive" size="sm" className="w-full" />}>Close session</AlertDialogTrigger>
+            <AlertDialogTrigger render={<Button variant="destructive" size="sm" className="w-full" disabled={closed} />}>{closed ? "Session closed" : "Close session"}</AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Close this session?</AlertDialogTitle>
@@ -181,7 +198,7 @@ export default function InstructorMock() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep it open</AlertDialogCancel>
-                <AlertDialogAction variant="destructive">Close session</AlertDialogAction>
+                <AlertDialogAction variant="destructive" onClick={() => { setClosed(true); show({ text: "Session closed — students can no longer send signals or chat" }); }}>Close session</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -410,10 +427,24 @@ export default function InstructorMock() {
                       Raw student text · last Claude run {relTime(aiRun.minutesAgo)}, {aiRun.model}, {(aiRun.latencyMs / 1000).toFixed(1)} s, ok
                     </p>
                   </div>
-                  <Button size="sm" variant="outline" disabled={picked.length === 0} onClick={() => show({ text: `Manual cluster from ${picked.length} questions — fill in a title to publish` })}>
+                  <Button size="sm" variant="outline" disabled={picked.length === 0 || groupTitle !== null} onClick={() => setGroupTitle("")}>
                     Group {picked.length > 0 ? picked.length : ""} selected
                   </Button>
                 </div>
+                {groupTitle !== null && (
+                  <form
+                    className="enter flex items-end gap-2 rounded-xl border bg-card p-3"
+                    onSubmit={(e) => { e.preventDefault(); groupPicked(); }}
+                    aria-label="Group selected questions"
+                  >
+                    <label className="flex-1 space-y-1 text-sm">
+                      <span className="font-medium">Cluster title for {picked.length} selected</span>
+                      <Input autoFocus value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} maxLength={120} placeholder="e.g. Where does the return value go?" />
+                    </label>
+                    <Button type="submit" size="sm" disabled={!groupTitle.trim()}>Create cluster</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setGroupTitle(null)}>Cancel</Button>
+                  </form>
+                )}
                 <ul className="space-y-2">
                   {pending.map((q, i) => {
                     const on = picked.includes(q._id);
@@ -448,7 +479,7 @@ export default function InstructorMock() {
                   </h2>
                   <div className="grid gap-3 2xl:grid-cols-2">
                     {suggested.map((c, i) => (
-                      <ClusterCard key={c._id} i={i} cluster={c} actions={
+                      <ClusterCard key={c._id} i={i} cluster={c} onEdit={edit} actions={
                         <>
                           <Button size="sm" onClick={() => publish(c._id)}>Publish</Button>
                           <Button size="sm" variant="ghost" onClick={() => discard(c._id)}>Discard</Button>
@@ -467,7 +498,7 @@ export default function InstructorMock() {
                     {published.map((c, i) => {
                       const room = rooms.find((r) => r.clusterId === c._id && r.status === "open");
                       return (
-                        <ClusterCard key={c._id} i={i} cluster={c} footer={
+                        <ClusterCard key={c._id} i={i} cluster={c} onEdit={edit} footer={
                           room ? (
                             <p className="text-xs text-muted-foreground">
                               Room <span className="font-medium text-foreground">{room.title}</span> · <span className="tabular-nums">{room.members.length} / {room.capacity}</span>
@@ -691,10 +722,11 @@ function OpenRoomDialog({ onOpen }: { onOpen: (conceptId: string, clusterId: str
   );
 }
 
-function ClusterCard({ i, cluster, actions, footer }: { i: number; cluster: Cluster; actions: React.ReactNode; footer?: React.ReactNode }) {
+function ClusterCard({ i, cluster, actions, footer, onEdit }: { i: number; cluster: Cluster; actions: React.ReactNode; footer?: React.ReactNode; onEdit: (id: string, title: string, summary: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(cluster.title);
   const [summary, setSummary] = useState(cluster.summary);
+  const save = () => { onEdit(cluster._id, title.trim(), summary.trim()); setEditing(false); };
   return (
     <Card className="enter" style={{ "--i": i } as React.CSSProperties}>
       {editing ? (
@@ -702,16 +734,16 @@ function ClusterCard({ i, cluster, actions, footer }: { i: number; cluster: Clus
           <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="font-medium" />
           <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" />
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => setEditing(false)} disabled={!title.trim()}>Save</Button>
+            <Button size="sm" onClick={save} disabled={!title.trim()}>Save</Button>
             <Button size="sm" variant="ghost" onClick={() => { setTitle(cluster.title); setSummary(cluster.summary); setEditing(false); }}>Cancel</Button>
           </div>
         </CardContent>
       ) : (
         <CardHeader>
-          <CardTitle render={<h3 />}>{title}</CardTitle>
-          <CardDescription>{summary}</CardDescription>
+          <CardTitle render={<h3 />}>{cluster.title}</CardTitle>
+          <CardDescription>{cluster.summary}</CardDescription>
           <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
-            <Button size="xs" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
+            <Button size="xs" variant="ghost" onClick={() => { setTitle(cluster.title); setSummary(cluster.summary); setEditing(true); }}>Edit</Button>
           </div>
           <p className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
             {cluster.conceptIds.map((id) => (
