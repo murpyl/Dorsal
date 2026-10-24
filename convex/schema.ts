@@ -118,4 +118,7 @@ export default defineSchema({
   })
     .index("by_session", ["sessionId"])
     .index("by_operation_time", ["operation", "createdAt"]),
+
+  // One row per issued lesson upload URL (global upload cap); no file content or identity.
+  uploadGrants: defineTable({ createdAt: v.number() }).index("by_createdAt", ["createdAt"]),
 });

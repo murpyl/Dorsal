@@ -113,12 +113,13 @@ describe("lessons.startInferRun (global rate limit, no session yet)", () => {
 describe("lesson uploads (global cap, stale purge)", () => {
   afterEach(() => vi.useRealTimers());
 
-  test(`refuses upload URLs after ${UPLOAD_RATE_LIMIT.files} recent files`, async () => {
+  test(`refuses upload URLs after ${UPLOAD_RATE_LIMIT.files} issued in the window, even if none were used`, async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
     const t = convexTest(schema, modules);
-    await t.run(async (ctx) => {
-      for (let i = 0; i < UPLOAD_RATE_LIMIT.files; i++) await ctx.storage.store(new Blob(["x"]));
-    });
+    for (let i = 0; i < UPLOAD_RATE_LIMIT.files; i++) await t.mutation(api.lessons.generateUploadUrl, {});
     await expect(t.mutation(api.lessons.generateUploadUrl, {})).rejects.toThrow(/Too many uploads/);
+    vi.setSystemTime(Date.now() + UPLOAD_RATE_LIMIT.windowMs + 1);
+    await expect(t.mutation(api.lessons.generateUploadUrl, {})).resolves.toBeTypeOf("string");
   });
 
   test("purges uploads older than STALE_UPLOAD_MS and keeps fresh ones", async () => {
@@ -127,7 +128,9 @@ describe("lesson uploads (global cap, stale purge)", () => {
     const old = await t.run((ctx) => ctx.storage.store(new Blob(["old"])));
     vi.setSystemTime(Date.now() + STALE_UPLOAD_MS + 1);
     const fresh = await t.run((ctx) => ctx.storage.store(new Blob(["fresh"])));
+    await t.run((ctx) => ctx.db.insert("uploadGrants", { createdAt: 0 }));
     await t.mutation(internal.lessons.purgeStaleUploads, {});
+    expect(await t.run((ctx) => ctx.db.query("uploadGrants").collect())).toHaveLength(0);
     const left = await t.run(async (ctx) => (await ctx.db.system.query("_storage").collect()).map((f) => f._id));
     expect(left).toEqual([fresh]);
     expect(left).not.toContain(old);

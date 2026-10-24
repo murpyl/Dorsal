@@ -95,6 +95,7 @@ lib/
 | `roomMembers` | roomId, participantId, role, joinedAt | by_room, by_room_participant |
 | `messages` | roomId, authorId, body, createdAt | by_room_time |
 | `aiRuns` | sessionId? (unset for `inferConcepts`), operation (`clusterQuestions` \| `inferConcepts`), model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session, by_operation_time |
+| `uploadGrants` | createdAt (one row per issued lesson upload URL; purged after 1 h) | by_createdAt |
 
 Pre/post is per signal, not per session: the session page writes `pre`, and a rating updated inside a help room (`signals.roomCheckIn`) is the only `post` input. The help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
 
@@ -109,7 +110,7 @@ Implement these minimal functions (names can be adjusted consistently throughout
 | Function | Type | Behavior |
 |---|---|---|
 | `sessions.create` | mutation | Instructor creates session + join code with their reviewed concepts (`{ label, description, prerequisites: index[] }`, 1–12, acyclic) |
-| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material (global cap: 100 uploads per 10 min) |
+| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material (global cap: 100 issued URLs per 10 min, counted in `uploadGrants`) |
 | `lessons.purgeStaleUploads` | internal mutation (cron, 15 min) | Deletes uploads older than 1 h that never reached `claude.inferConcepts` |
 | `claude.inferConcepts` | action | Pre-session: suggest concepts + prerequisites from uploaded material (one Claude call, validated, files deleted after, global rate limit via `aiRuns`) |
 | `sessions.join` | mutation | Validates code; creates/reuses participant |
