@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { Fredoka, Geist_Mono, Nunito } from "next/font/google";
+import { Geist_Mono, Lora, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+const lora = Lora({
+  variable: "--font-lora",
   subsets: ["latin"],
 });
 
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
+const nunitoSans = Nunito_Sans({
+  variable: "--font-nunito-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -26,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${lora.variable} ${nunitoSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>

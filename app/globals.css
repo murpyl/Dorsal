@@ -4,13 +4,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Botanical theme — linen paper, moss & sage greens, terracotta for warnings,
+ * charcoal-brown ink. Lora (serif) for headings, Nunito Sans for body copy.
+ */
 @theme inline {
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --color-blahaj: var(--blahaj);
-  --color-blahaj-belly: var(--blahaj-belly);
-  --color-blahaj-pink: var(--blahaj-pink);
+  --font-sans: var(--font-nunito-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-lora), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -42,6 +43,46 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
+  /* Understanding levels: clay (confused) → ochre (partly) → moss (can explain). */
+  --color-clay: var(--clay);
+  --color-clay-foreground: var(--clay-foreground);
+  --color-ochre: var(--ochre);
+  --color-ochre-foreground: var(--ochre-foreground);
+  --color-moss: var(--moss);
+  --color-moss-foreground: var(--moss-foreground);
+
+  /*
+   * Re-tint the Tailwind shades the app uses for status colour so that
+   * red/amber/emerald/neutral utilities read as clay/ochre/moss/stone.
+   * Meaning is preserved (red-ish → amber-ish → green-ish); only the hue is botanical.
+   */
+  --color-red-500: oklch(0.555 0.129 36);
+  --color-red-600: oklch(0.491 0.125 37.5);
+  --color-amber-50: oklch(0.965 0.024 88);
+  --color-amber-100: oklch(0.924 0.048 89);
+  --color-amber-200: oklch(0.866 0.078 88.5);
+  --color-amber-400: oklch(0.761 0.125 82);
+  --color-amber-500: oklch(0.57 0.11 76);
+  --color-amber-600: oklch(0.52 0.1 75);
+  --color-amber-700: oklch(0.498 0.097 74);
+  --color-amber-800: oklch(0.425 0.081 74.5);
+  --color-amber-900: oklch(0.354 0.064 74.5);
+  --color-amber-950: oklch(0.284 0.049 75);
+  --color-emerald-50: oklch(0.957 0.018 124);
+  --color-emerald-100: oklch(0.92 0.034 125.5);
+  --color-emerald-200: oklch(0.852 0.056 127.5);
+  --color-emerald-300: oklch(0.762 0.077 129.5);
+  --color-emerald-500: oklch(0.609 0.098 134);
+  --color-emerald-600: oklch(0.528 0.092 135);
+  --color-emerald-700: oklch(0.46 0.079 136);
+  --color-emerald-900: oklch(0.341 0.058 136);
+  --color-emerald-950: oklch(0.265 0.044 136);
+  --color-neutral-100: oklch(0.928 0.015 90);
+  --color-neutral-200: oklch(0.882 0.02 90.5);
+  --color-neutral-300: oklch(0.821 0.023 90);
+  --color-neutral-400: oklch(0.69 0.023 89);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,81 +90,96 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-soft: var(--elevation-soft);
+  --shadow-soft-lg: var(--elevation-soft-lg);
+  --shadow-moss: var(--elevation-moss);
 }
 
 /* Blåhaj: IKEA plush-shark palette. Blåhaj blue for actions, belly white-blue page,
    denim text, with the toy's black eyes (foreground) and pink mouth (destructive) as accents. */
 :root {
-  --blahaj: oklch(0.62 0.11 245);
-  --blahaj-belly: oklch(0.955 0.016 240);
-  --blahaj-pink: oklch(0.54 0.15 5);
-  --background: oklch(0.955 0.016 240);
-  --foreground: oklch(0.3 0.065 252);
-  --card: oklch(0.985 0.006 235);
-  --card-foreground: oklch(0.3 0.065 252);
-  --popover: oklch(0.985 0.006 235);
-  --popover-foreground: oklch(0.3 0.065 252);
-  --primary: oklch(0.54 0.12 245);
-  --primary-foreground: oklch(0.99 0.004 235);
-  --secondary: oklch(0.9 0.03 240);
-  --secondary-foreground: oklch(0.3 0.065 252);
-  --muted: oklch(0.93 0.022 240);
-  --muted-foreground: oklch(0.5 0.055 250);
-  --accent: oklch(0.91 0.045 238);
-  --accent-foreground: oklch(0.3 0.065 252);
-  --destructive: oklch(0.54 0.15 5);
-  --border: oklch(0.86 0.03 242);
-  --input: oklch(0.84 0.035 242);
-  --ring: oklch(0.62 0.11 245);
-  --chart-1: oklch(0.62 0.11 245);
-  --chart-2: oklch(0.45 0.09 252);
-  --chart-3: oklch(0.78 0.07 235);
-  --chart-4: oklch(0.68 0.12 5);
-  --chart-5: oklch(0.3 0.065 252);
-  --radius: 1.25rem;
-  --sidebar: oklch(0.985 0.006 235);
-  --sidebar-foreground: oklch(0.3 0.065 252);
-  --sidebar-primary: oklch(0.54 0.12 245);
-  --sidebar-primary-foreground: oklch(0.99 0.004 235);
-  --sidebar-accent: oklch(0.91 0.045 238);
-  --sidebar-accent-foreground: oklch(0.3 0.065 252);
-  --sidebar-border: oklch(0.86 0.03 242);
-  --sidebar-ring: oklch(0.62 0.11 245);
+  --background: oklch(0.959 0.01 87.5); /* linen #f4f1ea */
+  --foreground: oklch(0.275 0.011 73.5); /* charcoal-brown */
+  --card: oklch(0.985 0.008 91.5);
+  --card-foreground: oklch(0.275 0.011 73.5);
+  --popover: oklch(0.985 0.008 91.5);
+  --popover-foreground: oklch(0.275 0.011 73.5);
+  --primary: oklch(0.469 0.059 134); /* moss */
+  --primary-foreground: oklch(0.966 0.011 95);
+  --secondary: oklch(0.922 0.022 124); /* pale sage */
+  --secondary-foreground: oklch(0.353 0.04 133);
+  --muted: oklch(0.922 0.017 91.5);
+  --muted-foreground: oklch(0.509 0.019 83);
+  --accent: oklch(0.902 0.033 126);
+  --accent-foreground: oklch(0.34 0.043 134);
+  --destructive: oklch(0.517 0.133 36); /* terracotta */
+  --border: oklch(0.85 0.031 128); /* sage hairline */
+  --input: oklch(0.85 0.031 128);
+  --ring: oklch(0.652 0.075 134);
+  --chart-1: oklch(0.554 0.094 135);
+  --chart-2: oklch(0.752 0.069 131);
+  --chart-3: oklch(0.649 0.109 50);
+  --chart-4: oklch(0.748 0.124 80);
+  --chart-5: oklch(0.509 0.019 83);
+  --radius: 1.125rem;
+  --sidebar: oklch(0.985 0.008 91.5);
+  --sidebar-foreground: oklch(0.275 0.011 73.5);
+  --sidebar-primary: oklch(0.469 0.059 134);
+  --sidebar-primary-foreground: oklch(0.966 0.011 95);
+  --sidebar-accent: oklch(0.902 0.033 126);
+  --sidebar-accent-foreground: oklch(0.34 0.043 134);
+  --sidebar-border: oklch(0.85 0.031 128);
+  --sidebar-ring: oklch(0.652 0.075 134);
+
+  --clay: oklch(0.555 0.129 36);
+  --clay-foreground: oklch(0.985 0.008 91.5);
+  --ochre: oklch(0.748 0.124 80);
+  --ochre-foreground: oklch(0.301 0.055 78);
+  --moss: oklch(0.537 0.095 135);
+  --moss-foreground: oklch(0.985 0.008 91.5);
+
+  --elevation-soft: 0 1px 2px oklch(0.275 0.011 73.5 / 4%), 0 12px 32px -14px oklch(0.4 0.05 134 / 22%);
+  --elevation-soft-lg: 0 2px 4px oklch(0.275 0.011 73.5 / 5%), 0 24px 48px -20px oklch(0.4 0.05 134 / 28%);
+  --elevation-moss: 0 1px 2px oklch(0.3 0.05 134 / 20%), 0 8px 20px -10px oklch(0.4 0.06 134 / 45%);
 }
 
-/* Deep-water variant: same shark, lights off. */
+/* Botanical is a light theme; .dark mirrors it on a dark soil palette so toggling never breaks. */
 .dark {
-  --background: oklch(0.22 0.04 252);
-  --foreground: oklch(0.95 0.012 240);
-  --card: oklch(0.27 0.04 250);
-  --card-foreground: oklch(0.95 0.012 240);
-  --popover: oklch(0.27 0.04 250);
-  --popover-foreground: oklch(0.95 0.012 240);
-  --primary: oklch(0.74 0.1 240);
-  --primary-foreground: oklch(0.2 0.045 252);
-  --secondary: oklch(0.33 0.04 250);
-  --secondary-foreground: oklch(0.95 0.012 240);
-  --muted: oklch(0.31 0.035 250);
-  --muted-foreground: oklch(0.74 0.04 240);
-  --accent: oklch(0.36 0.05 248);
-  --accent-foreground: oklch(0.95 0.012 240);
-  --destructive: oklch(0.74 0.12 5);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.74 0.1 240);
-  --chart-1: oklch(0.74 0.1 240);
-  --chart-2: oklch(0.6 0.1 248);
-  --chart-3: oklch(0.85 0.05 235);
-  --chart-4: oklch(0.74 0.12 5);
-  --chart-5: oklch(0.95 0.012 240);
-  --sidebar: oklch(0.27 0.04 250);
-  --sidebar-foreground: oklch(0.95 0.012 240);
-  --sidebar-primary: oklch(0.74 0.1 240);
-  --sidebar-primary-foreground: oklch(0.2 0.045 252);
-  --sidebar-accent: oklch(0.36 0.05 248);
-  --sidebar-accent-foreground: oklch(0.95 0.012 240);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.74 0.1 240);
+  --background: oklch(0.22 0.012 80);
+  --foreground: oklch(0.94 0.01 90);
+  --card: oklch(0.26 0.013 85);
+  --card-foreground: oklch(0.94 0.01 90);
+  --popover: oklch(0.26 0.013 85);
+  --popover-foreground: oklch(0.94 0.01 90);
+  --primary: oklch(0.78 0.08 130);
+  --primary-foreground: oklch(0.22 0.03 134);
+  --secondary: oklch(0.32 0.02 125);
+  --secondary-foreground: oklch(0.92 0.02 124);
+  --muted: oklch(0.3 0.012 85);
+  --muted-foreground: oklch(0.72 0.015 85);
+  --accent: oklch(0.34 0.03 128);
+  --accent-foreground: oklch(0.93 0.03 126);
+  --destructive: oklch(0.72 0.12 40);
+  --border: oklch(0.42 0.025 128 / 60%);
+  --input: oklch(0.42 0.025 128 / 60%);
+  --ring: oklch(0.65 0.07 134);
+  --chart-1: oklch(0.78 0.08 130);
+  --chart-2: oklch(0.6 0.07 131);
+  --chart-3: oklch(0.72 0.11 50);
+  --chart-4: oklch(0.8 0.12 80);
+  --chart-5: oklch(0.72 0.015 85);
+  --sidebar: oklch(0.26 0.013 85);
+  --sidebar-foreground: oklch(0.94 0.01 90);
+  --sidebar-primary: oklch(0.78 0.08 130);
+  --sidebar-primary-foreground: oklch(0.22 0.03 134);
+  --sidebar-accent: oklch(0.34 0.03 128);
+  --sidebar-accent-foreground: oklch(0.93 0.03 126);
+  --sidebar-border: oklch(0.42 0.025 128 / 60%);
+  --sidebar-ring: oklch(0.65 0.07 134);
+  --elevation-soft: 0 1px 2px oklch(0 0 0 / 30%), 0 12px 32px -14px oklch(0 0 0 / 50%);
+  --elevation-soft-lg: 0 2px 4px oklch(0 0 0 / 35%), 0 24px 48px -20px oklch(0 0 0 / 60%);
+  --elevation-moss: 0 1px 2px oklch(0 0 0 / 30%), 0 8px 20px -10px oklch(0.6 0.08 130 / 40%);
 }
 
 @layer base {
@@ -141,61 +197,26 @@
   html {
     scroll-behavior: smooth;
   }
-  /* Belly-to-back gradient: paler at the bottom, a touch more blue up top, plus a soft fin-shaped glow. */
+  /* Linen paper with a sage wash top-left and a faint clay glow bottom-right. */
   body {
     background-color: var(--background);
     background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 22%), transparent 70%),
-      radial-gradient(44rem 22rem at -10% 110%, oklch(0.68 0.12 5 / 10%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.93 0.03 240), var(--background) 40rem);
+      radial-gradient(60rem 40rem at -10% -10%, oklch(0.88 0.04 128 / 55%), transparent 60%),
+      radial-gradient(50rem 36rem at 110% 110%, oklch(0.9 0.05 55 / 35%), transparent 60%);
     background-attachment: fixed;
   }
-  /* Two gentle waves along the bottom edge of the viewport (inline SVG, no image files). */
-  body::before,
-  body::after {
-    content: "";
-    position: fixed;
-    inset: auto 0 0 0;
-    height: 7rem;
-    pointer-events: none;
-    z-index: -1;
-    background-color: oklch(0.62 0.11 245 / 16%);
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 112' preserveAspectRatio='none'%3E%3Cpath d='M0 64C180 24 300 24 480 56S780 112 960 80 1260 8 1440 48V112H0Z'/%3E%3C/svg%3E")
-      center bottom / 100% 100% no-repeat;
-  }
-  body::before {
-    height: 10rem;
-    background-color: oklch(0.62 0.11 245 / 8%);
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160' preserveAspectRatio='none'%3E%3Cpath d='M0 96C240 40 420 40 640 88S1040 160 1240 104 1440 56 1440 56V160H0Z'/%3E%3C/svg%3E");
-  }
-  .dark body {
-    background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 25%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.25 0.045 252), var(--background) 40rem);
-  }
-  .dark body::after {
-    background-color: oklch(0.62 0.11 245 / 20%);
-  }
-  .dark body::before {
-    background-color: oklch(0.62 0.11 245 / 10%);
-  }
-  h1,
-  h2,
-  h3,
-  [data-slot="card-title"] {
+  /* Serif voice for every heading; body stays in the soft sans. */
+  h1, h2, h3 {
     @apply font-heading;
-    letter-spacing: 0.005em;
+    letter-spacing: -0.005em;
+    font-feature-settings: "kern", "liga";
   }
   h1 {
-    font-weight: 600;
-  }
-  [data-slot="input"],
-  [data-slot="textarea"],
-  [data-slot="select-trigger"] {
-    background-color: var(--card);
+    font-weight: 500;
   }
   ::selection {
-    background-color: oklch(0.62 0.11 245 / 30%);
+    background: oklch(0.85 0.06 128);
+    color: var(--foreground);
   }
 }
 
