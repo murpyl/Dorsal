@@ -7,6 +7,12 @@ import { SEED_CONCEPTS, SEED_EDGES } from "./sessions";
 const DEMO_CODE = "DEMO01";
 const DEMO_TITLE = "Recursion: how return values propagate";
 const PARTICIPANTS = 24;
+const FALLBACK_CLUSTER = {
+  title: "Tracing recursive return values",
+  summary: "Students don't see how each call's result flows back up the call stack and is combined on the way out.",
+  concepts: [3, 2], // Return values, Call stack & frames
+  questionConcept: 3,
+};
 
 /** `pre` signals per concept (same order as SEED_CONCEPTS): [confused, partial, can_explain]. */
 const SEED_SIGNALS: [number, number, number][] = [
@@ -17,7 +23,11 @@ const SEED_SIGNALS: [number, number, number][] = [
   [6, 3, 1], // Tree recursion: only 10 of 24 answered
 ];
 
-/** Three paraphrase groups (stack unwinding, return values, base case), interleaved in arrival order. */
+/**
+ * Three paraphrase groups (stack unwinding, return values, base case), interleaved in arrival order.
+ * The return-values group (concept 3) is pre-grouped into a published manual cluster so the demo has a
+ * visible cluster without Claude; the other two groups stay pending for the live "Suggest clusters" step.
+ */
 const SEED_QUESTIONS: { concept: number; content: string }[] = [
   { concept: 2, content: "When the base case finally returns, how does the program know which call to go back to?" },
   { concept: 3, content: "In factorial(4), where does the multiplication actually happen: on the way down or on the way back up?" },
@@ -135,19 +145,32 @@ export const reset = internalMutation({
       }
     }
 
+    const clusteredQuestionIds: Id<"questions">[] = [];
     for (const [i, q] of SEED_QUESTIONS.entries()) {
-      await ctx.db.insert("questions", {
+      const clustered = q.concept === FALLBACK_CLUSTER.questionConcept;
+      const questionId = await ctx.db.insert("questions", {
         sessionId,
         conceptId: conceptIds[q.concept],
         participantId: participantIds[(i * 5 + 3) % PARTICIPANTS],
         content: q.content,
-        state: "pending",
+        state: clustered ? "clustered" : "pending",
         createdAt: now - (SEED_QUESTIONS.length - i) * 15_000,
       });
+      if (clustered) clusteredQuestionIds.push(questionId);
     }
+    await ctx.db.insert("clusters", {
+      sessionId,
+      title: FALLBACK_CLUSTER.title,
+      summary: FALLBACK_CLUSTER.summary,
+      conceptIds: FALLBACK_CLUSTER.concepts.map((c) => conceptIds[c]),
+      questionIds: clusteredQuestionIds,
+      status: "published",
+      source: "manual",
+      createdAt: now - 10_000,
+    });
 
     console.log(
-      `Seeded ${code}: ${PARTICIPANTS} simulated participants, ${signalCount} pre signals, ${SEED_QUESTIONS.length} pending questions`,
+      `Seeded ${code}: ${PARTICIPANTS} simulated participants, ${signalCount} pre signals, ${SEED_QUESTIONS.length - clusteredQuestionIds.length} pending questions, 1 published cluster (${clusteredQuestionIds.length} questions)`,
     );
     console.log(`Instructor URL: http://localhost:3000/instructor/${sessionId}`);
     console.log(`In that tab run: localStorage.setItem("classpulse:instructor:${sessionId}", "${instructorSecret}")`);
