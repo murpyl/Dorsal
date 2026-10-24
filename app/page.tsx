@@ -59,7 +59,7 @@ export default function Home() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="enter" style={{ "--i": 1 } as React.CSSProperties}>
           <CardHeader>
-            <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+            <span className="mb-1 grid size-10 place-items-center rounded-2xl border-2 border-peach-foreground/20 bg-peach text-peach-foreground">
               <GraduationCap className="size-4.5" aria-hidden />
             </span>
             <CardTitle render={<h2 />}>Join as a student</CardTitle>
@@ -91,7 +91,7 @@ export default function Home() {
 
         <Card className="enter" style={{ "--i": 2 } as React.CSSProperties}>
           <CardHeader>
-            <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+            <span className="mb-1 grid size-10 place-items-center rounded-2xl border-2 border-mint-foreground/20 bg-mint text-mint-foreground">
               <Presentation className="size-4.5" aria-hidden />
             </span>
             <CardTitle render={<h2 />}>Start a session</CardTitle>

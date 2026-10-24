@@ -5,9 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-quicksand), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --color-primary-shadow: var(--primary-shadow);
+  --color-peach: var(--peach);
+  --color-peach-foreground: var(--peach-foreground);
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
+  --color-lavender: var(--lavender);
+  --color-lavender-foreground: var(--lavender-foreground);
+  --color-butter: var(--butter);
+  --color-butter-foreground: var(--butter-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +57,95 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Pastel Playground: cream page, white candy cards, coral primary, charcoal text.
+   Pastels: peach / mint / lavender / butter, each with a darker "foreground" tint used
+   for text and (via currentColor) for the chunky 2px borders. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.985 0.012 85);
+  --foreground: oklch(0.27 0.025 285);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.27 0.025 285);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.27 0.025 285);
+  --primary: oklch(0.68 0.19 30);
+  --primary-foreground: oklch(0.24 0.05 30);
+  --primary-shadow: oklch(0.56 0.19 30);
+  --secondary: oklch(0.94 0.06 165);
+  --secondary-foreground: oklch(0.34 0.07 165);
+  --muted: oklch(0.955 0.025 300);
+  --muted-foreground: oklch(0.46 0.035 290);
+  --accent: oklch(0.95 0.09 95);
+  --accent-foreground: oklch(0.36 0.08 80);
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0.87 0.03 300);
+  --input: oklch(0.84 0.04 300);
+  --ring: oklch(0.68 0.19 30);
+  --chart-1: oklch(0.68 0.19 30);
+  --chart-2: oklch(0.8 0.1 165);
+  --chart-3: oklch(0.78 0.08 300);
+  --chart-4: oklch(0.88 0.13 95);
+  --chart-5: oklch(0.84 0.09 55);
+  --radius: 1rem;
+  --peach: oklch(0.93 0.05 55);
+  --peach-foreground: oklch(0.36 0.08 45);
+  --mint: oklch(0.94 0.06 165);
+  --mint-foreground: oklch(0.34 0.07 165);
+  --lavender: oklch(0.94 0.035 300);
+  --lavender-foreground: oklch(0.36 0.08 300);
+  --butter: oklch(0.95 0.09 95);
+  --butter-foreground: oklch(0.36 0.08 80);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.27 0.025 285);
+  --sidebar-primary: oklch(0.68 0.19 30);
+  --sidebar-primary-foreground: oklch(0.24 0.05 30);
+  --sidebar-accent: oklch(0.955 0.025 300);
+  --sidebar-accent-foreground: oklch(0.27 0.025 285);
+  --sidebar-border: oklch(0.87 0.03 300);
+  --sidebar-ring: oklch(0.68 0.19 30);
 }
 
+/* The theme is light-first; .dark is a plum-charcoal fallback with the same pastel accents. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.22 0.02 290);
+  --foreground: oklch(0.96 0.01 85);
+  --card: oklch(0.27 0.025 290);
+  --card-foreground: oklch(0.96 0.01 85);
+  --popover: oklch(0.27 0.025 290);
+  --popover-foreground: oklch(0.96 0.01 85);
+  --primary: oklch(0.74 0.17 30);
+  --primary-foreground: oklch(0.22 0.05 30);
+  --primary-shadow: oklch(0.58 0.17 30);
+  --secondary: oklch(0.36 0.06 165);
+  --secondary-foreground: oklch(0.93 0.06 165);
+  --muted: oklch(0.32 0.03 300);
+  --muted-foreground: oklch(0.76 0.03 300);
+  --accent: oklch(0.4 0.08 95);
+  --accent-foreground: oklch(0.95 0.09 95);
+  --destructive: oklch(0.72 0.17 25);
+  --border: oklch(0.4 0.04 300);
+  --input: oklch(0.45 0.04 300);
+  --ring: oklch(0.74 0.17 30);
+  --chart-1: oklch(0.74 0.17 30);
+  --chart-2: oklch(0.8 0.1 165);
+  --chart-3: oklch(0.78 0.08 300);
+  --chart-4: oklch(0.88 0.13 95);
+  --chart-5: oklch(0.84 0.09 55);
+  --peach: oklch(0.4 0.07 55);
+  --peach-foreground: oklch(0.93 0.05 55);
+  --mint: oklch(0.36 0.06 165);
+  --mint-foreground: oklch(0.94 0.06 165);
+  --lavender: oklch(0.38 0.06 300);
+  --lavender-foreground: oklch(0.94 0.035 300);
+  --butter: oklch(0.4 0.08 95);
+  --butter-foreground: oklch(0.95 0.09 95);
+  --sidebar: oklch(0.27 0.025 290);
+  --sidebar-foreground: oklch(0.96 0.01 85);
+  --sidebar-primary: oklch(0.74 0.17 30);
+  --sidebar-primary-foreground: oklch(0.22 0.05 30);
+  --sidebar-accent: oklch(0.32 0.03 300);
+  --sidebar-accent-foreground: oklch(0.96 0.01 85);
+  --sidebar-border: oklch(0.4 0.04 300);
+  --sidebar-ring: oklch(0.74 0.17 30);
 }
 
 @layer base {
@@ -132,8 +163,53 @@
   html {
     scroll-behavior: smooth;
   }
+  /* Page background: cream with soft candy blobs (peach, mint, lavender, butter) pinned to the corners. */
   body {
-    @apply bg-muted/40;
+    background-color: var(--background);
+    background-image:
+      radial-gradient(42rem 30rem at -8% -10%, color-mix(in oklch, var(--peach) 85%, transparent), transparent 70%),
+      radial-gradient(38rem 28rem at 108% 0%, color-mix(in oklch, var(--mint) 80%, transparent), transparent 70%),
+      radial-gradient(40rem 30rem at 100% 105%, color-mix(in oklch, var(--lavender) 90%, transparent), transparent 70%),
+      radial-gradient(34rem 26rem at 0% 100%, color-mix(in oklch, var(--butter) 75%, transparent), transparent 70%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  body {
+    font-weight: 500;
+  }
+  ::selection {
+    background: var(--butter);
+    color: var(--butter-foreground);
+  }
+}
+
+/* Candy chrome: chunky 2px borders in a darker tint of the surface, plus a flat "sticker" drop shadow. */
+@layer components {
+  [data-slot="card"],
+  [data-slot="alert"],
+  [data-slot="alert-dialog-content"] {
+    box-shadow: 0 4px 0 0 var(--border);
+  }
+  [data-slot="button"][data-variant="default"],
+  [data-slot="button"][data-variant="secondary"],
+  [data-slot="button"][data-variant="outline"] {
+    box-shadow: 0 3px 0 0 var(--btn-shadow, var(--border));
+  }
+  [data-slot="button"][data-variant="default"] {
+    --btn-shadow: var(--primary-shadow);
+  }
+  [data-slot="button"][data-variant="secondary"] {
+    --btn-shadow: color-mix(in oklch, var(--secondary), var(--secondary-foreground) 30%);
+  }
+  [data-slot="button"]:active:not(:disabled) {
+    box-shadow: 0 0 0 0 var(--btn-shadow, var(--border));
   }
 }
 
@@ -149,7 +225,7 @@
   [data-slot="button"]:active:not(:disabled),
   [data-slot="toggle-group-item"]:active:not(:disabled),
   .pressable:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: scale(0.97) translateY(2px);
   }
 }
 
@@ -184,7 +260,7 @@
 
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: var(--color-neutral-400);
+  stroke: var(--input);
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);
