@@ -59,7 +59,7 @@ export function RoomJoinButton({
   const join = useMutation(api.rooms.join);
   if (room.isMember) {
     return (
-      <Button size="sm" render={<Link href={roomHref(room._id, code)} />}>
+      <Button size="sm" nativeButton={false} render={<Link href={roomHref(room._id, code)} />}>
         Open ({room.myRole})
         <ArrowRight data-icon="inline-end" aria-hidden />
       </Button>

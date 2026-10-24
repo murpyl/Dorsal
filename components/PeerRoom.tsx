@@ -94,7 +94,7 @@ export function PeerRoom() {
       <header className="enter space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Brand />
-          <Button variant="ghost" size="sm" render={<Link href={`/join/${code}`} />}>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={`/join/${code}`} />}>
             <ArrowLeft data-icon="inline-start" aria-hidden />
             Back to session {code}
           </Button>
@@ -255,7 +255,9 @@ function Gate({ text, href, cta }: { text: string; href: string; cta: string }) 
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
       <Brand />
       <p className="text-muted-foreground">{text}</p>
-      <Button render={<Link href={href} />}>{cta}</Button>
+      <Button nativeButton={false} render={<Link href={href} />}>
+        {cta}
+      </Button>
     </main>
   );
 }
