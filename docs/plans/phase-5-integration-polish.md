@@ -1,0 +1,25 @@
+# Phase 5 (Batch 2): integration + polish
+
+Scope: `docs/Build_Instructions.md` §5 Phase 5 and §6, plus the A×B seam the parallel Phase 3/4 sessions left for Batch 2 (`docs/plans/phase-3-4-contract.md`). Phases 1–4 are merged; this batch integrates them and polishes. Not touched (session E owns them in parallel): `README.md`, `docs/demo-script.md`, `convex/seed.ts`, vitest config, `*.test.ts`. No new dependencies, no stretch features.
+
+## Plan (one commit per feature)
+
+1. **A×B seam — rooms from clusters.**
+   - `convex/rooms.ts`: every room projection (`listBySession`, `listInstructor`, `get`) adds `clusterTitle` (title of the published cluster the room was opened for, else `null`). No new function.
+   - `ClusterQueue` (instructor): one `rooms.listInstructor` subscription; each **published** cluster card gets an "Open help room" button → `rooms.createForCluster({ conceptId: cluster.conceptIds[0], clusterId })` and lists that cluster's open rooms as `members / capacity` (+ helper count). Decision: the room's concept is the cluster's **first** concept (clusters normally have one; the title comes from the cluster anyway).
+   - `PublishedClusters` (student, now also takes `code`): subscribes to `rooms.listBySession` + `participants.me`; each cluster lists its open rooms with the same Join / Open / Full control as `RoomList` (extracted as `RoomJoinButton`, exported from `RoomList.tsx`, links to `/room/<id>?code=<CODE>`); a participant who opted in as helper for one of the cluster's concepts gets "Open a room as helper" → `rooms.createAsHelper({ conceptId: <first of the cluster's concepts they opted into>, clusterId })`.
+   - `RoomList`, `RoomStatus`, `PeerRoom` show "for cluster: <title>" when `clusterTitle` is set.
+2. **Graph marker + 4th metric.** `sessions.getInstructorView` (extension now allowed) returns per concept `openClusters` (published clusters whose `conceptIds` include it), plus `publishedClusterCount` and `simulatedCount`. `ConceptGraph` nodes get an `openClusters` badge ("N open cluster(s)"), keep `N = …` and the "Self-reported understanding" caption. Metrics grid becomes 4 cards: Participants (with "x simulated"), Responses, Confused responses, Open clusters. Student view unchanged (still `N < 5` suppressed — students never get counts).
+3. **Phase 5 polish.**
+   - Student: `max-w-xl` column that works at ≤ 400 px (no fixed-width rows; composer header wraps); confidence buttons taller (`min-h-14`, wrap allowed); current topic stays pinned first.
+   - Instructor: full-width (`max-w-none`, `px-6`), section order metrics → graph + detail → cluster queue → per-concept distribution → pre/post + rooms; graph height raised.
+   - Every list has loading / empty states (`RoomList`, `HelperOptIn` and `ClusterQueue` currently render nothing while loading or on a bad credential). Query errors: a small `ErrorBoundary` component (React class, no deps) wraps each mounted section so one failing subscription shows an inline "Couldn't load … Retry" instead of blanking the page.
+   - `ConnectionStatus` component on `useConvexConnectionState()`: a `role="status"` banner on student, instructor and room pages when the WebSocket is down ("Disconnected — reconnecting…"; the page keeps showing the last data).
+   - Keyboard: React Flow's own Enter/Space handling only selects when `elementsSelectable`, which we keep off (it would make nodes draggable-selectable). Instead `nodesFocusable={false}` and the custom node is `role="button" tabIndex=0` with an `aria-label` that spells out the counts; Enter/Space call `onSelect` (passed through node data). The per-concept distribution list is the text alternative: it gets `id="per-concept"` and an `aria-labelledby` heading, and the graph caption links to it.
+   - Simulated labels: `messages.listByRoom` adds `isSimulated` per author so chat bubbles are labelled; participant metric shows the simulated count; member list / queue / cluster cards already label.
+4. **Consistency pass.** `lib/ui.ts` with shared class strings (`card`, `btnPrimary`, `btnSecondary`, `btnDanger`, `chip`, `muted`) replacing the per-component variants; `lib/levels.ts` gains `PHASE_LABEL` (`pre` → "Before help (pre)", `post` → "After help (post)") used by the header, `SessionControls`, `PrePostComparison` and `PeerRoom`. Disclosures (pseudonymity, Claude processing, helper self-declaration, not-verified-learning) are kept verbatim.
+5. **End-to-end §9 run** against the shared dev deployment in two browser profiles, screenshots per step, at most one real Claude call (manual clusters otherwise).
+
+## Acceptance
+
+Instructor publishes a cluster → the node shows the badge and the "Open clusters" metric increments → "Open help room" on the card creates a room that students see under that cluster and can join → chat → post phase → room check-ins change the pre/post comparison. Everything renders usable at 400 px wide (student) and full width (instructor); disconnecting the network shows the banner on both views; Tab + Enter opens a node's details.
