@@ -38,7 +38,7 @@ export type StudentRoom = {
 };
 
 export const roomSummary = (r: StudentRoom) =>
-  `${r.memberCount} / ${r.capacity} in room · ${r.helperCount} helper${r.helperCount === 1 ? "" : "s"}${r.taCount > 0 ? ` · ${r.taCount} TA${r.taCount === 1 ? "" : "s"}` : ""}`;
+  `${r.memberCount} / ${r.capacity} students · ${r.helperCount} helper${r.helperCount === 1 ? "" : "s"}${r.taCount > 0 ? ` · ${r.taCount} TA${r.taCount === 1 ? "" : "s"}` : ""}`;
 
 /** Join / Open / Full control shared by RoomList and PublishedClusters. Joins, then navigates to the room with the ?code= convention. */
 export function RoomJoinButton({
@@ -165,7 +165,7 @@ export function RoomList({
       <CardHeader>
         <CardTitle id="help-rooms" render={<h2 />}>Peer help rooms</CardTitle>
         <CardDescription>
-          Small live chat rooms (max {rooms[0]?.capacity ?? 6} people) on one topic. Join only if you want to; you can leave any time.
+          Small live chat rooms (max {rooms[0]?.capacity ?? 6} students) on one topic. Join only if you want to; you can leave any time.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -287,7 +287,7 @@ export function RoomStatus({
                 <div className="space-y-0.5">
                   <p className="font-medium">{r.title}</p>
                   <p className="text-muted-foreground">
-                    {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
+                    {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} students · {r.helperCount} helper
                     {r.helperCount === 1 ? "" : "s"}
                     {r.taCount > 0 && ` · ${r.taCount} TA${r.taCount === 1 ? "" : "s"}`}
                     {r.memberCount >= r.capacity && (
@@ -299,7 +299,7 @@ export function RoomStatus({
                   {r.clusterTitle && <p className="text-xs text-muted-foreground">For cluster “{r.clusterTitle}”</p>}
                 </div>
                 <div className="flex gap-2">
-                  {role === "ta" && (r.isMember || r.memberCount < r.capacity) && (
+                  {role === "ta" && (
                     <Button
                       size="sm"
                       onClick={() =>

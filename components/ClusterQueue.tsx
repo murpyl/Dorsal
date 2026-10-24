@@ -288,7 +288,7 @@ function ClusterRooms({ rooms }: { rooms: { _id: string; title: string; memberCo
         <li key={r._id} className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
           <span className="font-medium text-foreground">{r.title}</span>
           <span className="tabular-nums">
-            <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
+            <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} students · {r.helperCount} helper
             {r.helperCount === 1 ? "" : "s"}
           </span>
           {r.memberCount >= r.capacity && (

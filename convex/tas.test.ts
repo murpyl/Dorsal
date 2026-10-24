@@ -67,17 +67,26 @@ describe("TA role", () => {
     expect(room.members.map((m) => [m.alias, m.role])).toEqual([["Student 1", "learner"], ["Maya", "ta"], ["Leo", "ta"]]);
     await t.mutation(api.messages.send, { roomId, token: TA2, body: "Let's trace fact(3)" });
     expect((await t.query(api.messages.listByRoom, { roomId, token: STUDENT }))!.map((m) => m.authorAlias)).toEqual(["Leo"]);
-    expect((await t.query(api.rooms.listBySession, { sessionId, token: STUDENT }))![0]).toMatchObject({ memberCount: 3, taCount: 2 });
+    expect((await t.query(api.rooms.listBySession, { sessionId, token: STUDENT }))![0]).toMatchObject({ memberCount: 1, taCount: 2 });
 
     await expect(t.mutation(api.signals.roomCheckIn, { roomId, token: TA1, level: "can_explain" })).rejects.toThrow(/TAs/);
     await expect(t.mutation(api.signals.upsert, { sessionId, token: TA1, conceptId: concepts[0]._id, level: "confused" })).rejects.toThrow(/TAs/);
     await expect(t.mutation(api.rooms.join, { roomId, token: TA1, role: "learner" })).rejects.toThrow(/TAs/);
 
-    expect((await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: TA1 }))![0]).toMatchObject({ memberCount: 3, isMember: true });
-    expect((await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: SECRET }))![0].isMember).toBe(false);
     await t.mutation(api.rooms.leave, { roomId, token: TA2 });
     await t.mutation(api.rooms.close, { roomId, token: TA1 });
     expect(await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: TA1 })).toEqual([]);
+  });
+
+  test("TAs enter full rooms and don't count toward capacity", async () => {
+    const { t, code, roomId } = await setup();
+    const students = [STUDENT, ...["b", "c", "d"].map((x) => `student-token-${x}-0123456789abcdef0123456789abcdef`)];
+    for (const token of students.slice(1)) await t.mutation(api.sessions.join, { code, token });
+    await t.mutation(api.rooms.joinAsTa, { roomId, instructorSecret: TA1 });
+    for (const token of students.slice(0, 3)) await t.mutation(api.rooms.join, { roomId, token, role: "learner" });
+    await expect(t.mutation(api.rooms.join, { roomId, token: students[3], role: "learner" })).rejects.toThrow(/full/);
+    await t.mutation(api.rooms.joinAsTa, { roomId, instructorSecret: TA2 });
+    expect((await t.query(api.rooms.get, { roomId, token: TA2 }))!.members).toHaveLength(5);
   });
 
   test("revoking one TA cuts off only that TA", async () => {

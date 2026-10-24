@@ -109,7 +109,7 @@ export function PeerRoom() {
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Help room · {room.conceptLabel} · <span className="tabular-nums">{room.members.length} / {room.capacity}</span>
+            Help room · {room.conceptLabel} · <span className="tabular-nums">{room.members.filter((m) => m.role !== "ta").length} / {room.capacity} students</span>
             {room.clusterTitle && <> · for cluster “{room.clusterTitle}”</>}
           </p>
           <p className="text-sm text-muted-foreground">{room.conceptDescription}</p>

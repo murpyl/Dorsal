@@ -72,7 +72,7 @@ const publicRoom = (
   clusterId: room.clusterId ?? null,
   clusterTitle,
   capacity: room.capacity,
-  memberCount: members.length,
+  memberCount: members.filter((m) => m.role !== "ta").length,
   helperCount: members.filter((m) => m.role === "helper").length,
   taCount: members.filter((m) => m.role === "ta").length,
 });
@@ -153,13 +153,10 @@ export const listBySession = query({
 export const listInstructor = query({
   args: { sessionId: v.id("sessions"), instructorSecret: v.string() },
   handler: async (ctx, { sessionId, instructorSecret }) => {
-    const staff = await getStaffSession(ctx, sessionId, instructorSecret);
-    if (!staff) return null;
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) return null;
     const rooms = await openRoomsWithCounts(ctx, sessionId);
-    return rooms.map(({ room, concept, members, clusterTitle }) => ({
-      ...publicRoom(room, concept, members, clusterTitle),
-      isMember: !!staff.ta && members.some((m) => m.participantId === staff.ta._id),
-    }));
+    return rooms.map(({ room, concept, members, clusterTitle }) => publicRoom(room, concept, members, clusterTitle));
   },
 });
 
@@ -218,7 +215,7 @@ export const join = mutation({
       throw new ConvexError("Opt in as a helper for this concept to join as a helper");
     if (await findMembership(ctx, roomId, participant._id)) throw new ConvexError("You are already in this room");
     const members = await listMembers(ctx, roomId);
-    if (members.length >= room.capacity) throw new ConvexError("Room is full");
+    if (members.filter((m) => m.role !== "ta").length >= room.capacity) throw new ConvexError("Room is full");
     await ctx.db.insert("roomMembers", { roomId, participantId: participant._id, role, joinedAt: Date.now() });
   },
 });
@@ -231,8 +228,6 @@ export const joinAsTa = mutation({
     const staff = await getStaffSession(ctx, room.sessionId, instructorSecret);
     if (!staff?.ta) throw new ConvexError("TA access required");
     if (await findMembership(ctx, roomId, staff.ta._id)) return;
-    const members = await listMembers(ctx, roomId);
-    if (members.length >= room.capacity) throw new ConvexError("Room is full");
     await ctx.db.insert("roomMembers", { roomId, participantId: staff.ta._id, role: "ta", joinedAt: Date.now() });
   },
 });
