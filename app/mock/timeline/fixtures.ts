@@ -235,6 +235,14 @@ export const questions: Question[] = [
     content: "Why does the stack get so deep for fib(30) when a loop is fine?",
   },
   {
+    _id: "q15",
+    conceptId: "base",
+    alias: "witty-seal",
+    createdAt: "10:51",
+    state: "pending",
+    content: "fact(0) returns 1 and then... where do the other numbers come from? It feels like the answer should just be 1.",
+  },
+  {
     _id: "q6",
     conceptId: "stack",
     alias: "sunny-newt",

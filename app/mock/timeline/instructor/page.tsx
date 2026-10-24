@@ -51,7 +51,7 @@ const MOCK_SUGGESTIONS: { questionIds: string[]; conceptIds: string[]; title: st
     confidence: 0.74,
   },
   {
-    questionIds: ["q1", "q10"],
+    questionIds: ["q1", "q15"],
     conceptIds: ["base"],
     title: "What the base case returns",
     summary: "Questions treat the base case as a stop signal and miss that its return value seeds every multiplication above it.",
