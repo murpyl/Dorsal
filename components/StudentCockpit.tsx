@@ -71,7 +71,7 @@ export function StudentCockpit() {
   const disabled = view.state !== "open";
 
   return (
-    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col gap-5 overflow-hidden p-4 sm:p-6">
+    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col gap-5 overflow-y-auto p-4 sm:p-6">
       <header className="enter shrink-0 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Brand />
@@ -128,7 +128,7 @@ export function StudentCockpit() {
           Waiting for the instructor&apos;s first prompt.
         </div>
       )}
-      <Tabs defaultValue="ask" className="flex min-h-0 flex-1 flex-col gap-3">
+      <Tabs defaultValue="ask" className="flex min-h-72 flex-1 flex-col gap-3">
         <TabsList className="w-full shrink-0">
           <TabsTrigger value="ask">Ask</TabsTrigger>
           <TabsTrigger value="class">Class Q&amp;A</TabsTrigger>
