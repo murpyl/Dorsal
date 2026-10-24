@@ -22,7 +22,16 @@ describe("seed.reset", () => {
 
     const questions = await t.run((ctx) => ctx.db.query("questions").collect());
     expect(questions).toHaveLength(10);
-    expect(questions.every((q) => q.state === "pending" && q.sessionId === sessionId)).toBe(true);
+    expect(questions.every((q) => q.sessionId === sessionId)).toBe(true);
+    expect(questions.filter((q) => q.state === "pending")).toHaveLength(7);
+    const clustered = questions.filter((q) => q.state === "clustered");
+    expect(clustered).toHaveLength(3);
+
+    const clusters = await t.run((ctx) => ctx.db.query("clusters").collect());
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0]).toMatchObject({ sessionId, title: "Tracing recursive return values", status: "published", source: "manual" });
+    expect([...clusters[0].questionIds].sort()).toEqual(clustered.map((q) => q._id).sort());
+    expect(await t.run((ctx) => ctx.db.query("aiRuns").collect())).toEqual([]);
 
     const view = (await t.query(api.sessions.getInstructorView, { sessionId, instructorSecret }))!;
     expect(view.code).toBe("DEMO01");
@@ -36,6 +45,29 @@ describe("seed.reset", () => {
 
     const signals = await t.run((ctx) => ctx.db.query("signals").collect());
     expect(signals.every((s) => s.sessionId === sessionId && s.phase === "pre")).toBe(true);
+
+    const returnValues = view.concepts.find((c) => c.label === "Return values")!._id;
+    const callStack = view.concepts.find((c) => c.label === "Call stack & frames")!._id;
+    expect(clusters[0].conceptIds).toEqual([returnValues, callStack]);
+    expect(clustered.every((q) => q.conceptId === returnValues)).toBe(true);
+    const list = (await t.query(api.clusters.listInstructor, { sessionId, instructorSecret }))!;
+    expect(list.suggested).toEqual([]);
+    expect(list.latestRun).toBeNull();
+    expect(list.published[0]).toMatchObject({ title: "Tracing recursive return values", conceptLabels: ["Return values", "Call stack & frames"] });
+    expect(list.published[0].questions.every((q) => q.isSimulated)).toBe(true);
+    expect((await t.query(api.questions.listInstructor, { sessionId, instructorSecret }))!).toHaveLength(10);
+    expect((await t.query(api.clusters.listForConcept, { sessionId, instructorSecret, conceptId: callStack }))!).toHaveLength(1);
+  });
+
+  test("the seeded fallback cluster is published to students with counts only", async () => {
+    const t = convexTest(schema, modules);
+    const { sessionId, code } = await t.mutation(internal.seed.reset, {});
+    const token = "student-token-a-0123456789abcdef0123456789abcdef";
+    await t.mutation(api.sessions.join, { code, token });
+    const published = (await t.query(api.clusters.listPublished, { sessionId, token }))!;
+    expect(published).toHaveLength(1);
+    expect(published[0]).toMatchObject({ title: "Tracing recursive return values", questionCount: 3, helperCount: 0 });
+    expect(JSON.stringify(published)).not.toContain("factorial(4)");
   });
 
   test("simulated participants cannot be impersonated, even with a long code", async () => {

@@ -11,11 +11,11 @@ Live classroom **confusion radar** (A) + **peer help** (B) + **concept knowledge
 |---|---|---|
 | 1 | Session create/join, 3-state confidence signals, live instructor radar | done |
 | 2 | React Flow concept graph coloured by aggregate confidence, instructor-set current topic | done |
-| 3 | Anonymous questions, moderation queue, Claude clustering with instructor review (`questions.*`, `clusters.*`, `claude.clusterQuestions`) | in progress |
-| 4 | Helper opt-in, peer rooms + chat, pre/post comparison (`participants.*`, `rooms.*`, `messages.*`, `signals.prePostByConcept`) | in progress |
-| 5 | Deterministic seed/reset, invariant tests, this README, demo script | done |
+| 3 | Anonymous questions, moderation queue, Claude clustering with instructor review (`questions.*`, `clusters.*`, `claude.clusterQuestions`) | done |
+| 4 | Helper opt-in, peer rooms + chat, pre/post comparison (`participants.*`, `rooms.*`, `messages.*`, `signals.prePostByConcept`) | done |
+| 5 | Deterministic seed/reset with a published fallback cluster, §8 scenario tests, this README, demo script | in progress (UI polish lands in parallel) |
 
-Functions marked *in progress* are specified in `docs/plans/phase-3-4-contract.md` and are being built on separate branches; everything below describes what is on `main`.
+Everything below describes what is on `main`; the Phase 3/4 function contract is in `docs/plans/phase-3-4-contract.md`.
 
 ## Architecture
 
@@ -29,7 +29,14 @@ Convex deployment  ──  schema + indexes · queries · mutations · scheduler
 convex/claude.ts  ("use node" action)  ──►  Anthropic API (ANTHROPIC_API_KEY, CLAUDE_MODEL)
 ```
 
-Convex is the system of record. All shared state (signals, questions, clusters, rooms, messages) lives in Convex tables and reaches every connected browser through reactive `useQuery` subscriptions — there is no polling, no custom websocket server and no second database. Mutations are transactional, which is what keeps "one signal per participant/concept/phase" and (Phase 4) room capacity correct under concurrent clients.
+### Why Convex is central (not a bolt-on)
+
+Convex is the system of record **and** the realtime layer **and** the AI orchestrator:
+
+- All shared state (signals, questions, clusters, rooms, messages, AI run log) lives in Convex tables with explicit indexes; there is no second database, cache or websocket server. Every view is a reactive `useQuery` subscription, so a student's tap changes the instructor's graph, the moderation queue, the published-cluster list and the room roster with no polling or manual refetch.
+- Mutations are transactional. "One signal per participant/concept/phase", "a question is claimed by at most one cluster", "a room never exceeds its capacity" and "ten messages per ten seconds" are each a read-check-write inside one mutation, so they stay correct under concurrent clients without locks or a job queue.
+- Privacy boundaries are enforced in the functions, not in the UI: the student query simply never reads other participants' rows or pending question text, and every protected function verifies the caller's credential against the stored hash.
+- Claude runs inside Convex too: a mutation records the `aiRuns` row and schedules the Node action (`ctx.scheduler.runAfter`), the action calls an internal query for its input and an internal mutation to store validated suggestions, and the instructor UI learns about the result through the same reactive query it was already subscribed to.
 
 ### Tables (`convex/schema.ts`, complete for all phases)
 
@@ -52,18 +59,47 @@ Convex is the system of record. All shared state (signals, questions, clusters, 
 | Landing | `/` → `app/page.tsx` | `sessions.create` (mutation) returns `{ sessionId, code }`; the browser generates the instructor secret | — |
 | Student cockpit | `/join/[code]` → `components/StudentCockpit.tsx`, `ConfidenceSelector` | `sessions.join` (idempotent per token) → `sessions.getStudentView` (query); `signals.upsert` (mutation) | participant token |
 | Instructor radar + graph | `/instructor/[sessionId]` → `components/RadarDashboard.tsx`, `ConceptGraph` | `sessions.getInstructorView` (one query feeds metrics, per-concept distributions, graph nodes/edges and the node detail panel); `sessions.setActiveConcept` | instructor secret |
-| Question composer, moderation queue, published clusters *(Phase 3, in progress)* | mounted in the two components above | `questions.submit` / `listInstructor` / `hide`, `clusters.requestSuggestions` / `listInstructor` / `listPublished` / `publish` / `discard` / `createManual` / `listForConcept` | per role |
-| Helper opt-in, rooms, chat, pre/post *(Phase 4, in progress)* | `/room/[roomId]` → `PeerRoom`, plus `HelperOptIn`, `RoomList`, `PrePostComparison` | `participants.setHelper` / `me`, `rooms.*`, `messages.send` / `listByRoom`, `sessions.setPhase` / `close`, `signals.prePostByConcept` | per role |
+| Question composer (*Send anonymously*) | student cockpit → `QuestionComposer` | `questions.submit` (mutation; 1–500 chars, 5 per participant per 60 s) | participant token |
+| Cluster queue: pending questions, *Suggest clusters (N pending)*, suggested clusters, *Group selected (N) into a cluster* | instructor dashboard → `ClusterQueue` | `questions.listInstructor` (every pending/clustered/hidden question with concept label, `isSimulated`, no participant IDs) + `clusters.listInstructor` (`suggested`, `published`, `latestRun`); mutations `questions.hide`, `clusters.requestSuggestions`, `clusters.publish`, `clusters.discard`, `clusters.createManual` | instructor secret |
+| Published clusters (students) | student cockpit → `PublishedClusters` | `clusters.listPublished` — title, summary, concept labels, `questionCount`, `helperCount`; never question text or participants | participant token |
+| Clusters on a graph node | instructor graph detail panel | `clusters.listForConcept` (published clusters touching that concept) | instructor secret |
+| Helper opt-in (*Volunteer as a peer helper*) | student cockpit → `HelperOptIn` | `participants.me` (query), `participants.setHelper` (mutation) | participant token |
+| Room list (*Open room*, *Join*, *Join as helper*, *Open a help room as a helper*) | student cockpit → `RoomList`; instructor → `RoomList` (instructor mode) | `rooms.listBySession` (student: member counts, `isMember`, `myRole`) / `rooms.listInstructor`; mutations `rooms.createForCluster` (instructor), `rooms.createAsHelper` (opted-in helper), `rooms.join`, `rooms.leave`, `rooms.close` | per role |
+| Peer room + chat (*I understand now* / *Still confused*) | `/room/[roomId]?code=<CODE>` → `PeerRoom` | `rooms.get` (members with aliases/roles, `null` for non-members), `messages.listByRoom` (`null` for non-members), `messages.send` (members only, 10 per 10 s), `signals.upsert` for the in-room check-in | participant token (the `?code=` query string tells the page which `localStorage` token to use) |
+| Pre/post comparison (*Pre (before help)* / *Post (after help)*) | instructor dashboard → `PrePostComparison` | `signals.prePostByConcept` (per concept: `pre` and `post` `{ counts, total }`); `sessions.setPhase` switches which phase new signals land in; `sessions.close` ends the session | instructor secret |
 
-`getStudentView` returns only the caller's own level per concept (no counts, no other participants). `getInstructorView` returns exact per-level counts and the denominator `N` for every concept; the UI flags `N < 5` as a low sample and `N = 0` as "no responses" (grey, never green).
+`getStudentView` returns only the caller's own level per concept (no counts, no other participants). `getInstructorView` returns exact per-level counts and the denominator `N` for every concept; the UI flags `N < 5` as a low sample and `N = 0` as "no responses" (grey, never green). Signals are stored per phase, so `pre` counts are untouched when the instructor switches to `post`; a student's "I understand now" in a room is just `signals.upsert` for the room's concept in the session's current phase.
 
-### Credentials
+### Credentials (disclosed hackathon compromise)
 
 There are no accounts. `sessions.create` is called with a random 72-character secret the browser generates and keeps in `localStorage` under `classpulse:instructor:<sessionId>`; only its SHA-256 is stored. Students do the same with a per-code token under `classpulse:student:<code>`; `sessions.join` hashes it and reuses the existing participant on refresh. Every protected query/mutation takes the credential as an argument and checks it in `convex/credentials.ts` (`getInstructorSession`, `requireParticipant`, `findParticipant`) — a wrong credential returns `null` or throws; nothing is trusted from client-side flags.
 
-### Where Claude runs (Phase 3)
+### Where Claude runs
 
-Claude is called **only** from `convex/claude.ts`, a Convex **Node.js action** (`"use node"`) scheduled in the background by the instructor's *Suggest clusters* button (`clusters.requestSuggestions` → `ctx.scheduler.runAfter(0, internal.claude.clusterQuestions, …)`). The deployment env vars are `ANTHROPIC_API_KEY` and `CLAUDE_MODEL` (`npx convex env set ANTHROPIC_API_KEY …`); they are never `NEXT_PUBLIC_` and the browser never talks to Anthropic. The action receives ≤ 40 pending question texts and the concept list — no aliases, participant IDs, chat or confidence records — forces one `save_clusters` tool call, validates the result with Zod (`lib/aiSchemas.ts`), drops unknown question/concept IDs and stores clusters as **suggestions** that the instructor edits, publishes or discards. Each call is logged to `aiRuns`. If the call fails, the run is marked `error` and the instructor groups questions manually with `clusters.createManual`; the rest of the app is unaffected.
+Claude is called **only** from `convex/claude.ts`, a Convex **Node.js action** (`"use node"`). The path, end to end:
+
+1. Instructor presses **Suggest clusters** → `clusters.requestSuggestions` (mutation) checks the secret, refuses if there are no pending questions or a run is already `running`, inserts an `aiRuns` row (`operation: "clusterQuestions"`, `model`, `status: "running"`) and schedules `internal.claude.clusterQuestions` with `ctx.scheduler.runAfter(0, …)`. The button is disabled while `latestRun.status === "running"`.
+2. The action reads its batch through `clusters.getClusterInput` (internal query): up to 40 pending questions as `{ id, content, conceptId }` plus the session's concepts `{ id, label, description }`.
+3. One Anthropic `messages.create` call with a single `save_clusters` tool and `tool_choice: { type: "tool", name: "save_clusters" }` — the model cannot answer in prose, only with the tool's JSON.
+4. `lib/aiSchemas.ts` → `sanitizeClusterSuggestions` parses the tool input with Zod (title/summary strings, `confidence` 0–1, 2–40 question IDs) and then checks it against the exact input batch: question IDs that were not sent or appear twice are dropped, concept IDs that are not in the session are dropped (falling back to the questions' own concepts), clusters left with fewer than two real questions are dropped. A malformed shape throws and the run is marked `error`.
+5. `clusters.saveSuggestions` (internal mutation) re-validates inside the transaction — it only claims questions that are still `pending` in this session — and stores each cluster with `status: "suggested"`, `source: "ai"`; the `aiRuns` row becomes `ok` with `latencyMs`.
+6. The instructor **publishes** (students now see the cluster through `clusters.listPublished`), **discards** (questions return to `pending`) or ignores the suggestion. Nothing the model produced is shown to students without this step.
+
+If anything fails (`clusters.markRunError`), the run shows `error` in the cluster queue with the message, the questions stay pending, and the instructor groups them by hand: select questions → *Group selected (N) into a cluster* → `clusters.createManual`, which publishes directly with `source: "manual"`. The seed also ships one such manual cluster so the demo has a published cluster even when the API is down.
+
+**Env vars.** `ANTHROPIC_API_KEY` and `CLAUDE_MODEL` are Convex deployment environment variables (`npx convex env set ANTHROPIC_API_KEY sk-…`, `npx convex env set CLAUDE_MODEL claude-…`); they are never `NEXT_PUBLIC_` and the browser never talks to Anthropic. The only browser-side variable is `NEXT_PUBLIC_CONVEX_URL` (written by `npx convex dev`). `CONVEX_DEPLOY_KEY` is used only by the CLI in CI/agent environments.
+
+**What is sent to Claude, and what is not.** Sent: the text of pending questions, their question IDs and concept IDs, and the concept labels/descriptions. Not sent: aliases, participant IDs or tokens, confidence signals, room chat, the session title/code, anything about the instructor, or any prior model output. `aiRuns` stores model name, status, latency and the error string — never the prompt or the questions.
+
+**Model limitations and mitigations** (Anthropic checklist, `docs/Build_Instructions.md` §7):
+
+| Risk | Mitigation |
+|---|---|
+| Merging unrelated questions into one cluster | Questions are shown verbatim inside the suggestion so the instructor can see what was grouped; discard returns them to the queue; manual grouping is always available. |
+| Fabricated or duplicated question/concept IDs | Dropped by `sanitizeClusterSuggestions` against the exact input batch, then again by `saveSuggestions`, which only claims pending questions of this session (tested in `convex/clusters.test.ts`). |
+| Over-confident titles/summaries | Stored as `suggested`, never auto-published; `confidence` is displayed, titles/summaries are length-capped, and the UI labels them as Claude suggestions pending review. |
+| Prose instead of structured output, or a malformed shape | Forced `tool_use` plus Zod; a parse failure marks the run `error` rather than storing anything. |
+| API outage, missing key, latency | The run is logged with its error, the button re-enables, and the manual path and the seeded fallback cluster keep the demo moving. |
 
 ## Run
 
@@ -78,10 +114,11 @@ Create a session on `/`; the instructor tab lands on `/instructor/<sessionId>` w
 ## Seed / reset the demo session
 
 ```bash
+npx convex dev --once                # push the current convex/ first if the deployment is shared with other branches
 npx convex run seed:reset            # or: npx convex run seed:reset '{"code":"ABC123"}'
 ```
 
-`seed.reset` is an `internalMutation` — it cannot be called from the browser. It deletes every row of the `DEMO01` session across all tables and recreates it with the 5 recursion concepts and 4 prerequisite edges, 24 participants flagged `isSimulated: true` (aliases `Sim 1…24`), a skewed `pre` distribution (*Call stack & frames* and *Return values* mostly confused, *Base case* mostly can-explain, *Tree recursion* half-answered) and 10 pending questions in three paraphrase groups (stack unwinding, return values, base case). It is idempotent: run it twice and there is still exactly one `DEMO01` session. It prints the instructor URL and a fresh secret; paste the printed `localStorage.setItem(...)` line into the instructor tab's console, reload, and the dashboard shows the seeded data. Students join at `/join/DEMO01`.
+`seed.reset` is an `internalMutation` — it cannot be called from the browser. It deletes every row of the `DEMO01` session across all tables (rooms, messages, clusters, aiRuns, questions, signals, participants, edges, concepts) and recreates it with the 5 recursion concepts and 4 prerequisite edges, 24 participants flagged `isSimulated: true` (aliases `Sim 1…24`), a skewed `pre` distribution (*Call stack & frames* and *Return values* mostly confused, *Base case* mostly can-explain, *Tree recursion* half-answered) and 10 questions in three paraphrase groups: the four stack-unwinding and three base-case questions are **pending** (for the live *Suggest clusters* moment) and the three return-value questions are already grouped into one **published** manual cluster, *Tracing recursive return values* (concepts *Return values* + *Call stack & frames*), so students see a published cluster even if Claude is unavailable. It is idempotent: run it twice and there is still exactly one `DEMO01` session with one cluster and seven pending questions. It prints the instructor URL and a fresh secret; paste the printed `localStorage.setItem(...)` line into the instructor tab's console, reload, and the dashboard shows the seeded data. Students join at `/join/DEMO01`.
 
 ## Tests
 
@@ -90,7 +127,17 @@ npm test              # vitest run, offline — mocks the Convex backend with co
 npm run test:watch
 ```
 
-`convex/*.test.ts` cover the invariants from `docs/Build_Instructions.md` §8: two confused → 2/2 and a change to partial → 1/2 with no double counting while the student view hides the breakdown (1); wrong tokens/secrets get `null` or an error and students never see another participant's signal (2); zero responses give `total 0` with no NaN (8); re-joining with the same token reuses the participant (10); plus `seed.reset` idempotency. Convex's bundler skips multi-dot files, so test files are never deployed.
+`convex/*.test.ts` cover the scenarios from `docs/Build_Instructions.md` §8 against the real functions:
+
+| File | Scenarios |
+|---|---|
+| `sessions.test.ts`, `signals.test.ts` | (1) two confused → 2/2, change to partial → 1/2 with no double counting while the student view hides the breakdown; (2) wrong tokens/secrets get `null`/error and students never see another participant's signal; (8) zero responses → `total 0`, no NaN; (10) re-joining with the same token reuses the participant; (9) `pre` and `post` stay separate after `sessions.setPhase`, and a room check-in lands in the current phase |
+| `questions.test.ts` | (3) a submitted question appears only in `questions.listInstructor` (without participant IDs); `clusters.listPublished` and `sessions.getStudentView` never contain pending question text; after `clusters.publish` students see the cluster with `questionCount` but no participant data; hidden questions are excluded; the 5-per-60 s rate limit (fake `Date`) |
+| `clusters.test.ts` | (4) `sanitizeClusterSuggestions` drops invented/duplicate question IDs and invalid concept IDs, rejects malformed shapes; `clusters.saveSuggestions` never stores IDs outside the session's pending questions; (7) `requestSuggestions` refuses with no pending questions, records an `aiRuns` row and refuses a concurrent run; after `markRunError`, `createManual` publishes a cluster students can see and a retry is allowed |
+| `rooms.test.ts` | (5) capacity and duplicate membership enforced in `rooms.join`, helper role needs opt-in, closed rooms reject joins; (6) non-members get `null` from `rooms.get`/`messages.listByRoom` and cannot send, members can send/read with aliases only; the 10-per-10 s message rate limit |
+| `seed.test.ts` | `seed.reset` is idempotent; 24 simulated participants; 7 pending + 3 clustered questions; exactly one published manual fallback cluster, visible to students with counts only |
+
+The tests never load `convex/claude.ts` (excluded in `convex/test.setup.ts`) and make no Anthropic calls; the AI error path is exercised through `clusters.markRunError`. Convex's bundler skips multi-dot files, so test files are never deployed.
 
 ```bash
 npm run lint && npx tsc --noEmit && npm run build
@@ -98,9 +145,10 @@ npm run lint && npx tsc --noEmit && npm run build
 
 ## Security and privacy limitations
 
-- **Hackathon credential compromise.** A single shared instructor secret per session, stored in `localStorage`, is the only instructor authentication; whoever holds it (or the device) is the instructor. Student tokens are likewise convenience credentials: they prove "same browser", not identity. A real deployment needs an auth provider with instructor/course roles and server-side identity checks.
+- **Hackathon credential compromise (disclosed).** A single shared instructor secret per session, stored in `localStorage`, is the only instructor authentication; whoever holds it (or the device) is the instructor. Student tokens are likewise `localStorage` convenience credentials: they prove "same browser", not identity, and a room link carries the session code (`/room/<id>?code=DEMO01`) only so the page can pick the right token. A real deployment needs an auth provider with instructor/course roles and server-side identity checks.
 - **Pseudonymous, not anonymous to operators.** Aliases hide identity from classmates and the instructor UI, but the deployment operator can see every row. We store no names, emails or grades and make no FERPA claims.
-- **Aggregates only, with sample sizes.** Students see their own levels and (Phase 3) published clusters only; per-level breakdowns are suppressed student-side when `N < 5`. Instructors see exact counts with a low-sample warning. Graph colours are labelled *Self-reported understanding* — a signal, not proof of learning.
+- **Aggregates only, with sample sizes.** Students see their own levels and published clusters (title, summary, counts) only; per-level breakdowns are suppressed student-side when `N < 5`. Instructors see exact counts with a low-sample warning. Graph colours are labelled *Self-reported understanding* — a signal, not proof of learning.
 - **Simulated data is labelled.** Seeded participants carry `isSimulated: true` and are labelled in the UI; the demo never presents fake numbers as real students.
-- **AI is advisory.** Claude only ever sees question text and concept IDs; its output is validated, stored as a suggestion and published by a human. Known model limitations — merging unrelated questions, over-confident titles, inventing relationships — are mitigated by ID validation, instructor review and the manual fallback, not eliminated.
-- **Not yet enforced:** rate limits on signals (questions and chat are rate-limited in Phases 3–4), question deletion by the author, data retention/expiry, and anything beyond one lecture per session.
+- **AI is advisory.** Claude only ever sees question text and concept IDs; its output is validated, stored as a suggestion and published by a human. Known model limitations — merging unrelated questions, over-confident titles, inventing relationships — are mitigated by ID validation, instructor review and the manual fallback (see the table above), not eliminated.
+- **Peer rooms are pseudonymous and unmoderated** beyond the instructor's ability to close a room; messages are kept until the session is reset.
+- **Not yet enforced:** rate limits on signals (questions and chat are rate-limited), question deletion by the author, data retention/expiry, and anything beyond one lecture per session.
