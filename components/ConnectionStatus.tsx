@@ -9,10 +9,10 @@ export function ConnectionStatus() {
   const state = useConvexConnectionState();
   if (state.isWebSocketConnected) return null;
   return (
-    <Alert role="status" aria-live="polite" className="enter border-amber-200 bg-amber-50 text-amber-900">
+    <Alert role="status" aria-live="polite" className="enter border-amber-300/30 bg-amber-300/10 text-amber-100">
       <WifiOff />
       <AlertTitle>{state.hasEverConnected ? "Disconnected — reconnecting…" : "Connecting to the live session…"}</AlertTitle>
-      <AlertDescription className="text-amber-800">
+      <AlertDescription className="text-amber-200">
         {state.hasEverConnected ? "Showing the last data received." : "This usually takes a moment."}
         {state.connectionRetries > 0 && ` (retry ${state.connectionRetries})`}
       </AlertDescription>

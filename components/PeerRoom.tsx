@@ -96,7 +96,7 @@ export function PeerRoom() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{room.title}</h1>
             {!open && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+              <Badge variant="secondary" className="bg-amber-300/15 text-amber-200">
                 closed
               </Badge>
             )}
@@ -120,11 +120,11 @@ export function PeerRoom() {
               {room.members.map((m, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-1.5">
                   <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
-                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-100 text-emerald-900")}>
+                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-300/15 text-emerald-200")}>
                     {m.role}
                   </Badge>
                   {m.isSimulated && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                    <Badge variant="secondary" className="bg-amber-300/15 text-amber-200">
                       simulated
                     </Badge>
                   )}
@@ -176,7 +176,7 @@ export function PeerRoom() {
                   >
                     <p className={cn("mb-0.5 text-[11px] font-medium", m.isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {m.isMine ? "You" : m.authorAlias}
-                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-900">simulated</span>}
+                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-300/15 px-1 text-amber-200">simulated</span>}
                     </p>
                     <p className="break-words whitespace-pre-wrap">{m.body}</p>
                   </div>
@@ -215,7 +215,7 @@ export function PeerRoom() {
         <CardContent className="space-y-3">
           <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
           {room.myLevel && (
-            <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+            <p className="enter flex items-center gap-1.5 text-sm text-emerald-300">
               <CheckCircle2 className="size-4" aria-hidden />
               Rating saved. You can change it any time.
             </p>
