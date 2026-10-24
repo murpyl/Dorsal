@@ -16,7 +16,10 @@ export function HelperOptIn({
   concepts: { _id: Id<"concepts">; label: string }[];
 }) {
   const me = useQuery(api.participants.me, { sessionId, token });
-  const setHelper = useMutation(api.participants.setHelper);
+  const setHelper = useMutation(api.participants.setHelper).withOptimisticUpdate((store, { conceptIds }) => {
+    const current = store.getQuery(api.participants.me, { sessionId, token });
+    if (current) store.setQuery(api.participants.me, { sessionId, token }, { ...current, helperConceptIds: conceptIds });
+  });
   const [error, setError] = useState<string | null>(null);
 
   if (!me) return null;
