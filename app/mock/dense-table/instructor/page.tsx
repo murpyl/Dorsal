@@ -58,13 +58,14 @@ export default function InstructorDenseTable() {
   const [copied, setCopied] = useState(false);
 
   const selected = conceptById(selectedId);
-  const responses = CONCEPTS.reduce((s, c) => s + c.total, 0);
-  const confused = CONCEPTS.reduce((s, c) => s + c.counts.confused, 0);
+  const tallyFor = (c: (typeof CONCEPTS)[number]) => (phase === "pre" ? c : c.post);
+  const responses = CONCEPTS.reduce((s, c) => s + tallyFor(c).total, 0);
+  const confused = CONCEPTS.reduce((s, c) => s + tallyFor(c).counts.confused, 0);
   const published = clusters.filter((c) => c.status === "published");
   const suggested = clusters.filter((c) => c.status === "suggested");
   const pending = QUESTIONS.filter((q) => q.state === "pending" && !hidden.includes(q._id));
   const openClusterCount = (id: string) => published.filter((c) => c.conceptIds.includes(id)).length;
-  const graphConcepts = CONCEPTS.map((c) => ({ ...c, openClusters: openClusterCount(c._id) }));
+  const graphConcepts = CONCEPTS.map((c) => ({ ...c, ...tallyFor(c), openClusters: openClusterCount(c._id) }));
 
   function log(text: string, kind: (typeof ACTIVITY)[number]["kind"]) {
     setActivity((a) => [{ at: SESSION.now, text, kind }, ...a].slice(0, 8));
@@ -88,6 +89,10 @@ export default function InstructorDenseTable() {
   }
   function discard(id: string) {
     setClusters((cs) => cs.filter((c) => c._id !== id));
+  }
+  function unpublish(id: string) {
+    setClusters((cs) => cs.map((c) => (c._id === id ? { ...c, status: "suggested", publishedAt: null } : c)));
+    log(`Unpublished “${clusters.find((c) => c._id === id)!.title}” — back to suggested`, "cluster");
   }
   function suggest() {
     if (aiState === "running" || pending.length === 0) return;
@@ -224,8 +229,13 @@ export default function InstructorDenseTable() {
                 size="icon-xs"
                 aria-label={copied ? "Link copied" : "Copy join link"}
                 onClick={() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
+                  navigator.clipboard
+                    .writeText(`${window.location.origin}/join/${SESSION.code}`)
+                    .then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1500);
+                    })
+                    .catch(() => log("Could not copy the join link — copy the code by hand", "signal"));
                 }}
               >
                 {copied ? <Check className="text-teal-700" aria-hidden /> : <Copy aria-hidden />}
@@ -271,7 +281,7 @@ export default function InstructorDenseTable() {
                   {CONCEPTS.map((c, i) => {
                     const isActive = c._id === activeId;
                     const isSelected = c._id === selectedId;
-                    const tally = phase === "pre" ? c : c.post;
+                    const tally = tallyFor(c);
                     const score = understandingScore(tally);
                     const low = tally.total < LOW_SAMPLE;
                     const n = openClusterCount(c._id);
@@ -408,6 +418,7 @@ export default function InstructorDenseTable() {
                             onCancel={() => setEditing(null)}
                             onPublish={() => publish(c._id)}
                             onDiscard={() => discard(c._id)}
+                            onUnpublish={() => unpublish(c._id)}
                             onOpenRoom={() => openRoom(c.conceptIds[0], c._id)}
                           />
                         );
@@ -634,6 +645,7 @@ function ClusterRows({
   onCancel,
   onPublish,
   onDiscard,
+  onUnpublish,
   onOpenRoom,
 }: {
   cluster: Cluster;
@@ -646,11 +658,9 @@ function ClusterRows({
   onCancel: () => void;
   onPublish: () => void;
   onDiscard: () => void;
+  onUnpublish: () => void;
   onOpenRoom: () => void;
 }) {
-  const [title, setTitle] = useState(c.title);
-  const [summary, setSummary] = useState(c.summary);
-  const [conceptIds, setConceptIds] = useState(c.conceptIds);
   const isSuggested = c.status === "suggested";
   return (
     <>
@@ -707,7 +717,7 @@ function ClusterRows({
                 <Button size="xs" variant="outline" onClick={onEdit}>
                   Edit
                 </Button>
-                <Button size="xs" variant="ghost" onClick={onDiscard}>
+                <Button size="xs" variant="ghost" onClick={onUnpublish}>
                   Unpublish
                 </Button>
               </>
@@ -720,47 +730,7 @@ function ClusterRows({
           <TableCell />
           <TableCell colSpan={7} className="whitespace-normal py-3">
             {editing ? (
-              <form
-                className="max-w-2xl space-y-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  onSave({ title, summary, conceptIds });
-                }}
-              >
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="font-medium" />
-                <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" />
-                <fieldset className="flex flex-wrap gap-1.5">
-                  <legend className="sr-only">Concepts</legend>
-                  {CONCEPTS.map((k) => {
-                    const on = conceptIds.includes(k._id);
-                    return (
-                      <label
-                        key={k._id}
-                        className={cn(
-                          "pressable flex cursor-pointer items-center rounded-full border px-2.5 py-1 text-xs font-medium has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                          on ? "border-foreground bg-foreground text-background" : "bg-background hover:bg-muted",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={on}
-                          onChange={(e) => setConceptIds(e.target.checked ? [...conceptIds, k._id] : conceptIds.filter((id) => id !== k._id))}
-                        />
-                        {k.label}
-                      </label>
-                    );
-                  })}
-                </fieldset>
-                <div className="flex gap-2">
-                  <Button size="sm" type="submit" disabled={!title.trim() || conceptIds.length === 0}>
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" type="button" onClick={onCancel}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
+              <ClusterEditForm cluster={c} onSave={onSave} onCancel={onCancel} />
             ) : (
               <div className="grid gap-4 md:grid-cols-[1fr_16rem]">
                 <div>
@@ -805,5 +775,62 @@ function ClusterRows({
         </TableRow>
       )}
     </>
+  );
+}
+
+function ClusterEditForm({
+  cluster: c,
+  onSave,
+  onCancel,
+}: {
+  cluster: Cluster;
+  onSave: (patch: { title: string; summary: string; conceptIds: string[] }) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(c.title);
+  const [summary, setSummary] = useState(c.summary);
+  const [conceptIds, setConceptIds] = useState(c.conceptIds);
+  return (
+    <form
+      className="max-w-2xl space-y-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave({ title, summary, conceptIds });
+      }}
+    >
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="font-medium" />
+      <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" />
+      <fieldset className="flex flex-wrap gap-1.5">
+        <legend className="sr-only">Concepts</legend>
+        {CONCEPTS.map((k) => {
+          const on = conceptIds.includes(k._id);
+          return (
+            <label
+              key={k._id}
+              className={cn(
+                "pressable flex cursor-pointer items-center rounded-full border px-2.5 py-1 text-xs font-medium has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                on ? "border-foreground bg-foreground text-background" : "bg-background hover:bg-muted",
+              )}
+            >
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={on}
+                onChange={(e) => setConceptIds(e.target.checked ? [...conceptIds, k._id] : conceptIds.filter((id) => id !== k._id))}
+              />
+              {k.label}
+            </label>
+          );
+        })}
+      </fieldset>
+      <div className="flex gap-2">
+        <Button size="sm" type="submit" disabled={!title.trim() || conceptIds.length === 0}>
+          Save
+        </Button>
+        <Button size="sm" variant="ghost" type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
