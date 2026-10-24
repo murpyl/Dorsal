@@ -273,7 +273,7 @@ function PushPromptForm({
             Students now see: <span className="font-medium text-indigo-900">{activePrompt}</span>
           </>
         ) : (
-          "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one."
+          "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one. Ratings are per concept, so a new question on the same concept keeps its existing answers."
         )}
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}

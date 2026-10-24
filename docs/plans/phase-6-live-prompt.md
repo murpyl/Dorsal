@@ -16,7 +16,7 @@ Request: the student page shows **one** card — the instructor's current concep
 - "Prompt N of 5" uses the concept's order in the session's concept list, not the position in `activeHistory`, so the number is stable when the instructor goes back to a concept.
 - Covered concepts are listed in the order they first became current; the current one is excluded from that list.
 - Re-selecting the current concept is a no-op for `activeHistory` and for the "New prompt" cue.
-- The Lecture Listener (session G) was cancelled; the manual *Push prompt* form replaces it. Pushing the current concept again with a new question only changes the question (history unchanged) and still triggers the student "New prompt" cue.
+- The Lecture Listener (session G) was cancelled; the manual *Push prompt* form replaces it. Pushing the current concept again with a new question only changes the question (history unchanged) and still triggers the student "New prompt" cue. Ratings stay per concept (one signal per participant and concept — no prompt revision on signals, which would be another schema change), so Participation and the students' selected levels carry over when only the question changes; the Push prompt form says so.
 - `answeredCount` counts `pre` signals only, like the rest of the dashboard; simulated participants count toward both sides of the ratio and are labelled.
 
 ## Acceptance
