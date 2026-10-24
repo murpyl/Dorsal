@@ -41,15 +41,16 @@ export function StudentCockpit() {
   // "New prompt" cue: shown for a few seconds after the prompt changes while the page is open.
   const previousPrompt = useRef<string | null | undefined>(undefined);
   const [cueFor, setCueFor] = useState<string | null>(null);
+  const loaded = view !== undefined;
   useEffect(() => {
-    if (!view) return;
+    if (!loaded) return;
     const changed = previousPrompt.current !== undefined && previousPrompt.current !== promptKey;
     previousPrompt.current = promptKey;
     if (!changed || !promptKey) return;
     setCueFor(promptKey);
     const timer = setTimeout(() => setCueFor(null), NEW_PROMPT_CUE_MS);
     return () => clearTimeout(timer);
-  }, [view, promptKey]);
+  }, [loaded, promptKey]);
 
   if (error)
     return (
