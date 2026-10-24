@@ -66,7 +66,7 @@ export function StudentCockpit() {
           </p>
         </div>
         {view.state === "closed" && (
-          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+          <Badge variant="secondary" className="bg-amber-400/15 text-amber-200">
             This session is closed
           </Badge>
         )}

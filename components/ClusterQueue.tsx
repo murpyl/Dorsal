@@ -209,7 +209,7 @@ export function ClusterQueue({
                       <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="secondary">{q.conceptLabel}</Badge>
                         <span className="tabular-nums">{time(q.createdAt)}</span>
-                        {q.state === "clustered" && <span className="text-emerald-700">in a cluster</span>}
+                        {q.state === "clustered" && <span className="text-emerald-300">in a cluster</span>}
                         {q.isSimulated && <Badge variant="outline">simulated</Badge>}
                       </p>
                     </div>
@@ -233,7 +233,7 @@ function AiStatus({ run }: { run: Run | null }) {
     return <p className="text-sm text-foreground">Claude is grouping pending questions… (started {time(run.createdAt)})</p>;
   if (run.status === "ok")
     return (
-      <p className="text-sm text-emerald-700">
+      <p className="text-sm text-emerald-300">
         AI suggestions ready · {run.model} · {run.latencyMs ?? "?"} ms · {time(run.createdAt)}
       </p>
     );
@@ -292,7 +292,7 @@ function ClusterRooms({ rooms }: { rooms: { _id: string; title: string; memberCo
             {r.helperCount === 1 ? "" : "s"}
           </span>
           {r.memberCount >= r.capacity && (
-            <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+            <Badge variant="secondary" className="bg-amber-400/15 text-amber-200">
               full
             </Badge>
           )}

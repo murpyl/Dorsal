@@ -111,7 +111,7 @@ export function PublishedClusters({
                       size="sm"
                       disabled={busy}
                       onClick={() => openRoom(c._id, helperConceptId)}
-                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      className="border-emerald-400 bg-emerald-400 text-emerald-950 hover:bg-emerald-300"
                     >
                       Open a room as helper ({concepts.find((k) => k._id === helperConceptId)?.label ?? "this topic"})
                     </Button>
