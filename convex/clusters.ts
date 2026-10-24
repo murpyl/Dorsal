@@ -3,9 +3,9 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { getInstructorSession, requireParticipant } from "./credentials";
+import { MIN_CLUSTER_QUESTIONS, RUN_STALE_MS } from "../lib/aiSchemas";
 
 const MAX_INPUT_QUESTIONS = 40;
-const RUN_STALE_MS = 60_000;
 
 async function requireInstructor(ctx: QueryCtx, sessionId: Id<"sessions">, instructorSecret: string) {
   const session = await getInstructorSession(ctx, sessionId, instructorSecret);
@@ -35,6 +35,16 @@ async function clustersByStatus(ctx: QueryCtx, sessionId: Id<"sessions">, status
 async function clusterQuestions(ctx: QueryCtx, cluster: Doc<"clusters">) {
   const docs = await Promise.all(cluster.questionIds.map((id) => ctx.db.get(id)));
   return docs.filter((q): q is Doc<"questions"> => q !== null && q.state !== "hidden");
+}
+
+/** Instructor-facing projection of a cluster's questions: text + simulated marker, no participant IDs. */
+async function clusterQuestionViews(ctx: QueryCtx, cluster: Doc<"clusters">) {
+  return await Promise.all(
+    (await clusterQuestions(ctx, cluster)).map(async (q) => {
+      const participant = await ctx.db.get(q.participantId);
+      return { _id: q._id, content: q.content, isSimulated: participant?.isSimulated ?? false };
+    }),
+  );
 }
 
 async function validateConceptIds(ctx: QueryCtx, sessionId: Id<"sessions">, conceptIds: Id<"concepts">[]) {
@@ -132,7 +142,10 @@ export const saveSuggestions = internalMutation({
     let saved = 0;
     for (const cluster of clusters) {
       const questionIds = await claimPendingQuestions(ctx, sessionId, cluster.questionIds);
-      if (questionIds.length === 0) continue;
+      if (questionIds.length < MIN_CLUSTER_QUESTIONS) {
+        for (const id of questionIds) await ctx.db.patch(id, { state: "pending" });
+        continue;
+      }
       await ctx.db.insert("clusters", {
         sessionId,
         title: cluster.title,
@@ -173,7 +186,7 @@ export const listInstructor = query({
       Promise.all(
         clusters.map(async (c) => ({
           ...withLabels(c, labels),
-          questions: (await clusterQuestions(ctx, c)).map((q) => ({ _id: q._id, content: q.content })),
+          questions: await clusterQuestionViews(ctx, c),
         })),
       );
     return {
@@ -223,7 +236,7 @@ export const listForConcept = query({
     return await Promise.all(
       published.map(async (c) => ({
         ...withLabels(c, labels),
-        questions: (await clusterQuestions(ctx, c)).map((q) => ({ _id: q._id, content: q.content })),
+        questions: await clusterQuestionViews(ctx, c),
       })),
     );
   },

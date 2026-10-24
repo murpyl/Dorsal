@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { RUN_STALE_MS } from "@/lib/aiSchemas";
 import { errorMessage } from "@/lib/errors";
 
 type Concept = { _id: Id<"concepts">; label: string };
@@ -16,7 +17,7 @@ type Cluster = {
   status: "suggested" | "published" | "discarded";
   source: "ai" | "manual";
   confidence: number | null;
-  questions: { _id: Id<"questions">; content: string }[];
+  questions: { _id: Id<"questions">; content: string; isSimulated: boolean }[];
 };
 type Run = { status: "running" | "ok" | "error"; model: string; latencyMs: number | null; error: string | null; createdAt: number };
 
@@ -46,17 +47,28 @@ export function ClusterQueue({
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Id<"questions">[]>([]);
   const [grouping, setGrouping] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, []);
 
   if (data === undefined || questions === undefined) return <p className="text-sm text-zinc-500">Loading questions…</p>;
   if (data === null || questions === null) return null;
 
   const pending = questions.filter((q) => q.state === "pending");
-  const running = data.latestRun?.status === "running";
+  const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;
   const selectedQuestions = pending.filter((q) => selected.includes(q._id));
 
-  const run = (fn: () => Promise<unknown>) => {
+  const run = (fn: () => Promise<unknown>): Promise<boolean> => {
     setError(null);
-    return fn().catch((err) => setError(errorMessage(err)));
+    return fn().then(
+      () => true,
+      (err) => {
+        setError(errorMessage(err));
+        return false;
+      },
+    );
   };
   const toggle = (id: Id<"questions">) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -140,7 +152,8 @@ export function ClusterQueue({
             questions={selectedQuestions}
             onCancel={() => setGrouping(false)}
             onCreate={(fields) =>
-              run(() => createManual({ ...creds, ...fields, questionIds: selectedQuestions.map((q) => q._id) })).then(() => {
+              run(() => createManual({ ...creds, ...fields, questionIds: selectedQuestions.map((q) => q._id) })).then((ok) => {
+                if (!ok) return;
                 setSelected([]);
                 setGrouping(false);
               })
@@ -233,7 +246,7 @@ function ClusterCard({
 }: {
   cluster: Cluster;
   concepts: Concept[];
-  onSave: (patch: { title: string; summary: string; conceptIds: Id<"concepts">[] }) => Promise<unknown>;
+  onSave: (patch: { title: string; summary: string; conceptIds: Id<"concepts">[] }) => Promise<boolean>;
   actions: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
@@ -256,7 +269,7 @@ function ClusterCard({
           <textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" className="w-full rounded-md border border-zinc-300 px-2 py-1" />
           <ConceptPicker concepts={concepts} value={conceptIds} onChange={setConceptIds} />
           <div className="flex gap-2">
-            <button onClick={() => onSave({ title, summary, conceptIds }).then(() => setEditing(false))} disabled={!title.trim() || conceptIds.length === 0} className={primary}>
+            <button onClick={() => onSave({ title, summary, conceptIds }).then((ok) => ok && setEditing(false))} disabled={!title.trim() || conceptIds.length === 0} className={primary}>
               Save
             </button>
             <button onClick={() => setEditing(false)} className={secondary}>
@@ -292,7 +305,10 @@ function ClusterCard({
         </summary>
         <ul className="mt-1 list-disc space-y-1 pl-5 text-zinc-700">
           {cluster.questions.map((q) => (
-            <li key={q._id}>{q.content}</li>
+            <li key={q._id}>
+              {q.content}
+              {q.isSimulated && <span className="ml-2 rounded bg-zinc-100 px-1 text-xs text-zinc-500">simulated</span>}
+            </li>
           ))}
         </ul>
       </details>
@@ -365,7 +381,10 @@ export function ConceptClusters({
               {c.summary && <p className="text-zinc-600">{c.summary}</p>}
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-zinc-700">
                 {c.questions.map((q) => (
-                  <li key={q._id}>{q.content}</li>
+                  <li key={q._id}>
+                    {q.content}
+                    {q.isSimulated && <span className="ml-2 rounded bg-zinc-100 px-1 text-xs text-zinc-500">simulated</span>}
+                  </li>
                 ))}
               </ul>
             </li>

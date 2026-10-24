@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 const TITLE_MAX = 120;
+/** A `running` aiRuns row older than this is treated as dead (server allows a retry, UI re-enables the button). */
+export const RUN_STALE_MS = 60_000;
+/** A misconception cluster needs at least two distinct student questions. */
+export const MIN_CLUSTER_QUESTIONS = 2;
 const SUMMARY_MAX = 500;
 
 /** The single tool Claude is forced to call. `input_schema` is the structured-output contract. */
@@ -71,7 +75,7 @@ export function sanitizeClusterSuggestions(raw: unknown, input: ClusterInput) {
       usedQuestions.add(id);
       questionIds.push(id);
     }
-    if (questionIds.length === 0) continue;
+    if (questionIds.length < MIN_CLUSTER_QUESTIONS) continue;
 
     let conceptIds = [...new Set(cluster.conceptIds)].filter((id) => validConcepts.has(id));
     droppedIds += cluster.conceptIds.length - conceptIds.length;
