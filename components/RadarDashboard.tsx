@@ -55,10 +55,15 @@ export function RadarDashboard() {
         </div>
       </header>
 
-      <section className="grid grid-cols-3 gap-4">
-        <Metric label="Participants" value={view.participantCount} />
-        <Metric label="Responses" value={responses} />
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="Session metrics">
+        <Metric
+          label="Participants"
+          value={view.participantCount}
+          detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
+        />
+        <Metric label="Responses" value={responses} detail={`this phase`} />
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
+        <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
 
       <section className="grid gap-4 md:grid-cols-[1fr_18rem]">

@@ -7,10 +7,10 @@ import { useMemo } from "react";
 export const LOW_SAMPLE = 5;
 
 type Counts = { confused: number; partial: number; can_explain: number };
-export type GraphConcept = { _id: string; label: string; x: number; y: number; counts: Counts; total: number };
+export type GraphConcept = { _id: string; label: string; x: number; y: number; counts: Counts; total: number; openClusters: number };
 export type GraphEdge = { _id: string; fromId: string; toId: string };
 
-type ConceptNodeData = { label: string; total: number; score: number | null; active: boolean; selected: boolean };
+type ConceptNodeData = { label: string; total: number; score: number | null; active: boolean; selected: boolean; openClusters: number };
 type ConceptNode = Node<ConceptNodeData, "concept">;
 
 export function understandingScore(c: { counts: Counts; total: number }) {
@@ -18,16 +18,24 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 }
 
 function ConceptNodeView({ data }: NodeProps<ConceptNode>) {
-  const { label, total, score, active, selected } = data;
+  const { label, total, score, active, selected, openClusters } = data;
   const fill = score === null ? "#e4e4e7" : `hsl(${Math.round(score * 130)} 75% 60%)`;
   const low = total < LOW_SAMPLE;
   return (
     <div
-      className={`w-48 rounded-xl px-3 py-2 text-center text-zinc-900 shadow-sm ${low ? "border-2 border-dashed border-zinc-500" : "border-2 border-zinc-700"} ${active ? "ring-4 ring-indigo-400" : ""} ${selected ? "outline-2 outline-offset-2 outline-zinc-900" : ""}`}
+      className={`relative w-48 rounded-xl px-3 py-2 text-center text-zinc-900 shadow-sm ${low ? "border-2 border-dashed border-zinc-500" : "border-2 border-zinc-700"} ${active ? "ring-4 ring-indigo-400" : ""} ${selected ? "outline-2 outline-offset-2 outline-zinc-900" : ""}`}
       style={{ background: fill }}
       data-testid="concept-node"
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
+      {openClusters > 0 && (
+        <span
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow"
+          title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
+        >
+          {openClusters} cluster{openClusters === 1 ? "" : "s"}
+        </span>
+      )}
       <p className="font-medium">{label}</p>
       <p className="text-xs">
         N = {total}
@@ -66,6 +74,7 @@ export function ConceptGraph({
           score: understandingScore(c),
           active: c._id === activeConceptId,
           selected: c._id === selectedId,
+          openClusters: c.openClusters,
         },
       })),
     [concepts, activeConceptId, selectedId],
@@ -100,6 +109,12 @@ export function ConceptGraph({
           <span className="inline-block h-3 w-3 rounded border border-zinc-500 bg-zinc-200" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" aria-hidden>
+            n clusters
+          </span>
+          published question clusters on this concept
+        </span>
         <span>Student confidence, not measured mastery</span>
       </figcaption>
       <div className="h-80">
