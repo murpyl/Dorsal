@@ -59,7 +59,7 @@ export default function ControlRoomStudent() {
     announce(`New from your instructor: “${k.title}”`, "#asking");
   }
   function joinRoom(id: string) {
-    setRooms((rs) => rs.map((r) => (r._id === id && !r.members.some((m) => m.isMe) ? { ...r, members: [...r.members, { alias: SESSION.alias, role: "learner", isMe: true }] } : r)));
+    setRooms((rs) => rs.map((r) => (r._id === id && !r.members.some((m) => m.isMe) ? { ...r, members: [...r.members, { alias: SESSION.alias, role: helping.includes(r.conceptId) ? "helper" : "learner", isMe: true }] } : r)));
   }
 
   useEffect(() => {
@@ -330,7 +330,7 @@ function RoomRow({ room, onJoin, asHelper, showConcept }: { room: Room; onJoin: 
         </span>
       </span>
       {isMember ? (
-        <Button size="sm" nativeButton={false} render={<Link href="/mock/control-room/room" />}>
+        <Button size="sm" nativeButton={false} render={<Link href={`/mock/control-room/room?room=${room._id}`} />}>
           Open ({asHelper ? "helper" : "learner"})
           <ArrowRight data-icon="inline-end" aria-hidden />
         </Button>

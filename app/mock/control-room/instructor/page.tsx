@@ -50,12 +50,14 @@ import {
   type Concept,
   type Question,
   type Room,
+  type Counts,
 } from "../fixtures";
 
 type Order = "lecture" | "confused";
 type AiRun = { status: "idle" | "running" | "ok" };
 
 const confusedShare = (c: Concept) => (c.total === 0 ? 0 : c.counts.confused / c.total);
+const sumCounts = (c: Counts) => c.confused + c.partial + c.can_explain;
 
 export default function ControlRoomInstructor() {
   const [activeId, setActiveId] = useState(SESSION.activeConceptId);
@@ -68,6 +70,7 @@ export default function ControlRoomInstructor() {
   const [rooms, setRooms] = useState<Room[]>(ROOMS);
   const [queueOpen, setQueueOpen] = useState(false);
   const [run, setRun] = useState<AiRun>({ status: "ok" });
+  const [closed, setClosed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -77,10 +80,17 @@ export default function ControlRoomInstructor() {
     noticeTimer.current = setTimeout(() => setNotice(null), 4500);
   }, []);
 
+  // `counts` always holds the active phase so the rail, graph, inspector and totals agree; `pre`/`post` feed the comparison.
   const concepts = useMemo(
-    () => CONCEPTS.map((c) => ({ ...c, openClusters: clusters.filter((k) => k.status === "published" && k.conceptIds.includes(c._id)).length })),
-    [clusters],
+    () =>
+      CONCEPTS.map((c) => {
+        const counts = phase === "post" ? c.post : c.counts;
+        return { ...c, pre: c.counts, counts, total: sumCounts(counts), openClusters: clusters.filter((k) => k.status === "published" && k.conceptIds.includes(c._id)).length };
+      }),
+    [clusters, phase],
   );
+  const clusteredIds = useMemo(() => new Set(clusters.flatMap((k) => k.questionIds)), [clusters]);
+  const questionsView = useMemo(() => questions.map((q) => ({ ...q, state: clusteredIds.has(q._id) ? ("clustered" as const) : ("pending" as const) })), [questions, clusteredIds]);
   const ordered = useMemo(
     () => (order === "lecture" ? concepts : [...concepts].sort((a, b) => confusedShare(b) - confusedShare(a))),
     [concepts, order],
@@ -88,7 +98,7 @@ export default function ControlRoomInstructor() {
   const selected = concepts.find((c) => c._id === selectedId) ?? concepts[0];
   const responses = concepts.reduce((s, c) => s + c.total, 0);
   const confused = concepts.reduce((s, c) => s + c.counts.confused, 0);
-  const pending = questions.filter((q) => q.state === "pending");
+  const pending = questionsView.filter((q) => q.state === "pending");
   const suggested = clusters.filter((k) => k.status === "suggested");
   const published = clusters.filter((k) => k.status === "published");
 
@@ -116,12 +126,14 @@ export default function ControlRoomInstructor() {
   function discard(id: string) {
     const k = clusters.find((c) => c._id === id);
     setClusters((ks) => ks.filter((c) => c._id !== id));
-    setQuestions((qs) => qs.map((q) => (k?.questionIds.includes(q._id) ? { ...q, state: "pending" } : q)));
+    if (k) announce(`Discarded “${k.title}”. Its questions are pending again.`);
   }
   function updateCluster(id: string, patch: Partial<Cluster>) {
     setClusters((ks) => ks.map((c) => (c._id === id ? { ...c, ...patch } : c)));
   }
-  function groupManually(ids: string[]) {
+  function groupManually(wanted: string[]) {
+    const ids = wanted.filter((id) => pending.some((q) => q._id === id));
+    if (ids.length === 0) return;
     const first = questions.find((q) => q._id === ids[0]);
     const conceptIds = [...new Set(questions.filter((q) => ids.includes(q._id)).map((q) => q.conceptId))];
     setClusters((ks) => [
@@ -138,7 +150,6 @@ export default function ControlRoomInstructor() {
         helperCount: 0,
       },
     ]);
-    setQuestions((qs) => qs.map((q) => (ids.includes(q._id) ? { ...q, state: "clustered" } : q)));
   }
   function suggest() {
     setRun({ status: "running" });
@@ -146,6 +157,11 @@ export default function ControlRoomInstructor() {
       setRun({ status: "ok" });
       announce("Claude finished grouping. Review the suggestions before publishing.");
     }, 1800);
+  }
+  function closeSession() {
+    setClosed(true);
+    setQueueOpen(false);
+    announce("Session closed. Students can no longer send signals or chat; the summary stays visible.");
   }
   function switchPhase(next: Phase) {
     setPhase(next);
@@ -168,9 +184,11 @@ export default function ControlRoomInstructor() {
         onPresenting={() => setPresenting((p) => !p)}
         metrics={{ participants: SESSION.participantCount, simulated: SESSION.simulatedCount, responses, confused, published: published.length, rooms: rooms.length }}
         notice={notice}
+        closed={closed}
+        onClose={closeSession}
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)_22rem] border-t">
+      <div className={cn("grid min-h-0 flex-1 grid-cols-[18rem_minmax(0,1fr)_22rem] border-t", closed && "opacity-60")} inert={closed}>
         <ConceptRail
           concepts={ordered}
           activeId={activeId}
@@ -210,7 +228,7 @@ export default function ControlRoomInstructor() {
             onSuggest={suggest}
           >
             <QueueBody
-              questions={questions}
+              questions={questionsView}
               suggested={suggested}
               published={published}
               rooms={rooms}
@@ -237,11 +255,15 @@ function TopBar({
   onPresenting,
   metrics,
   notice,
+  closed,
+  onClose,
 }: {
   phase: Phase;
   onPhase: (p: Phase) => void;
   presenting: boolean;
   onPresenting: () => void;
+  closed: boolean;
+  onClose: () => void;
   metrics: { participants: number; simulated: number; responses: number; confused: number; published: number; rooms: number };
   notice: string | null;
 }) {
@@ -319,14 +341,24 @@ function TopBar({
           size="icon-sm"
           aria-label={copied ? "Link copied" : "Copy join link"}
           onClick={() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
+            navigator.clipboard
+              .writeText(`${window.location.origin}/join/${SESSION.code}`)
+              .then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              })
+              .catch(() => setCopied(false));
           }}
         >
           {copied ? <Check className="text-emerald-600" aria-hidden /> : <Copy aria-hidden />}
         </Button>
       </div>
 
+      {closed ? (
+        <Badge variant="secondary" className="bg-red-100 text-red-900">
+          Session closed
+        </Badge>
+      ) : (
       <AlertDialog>
         <AlertDialogTrigger render={<Button variant="destructive" size="sm" />}>Close session</AlertDialogTrigger>
         <AlertDialogContent>
@@ -336,10 +368,13 @@ function TopBar({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep it open</AlertDialogCancel>
-            <AlertDialogAction variant="destructive">Close session</AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={onClose}>
+              Close session
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      )}
     </header>
   );
 }
@@ -491,7 +526,7 @@ function Inspector({
   onCloseRoom,
   onReview,
 }: {
-  concept: Concept;
+  concept: Concept & { pre: Counts };
   isActive: boolean;
   phase: Phase;
   clusters: Cluster[];
@@ -563,8 +598,8 @@ function Inspector({
           <h3 id="insp-prepost" className="text-sm font-semibold">
             Before vs after help
           </h3>
-          <PhaseRow label="pre" tally={concept.counts} />
-          <PhaseRow label="post" tally={{ ...concept.post, total: concept.post.confused + concept.post.partial + concept.post.can_explain }} />
+          <PhaseRow label="pre" tally={{ ...concept.pre, total: sumCounts(concept.pre) }} />
+          <PhaseRow label="post" tally={{ ...concept.post, total: sumCounts(concept.post) }} />
           <p className="text-xs text-muted-foreground">Separate response sets. A shift is what students say, not verified learning.</p>
         </section>
 
@@ -883,8 +918,9 @@ function QueueBody({
   onUpdate: (id: string, patch: Partial<Cluster>) => void;
   onOpenRoom: (k: Cluster) => void;
 }) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const [picked, setPicked] = useState<string[]>([]);
+  const selected = picked.filter((id) => questions.some((q) => q._id === id && q.state === "pending"));
+  const toggle = (id: string) => setPicked((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] divide-x">
       <section className="space-y-3 p-4" aria-labelledby="queue-heading">
@@ -901,7 +937,7 @@ function QueueBody({
             disabled={selected.length === 0}
             onClick={() => {
               onGroup(selected);
-              setSelected([]);
+              setPicked([]);
             }}
           >
             Group selected ({selected.length})

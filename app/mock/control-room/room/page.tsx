@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Suspense, type FormEvent, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, SendHorizonal } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +19,23 @@ const CHECK_INS: { level: Level; label: string; className: string }[] = [
 ];
 
 export default function ControlRoomPeerRoom() {
-  const room = ROOMS[0];
+  return (
+    <Suspense fallback={null}>
+      <PeerRoomView />
+    </Suspense>
+  );
+}
+
+function PeerRoomView() {
+  const roomId = useSearchParams().get("room");
+  const fixture = ROOMS.find((r) => r._id === roomId) ?? ROOMS[0];
+  const room = fixture.members.some((m) => m.isMe)
+    ? fixture
+    : { ...fixture, members: [...fixture.members, { alias: SESSION.alias, role: "learner" as const, isMe: true }] };
   const concept = conceptById(room.conceptId);
   const cluster = CLUSTERS.find((k) => k._id === room.clusterId);
   const me = room.members.find((m) => m.isMe)!;
-  const [messages, setMessages] = useState<Message[]>(MESSAGES);
+  const [messages, setMessages] = useState<Message[]>(() => MESSAGES.filter((m) => m.roomId === room._id));
   const [draft, setDraft] = useState("");
   const [checkedIn, setCheckedIn] = useState<Level | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -36,7 +49,7 @@ export default function ControlRoomPeerRoom() {
     e.preventDefault();
     const body = draft.trim();
     if (!body) return;
-    setMessages((ms) => [...ms, { _id: `m${Date.now()}`, authorAlias: me.alias, body, isMine: true, time: "now" }]);
+    setMessages((ms) => [...ms, { _id: `m${Date.now()}`, roomId: room._id, authorAlias: me.alias, body, isMine: true, time: "now" }]);
     setDraft("");
   }
 

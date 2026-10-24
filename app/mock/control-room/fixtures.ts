@@ -52,7 +52,7 @@ export type Room = {
   members: { alias: string; role: "helper" | "learner"; isMe?: boolean; isSimulated?: boolean }[];
 };
 
-export type Message = { _id: string; authorAlias: string; body: string; isMine: boolean; time: string };
+export type Message = { _id: string; roomId: string; authorAlias: string; body: string; isMine: boolean; time: string };
 
 const tally = (confused: number, partial: number, can_explain: number): Counts => ({ confused, partial, can_explain });
 const sum = (c: Counts) => c.confused + c.partial + c.can_explain;
@@ -154,9 +154,9 @@ export const QUESTIONS: Question[] = [
   { _id: "q3", conceptId: "c_call_stack", content: "Does each frame have its own copy of n, or do they all share one n?", state: "clustered", minutesAgo: 12, isSimulated: true },
   { _id: "q4", conceptId: "c_tree_recursion", content: "In fib(5), how many times does fib(2) actually get called? The tree in the slides lost me.", state: "clustered", minutesAgo: 9, isSimulated: true },
   { _id: "q5", conceptId: "c_tree_recursion", content: "Is tree recursion just recursion with an if/else, or is it a different thing?", state: "clustered", minutesAgo: 8, isSimulated: true },
-  { _id: "q6", conceptId: "c_recursive_case", content: "How do you know what the smaller problem should be? For fact it's n-1 but for lists?", state: "pending", minutesAgo: 6, isSimulated: true },
-  { _id: "q7", conceptId: "c_recursive_case", content: "Can the recursive case call the function more than once on the same input?", state: "pending", minutesAgo: 5, isSimulated: false },
-  { _id: "q8", conceptId: "c_call_stack", content: "What happens on the stack if there is no base case? Does Python just… stop?", state: "pending", minutesAgo: 4, isSimulated: true },
+  { _id: "q6", conceptId: "c_recursive_case", content: "How do you know what the smaller problem should be? For fact it's n-1 but for lists?", state: "clustered", minutesAgo: 6, isSimulated: true },
+  { _id: "q7", conceptId: "c_recursive_case", content: "Can the recursive case call the function more than once on the same input?", state: "clustered", minutesAgo: 5, isSimulated: false },
+  { _id: "q8", conceptId: "c_call_stack", content: "What happens on the stack if there is no base case? Does Python just… stop?", state: "clustered", minutesAgo: 4, isSimulated: true },
   { _id: "q9", conceptId: "c_rec_vs_iter", content: "If every recursive function can be a loop, why would you ever pick recursion?", state: "pending", minutesAgo: 2, isSimulated: false },
   { _id: "q10", conceptId: "c_base_case", content: "Can a function have two base cases? fib seems to have 0 and 1.", state: "pending", minutesAgo: 1, isSimulated: true },
 ];
@@ -243,7 +243,10 @@ export const MESSAGES: Message[] = [
   { _id: "m4", authorAlias: "brisk-lynx", body: "So there are three sticky notes on top of each other before anything returns?", isMine: false, time: "10:43" },
   { _id: "m5", authorAlias: "steady-heron", body: "Exactly: fact(3), fact(2), fact(1). fact(1) returns 1 first, so the notes get filled in from the top down. That's why results come back in reverse.", isMine: false, time: "10:44" },
   { _id: "m6", authorAlias: "mellow-finch", body: "Oh. So the 'reverse order' is just the stack popping. That finally clicked.", isMine: false, time: "10:45" },
-];
+  { _id: "m7", roomId: "r2", authorAlias: "calm-walrus", body: "Let's draw fib(5) as a tree. Each node is one call; how many children does fib(5) have?", isMine: false, time: "10:46" },
+  { _id: "m8", roomId: "r2", authorAlias: "swift-moth", body: "Two: fib(4) and fib(3). And then fib(4) also calls fib(3), so fib(3) shows up twice already.", isMine: false, time: "10:47" },
+  { _id: "m9", roomId: "r2", authorAlias: "calm-walrus", body: "Right, that duplication is the whole point: fib(2) ends up being computed three times in fib(5). Count the leaves and you'll see why it gets slow.", isMine: false, time: "10:47" },
+].map((m) => ({ roomId: "r1", ...m }));
 
 /** The student's own answers so far (students never see anyone else's). */
 export const MY_LEVELS: Record<string, Level | null> = {
