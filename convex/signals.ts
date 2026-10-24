@@ -3,6 +3,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { getInstructorSession, requireParticipant } from "./credentials";
 import { level } from "./schema";
+import { hasBeenActive } from "./sessions";
 
 async function writeSignal(
   ctx: MutationCtx,
@@ -20,7 +21,10 @@ async function writeSignal(
   else await ctx.db.insert("signals", { sessionId, conceptId, participantId, level, phase, updatedAt: Date.now() });
 }
 
-/** The student's rating on the session page; always recorded as `pre` (before peer help). */
+/**
+ * The student's rating on the session page; always recorded as `pre` (before peer help).
+ * Only the current concept or one the instructor has already made current can be rated here.
+ */
 export const upsert = mutation({
   args: { sessionId: v.id("sessions"), token: v.string(), conceptId: v.id("concepts"), level },
   handler: async (ctx, { sessionId, token, conceptId, level }) => {
@@ -29,6 +33,7 @@ export const upsert = mutation({
     const participant = await requireParticipant(ctx, sessionId, token);
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
+    if (!hasBeenActive(session, conceptId)) throw new ConvexError("That concept hasn't been covered yet");
     await writeSignal(ctx, sessionId, participant._id, conceptId, level, "pre");
   },
 });
