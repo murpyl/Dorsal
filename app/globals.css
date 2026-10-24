@@ -96,6 +96,8 @@
   --shadow-moss: var(--elevation-moss);
 }
 
+/* Blåhaj: IKEA plush-shark palette. Blåhaj blue for actions, belly white-blue page,
+   denim text, with the toy's black eyes (foreground) and pink mouth (destructive) as accents. */
 :root {
   --background: oklch(0.959 0.01 87.5); /* linen #f4f1ea */
   --foreground: oklch(0.275 0.011 73.5); /* charcoal-brown */
@@ -265,7 +267,7 @@
 
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: var(--color-neutral-400);
+  stroke: oklch(0.72 0.06 240);
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);
