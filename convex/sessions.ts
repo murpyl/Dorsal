@@ -19,6 +19,8 @@ export const SEED_EDGES: [number, number][] = [
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 /** Previously-current concept ids in the order they first became current, excluding the current one. */
+export const MAX_PROMPT_LENGTH = 200;
+
 export function coveredConceptIds(session: Doc<"sessions">) {
   return (session.activeHistory ?? []).map((h) => h.conceptId).filter((id) => id !== session.activeConceptId);
 }
@@ -126,6 +128,7 @@ export const getStudentView = query({
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
       coveredConceptIds: coveredConceptIds(session),
+      activePrompt: session.activePrompt,
       alias: participant.alias,
       concepts: withMyLevel,
     };
@@ -175,6 +178,7 @@ export const getInstructorView = query({
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
       coveredConceptIds: coveredConceptIds(session),
+      activePrompt: session.activePrompt,
       // One `pre` signal per participant and concept, so the current concept's total is the number of participants who answered it.
       answeredCount: conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0,
       participantCount: participants.length,
@@ -187,8 +191,8 @@ export const getInstructorView = query({
 });
 
 export const setActiveConcept = mutation({
-  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts") },
-  handler: async (ctx, { sessionId, instructorSecret, conceptId }) => {
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts"), question: v.optional(v.string()) },
+  handler: async (ctx, { sessionId, instructorSecret, conceptId, question }) => {
     const session = await getInstructorSession(ctx, sessionId, instructorSecret);
     if (!session) throw new ConvexError("Instructor access required");
     const concept = await ctx.db.get(conceptId);
@@ -196,8 +200,11 @@ export const setActiveConcept = mutation({
     // Sessions created before activeHistory existed: their current concept was active, so it counts as covered.
     const history =
       session.activeHistory ?? (session.activeConceptId ? [{ conceptId: session.activeConceptId, at: session.createdAt }] : []);
+    const activePrompt = question?.trim() || undefined;
+    if (activePrompt && activePrompt.length > MAX_PROMPT_LENGTH) throw new ConvexError(`Keep the prompt under ${MAX_PROMPT_LENGTH} characters`);
     await ctx.db.patch(sessionId, {
       activeConceptId: conceptId,
+      activePrompt,
       activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: Date.now() }],
     });
   },

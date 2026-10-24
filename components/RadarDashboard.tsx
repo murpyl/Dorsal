@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { api } from "@/convex/_generated/api";
+import { MAX_PROMPT_LENGTH } from "@/convex/sessions";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
@@ -38,12 +39,14 @@ export function RadarDashboard() {
   const coverage = (id: string) =>
     id === view.activeConceptId ? "current" : view.coveredConceptIds.includes(id as Id<"concepts">) ? "covered" : "upcoming";
 
-  async function makeCurrent(conceptId: Id<"concepts">) {
+  async function makeCurrent(conceptId: Id<"concepts">, question?: string) {
     setError(null);
     try {
-      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId });
+      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId, question });
+      return true;
     } catch (err) {
       setError(errorMessage(err));
+      return false;
     }
   }
 
@@ -61,6 +64,13 @@ export function RadarDashboard() {
         </div>
       </header>
       <ConnectionStatus />
+      <PushPromptForm
+        concepts={view.concepts}
+        activeConceptId={view.activeConceptId}
+        activePrompt={view.activePrompt}
+        onPush={makeCurrent}
+        error={error}
+      />
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-5" aria-label="Session metrics">
         <Metric
@@ -77,7 +87,6 @@ export function RadarDashboard() {
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
         <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
-      {/* Lecture Listener (session G): <LectureListener sessionId instructorSecret /> goes here, directly below the metrics grid. */}
 
       <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
         <ConceptGraph
@@ -199,5 +208,75 @@ function Metric({ label, value, detail }: { label: string; value: number | strin
       <p className="text-3xl font-semibold">{value}</p>
       {detail && <p className="text-sm text-zinc-500">{detail}</p>}
     </div>
+  );
+}
+
+/** Instructor/TA pushes the next prompt: pick a concept and optionally type a one-line question students see under it. */
+function PushPromptForm({
+  concepts,
+  activeConceptId,
+  activePrompt,
+  onPush,
+  error,
+}: {
+  concepts: { _id: Id<"concepts">; label: string }[];
+  activeConceptId: Id<"concepts"> | null;
+  activePrompt: string | undefined;
+  onPush: (conceptId: Id<"concepts">, question?: string) => Promise<boolean>;
+  error: string | null;
+}) {
+  const [conceptId, setConceptId] = useState<string>("");
+  const [question, setQuestion] = useState("");
+  const [busy, setBusy] = useState(false);
+  const target = conceptId || activeConceptId || concepts[0]?._id || "";
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!target) return;
+    setBusy(true);
+    const ok = await onPush(target as Id<"concepts">, question.trim() || undefined);
+    setBusy(false);
+    if (ok) setQuestion("");
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50 p-4" aria-label="Push prompt">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-sm">
+          <span className="block text-xs font-semibold uppercase tracking-wide text-indigo-600">Push prompt</span>
+          <select value={target} onChange={(e) => setConceptId(e.target.value)} className="mt-1 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm">
+            {concepts.map((c) => (
+              <option key={c._id} value={c._id}>
+                {c.label}
+                {c._id === activeConceptId ? " (current)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="min-w-0 flex-1 text-sm">
+          <span className="sr-only">Question (optional)</span>
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            maxLength={MAX_PROMPT_LENGTH}
+            placeholder="Optional question, e.g. Why does fib(1) not recurse?"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm"
+          />
+        </label>
+        <button type="submit" disabled={busy || !target} className={btnPrimary}>
+          Push prompt
+        </button>
+      </div>
+      <p className="text-xs text-zinc-600">
+        {activePrompt ? (
+          <>
+            Students now see: <span className="font-medium text-indigo-900">{activePrompt}</span>
+          </>
+        ) : (
+          "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one."
+        )}
+      </p>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </form>
   );
 }

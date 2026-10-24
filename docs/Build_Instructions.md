@@ -222,7 +222,7 @@ Example expected model response:
 
 ## 6. Suggested UI details
 
-**Student:** One card for the current topic ("Prompt N of 5", switches live when the instructor makes another concept current); three large confidence buttons; a collapsed list of already-covered concepts for revising earlier answers (never-covered concepts are not answerable); anonymous question field; list of published misconception clusters; `Get peer help` action; small accessible graph.
+**Student:** One card for the current topic ("Prompt N of 5" with the instructor's optional pushed question, switches live when the instructor makes another concept current); three large confidence buttons; a collapsed list of already-covered concepts for revising earlier answers (never-covered concepts are not answerable); anonymous question field; list of published misconception clusters; `Get peer help` action; small accessible graph.
 
 **Instructor:** Four metric cards (active participants, responses, currently confused, open clusters), compact distribution chart per concept, interactive graph, moderation queue, live help-room status.
 

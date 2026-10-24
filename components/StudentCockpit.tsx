@@ -31,21 +31,22 @@ export function StudentCockpit() {
   }, [code, token, join]);
 
   const view = useQuery(api.sessions.getStudentView, token ? { code, token } : "skip");
-  const activeConceptId = view?.activeConceptId ?? null;
+  // Identifies what is currently being asked: the concept plus the optional pushed question.
+  const promptKey = view?.activeConceptId ? `${view.activeConceptId}\n${view.activePrompt ?? ""}` : null;
 
-  // "New prompt" cue: shown for a few seconds after the current concept changes while the page is open.
-  // Keyed to the concept id so it can only ever describe the card that is currently rendered.
-  const previousActive = useRef<Id<"concepts"> | null | undefined>(undefined);
-  const [cueFor, setCueFor] = useState<Id<"concepts"> | null>(null);
+  // "New prompt" cue: shown for a few seconds after the prompt changes while the page is open.
+  // Keyed to the prompt so it can only ever describe the card that is currently rendered.
+  const previousPrompt = useRef<string | null | undefined>(undefined);
+  const [cueFor, setCueFor] = useState<string | null>(null);
   useEffect(() => {
     if (!view) return;
-    const changed = previousActive.current !== undefined && previousActive.current !== activeConceptId;
-    previousActive.current = activeConceptId;
-    if (!changed || !activeConceptId) return;
-    setCueFor(activeConceptId);
+    const changed = previousPrompt.current !== undefined && previousPrompt.current !== promptKey;
+    previousPrompt.current = promptKey;
+    if (!changed || !promptKey) return;
+    setCueFor(promptKey);
     const timer = setTimeout(() => setCueFor(null), NEW_PROMPT_CUE_MS);
     return () => clearTimeout(timer);
-  }, [view, activeConceptId]);
+  }, [view, promptKey]);
 
   if (error) return <p className="p-8 text-red-600">{error}</p>;
   if (!view || !token) return <p className="p-8 text-zinc-500">Joining session {code}…</p>;
@@ -77,7 +78,7 @@ export function StudentCockpit() {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Current topic</p>
-            {cueFor === current._id && (
+            {cueFor === promptKey && (
               <span className="animate-pulse rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">New prompt</span>
             )}
           </div>
@@ -86,7 +87,7 @@ export function StudentCockpit() {
           </h2>
           <p className="font-medium">{current.label}</p>
           <p className="text-sm text-zinc-600">{current.description}</p>
-          {/* Lecture Listener (session G): <LivePromptText sessionId code token conceptId={current._id} /> goes here. */}
+          {view.activePrompt && <p className="rounded-lg bg-white px-3 py-2 text-base font-medium text-indigo-900">{view.activePrompt}</p>}
           <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
         </section>
       ) : (

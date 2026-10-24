@@ -194,6 +194,34 @@ describe("live prompt (phase 6: only covered concepts can be rated)", () => {
     expect((await instructorView())!.coveredConceptIds).toEqual([concepts[0]._id]);
   });
 
+  test("setActiveConcept stores a trimmed question as activePrompt, clears it when omitted and rejects long ones", async () => {
+    const { t, sessionId, code, instructorView } = await setup();
+    const concepts = (await instructorView())!.concepts;
+    const creds = { sessionId, instructorSecret: SECRET };
+    await t.mutation(api.sessions.join, { code, token: TOKEN_A });
+    const studentPrompt = async () => (await t.query(api.sessions.getStudentView, { code, token: TOKEN_A }))!.activePrompt;
+
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id, question: "  Why does fib(1) not recurse?  " });
+    expect(await studentPrompt()).toBe("Why does fib(1) not recurse?");
+    expect((await instructorView())!.activePrompt).toBe("Why does fib(1) not recurse?");
+
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id, question: "   " });
+    expect(await studentPrompt()).toBeUndefined();
+
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[2]._id, question: "Draw the call stack" });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[0]._id });
+    expect(await studentPrompt()).toBeUndefined();
+
+    await expect(
+      t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[0]._id, question: "x".repeat(201) }),
+    ).rejects.toThrow(/200 characters/);
+    expect((await t.run((ctx) => ctx.db.get(sessionId)))!.activeHistory!.map((h) => h.conceptId)).toEqual([
+      concepts[0]._id,
+      concepts[1]._id,
+      concepts[2]._id,
+    ]);
+  });
+
   test("setActiveConcept keeps the previous current concept covered in a session created before activeHistory existed", async () => {
     const { t, sessionId, instructorView } = await setup();
     const concepts = (await instructorView())!.concepts;
