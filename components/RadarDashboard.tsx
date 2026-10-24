@@ -52,7 +52,9 @@ export function RadarDashboard() {
               <h2 className="font-medium">{c.label}</h2>
               <p className="text-sm text-zinc-600">
                 N = {c.total}
-                {c.total > 0 && c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">low sample</span>}
+                {c.total < LOW_SAMPLE && (
+                  <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>
+                )}
               </p>
             </div>
             <div className="flex h-3 overflow-hidden rounded-full bg-zinc-100" aria-hidden>

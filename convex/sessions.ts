@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { MIN_SECRET_LENGTH, findParticipant, getInstructorSession, sha256 } from "./credentials";
+import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
 
 const SEED_CONCEPTS = [
   { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
@@ -23,7 +23,7 @@ export const create = mutation({
   handler: async (ctx, { title, instructorSecret }) => {
     const trimmed = title.trim();
     if (!trimmed || trimmed.length > 100) throw new ConvexError("Title must be 1–100 characters");
-    if (instructorSecret.length < MIN_SECRET_LENGTH) throw new ConvexError("Instructor secret too short");
+    if (!isValidSecret(instructorSecret)) throw new ConvexError("Invalid instructor secret");
 
     let code: string;
     do {
@@ -58,7 +58,7 @@ export const create = mutation({
 export const join = mutation({
   args: { code: v.string(), token: v.string() },
   handler: async (ctx, { code, token }) => {
-    if (token.length < MIN_SECRET_LENGTH) throw new ConvexError("Invalid participant token");
+    if (!isValidSecret(token)) throw new ConvexError("Invalid participant token");
     const session = await ctx.db
       .query("sessions")
       .withIndex("by_code", (q) => q.eq("code", code.toUpperCase()))
