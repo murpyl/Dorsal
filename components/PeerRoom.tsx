@@ -30,7 +30,7 @@ export function PeerRoom() {
 
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [checkedIn, setCheckedIn] = useState<Level | null>(null);
+  const [checkIn, setCheckIn] = useState<{ level: Level; phase: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,6 +58,7 @@ export function PeerRoom() {
     );
 
   const open = room.status === "open" && room.sessionState === "open";
+  const checkedIn = checkIn?.phase === room.phase ? checkIn.level : null;
 
   async function guard(action: () => Promise<unknown>) {
     setError(null);
@@ -185,7 +186,7 @@ export function PeerRoom() {
               onClick={() =>
                 guard(async () => {
                   await upsert({ sessionId: room.sessionId, token: token!, conceptId: room.conceptId, level: c.level });
-                  setCheckedIn(c.level);
+                  setCheckIn({ level: c.level, phase: room.phase });
                 })
               }
               className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${c.className} ${checkedIn === c.level ? "ring-2 ring-offset-2 ring-zinc-800" : ""}`}

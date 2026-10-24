@@ -14,6 +14,16 @@ export const setHelper = mutation({
       if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
     }
     await ctx.db.patch(participant._id, { helperConceptIds: unique });
+    const keep = new Set(unique);
+    const memberships = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_participant", (q) => q.eq("participantId", participant._id))
+      .collect();
+    for (const m of memberships) {
+      if (m.role !== "helper") continue;
+      const room = await ctx.db.get(m.roomId);
+      if (room && room.status === "open" && !keep.has(room.conceptId)) await ctx.db.patch(m._id, { role: "learner" });
+    }
   },
 });
 
