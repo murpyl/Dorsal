@@ -5,12 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --color-blahaj: var(--blahaj);
-  --color-blahaj-belly: var(--blahaj-belly);
-  --color-blahaj-pink: var(--blahaj-pink);
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-heading: var(--font-archivo-black), var(--font-space-grotesk), ui-sans-serif, sans-serif;
+  /* Brutalist: every shadow is a hard offset block in the foreground colour. */
+  --shadow-2xs: 1px 1px 0 0 var(--foreground);
+  --shadow-xs: 2px 2px 0 0 var(--foreground);
+  --shadow-sm: 2px 2px 0 0 var(--foreground);
+  --shadow-md: 4px 4px 0 0 var(--foreground);
+  --shadow-lg: 6px 6px 0 0 var(--foreground);
+  --shadow-xl: 8px 8px 0 0 var(--foreground);
+  --shadow-2xl: 12px 12px 0 0 var(--foreground);
+  --shadow-hard: var(--shadow-md);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -51,79 +57,75 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Blåhaj: IKEA plush-shark palette. Blåhaj blue for actions, belly white-blue page,
-   denim text, with the toy's black eyes (foreground) and pink mouth (destructive) as accents. */
+/* Brutalist: stark black on white, zero radius, 2px rules, one electric-yellow accent. */
 :root {
-  --blahaj: oklch(0.62 0.11 245);
-  --blahaj-belly: oklch(0.955 0.016 240);
-  --blahaj-pink: oklch(0.54 0.15 5);
-  --background: oklch(0.955 0.016 240);
-  --foreground: oklch(0.3 0.065 252);
-  --card: oklch(0.985 0.006 235);
-  --card-foreground: oklch(0.3 0.065 252);
-  --popover: oklch(0.985 0.006 235);
-  --popover-foreground: oklch(0.3 0.065 252);
-  --primary: oklch(0.54 0.12 245);
-  --primary-foreground: oklch(0.99 0.004 235);
-  --secondary: oklch(0.9 0.03 240);
-  --secondary-foreground: oklch(0.3 0.065 252);
-  --muted: oklch(0.93 0.022 240);
-  --muted-foreground: oklch(0.5 0.055 250);
-  --accent: oklch(0.91 0.045 238);
-  --accent-foreground: oklch(0.3 0.065 252);
-  --destructive: oklch(0.54 0.15 5);
-  --border: oklch(0.86 0.03 242);
-  --input: oklch(0.84 0.035 242);
-  --ring: oklch(0.62 0.11 245);
-  --chart-1: oklch(0.62 0.11 245);
-  --chart-2: oklch(0.45 0.09 252);
-  --chart-3: oklch(0.78 0.07 235);
-  --chart-4: oklch(0.68 0.12 5);
-  --chart-5: oklch(0.3 0.065 252);
-  --radius: 1.25rem;
-  --sidebar: oklch(0.985 0.006 235);
-  --sidebar-foreground: oklch(0.3 0.065 252);
-  --sidebar-primary: oklch(0.54 0.12 245);
-  --sidebar-primary-foreground: oklch(0.99 0.004 235);
-  --sidebar-accent: oklch(0.91 0.045 238);
-  --sidebar-accent-foreground: oklch(0.3 0.065 252);
-  --sidebar-border: oklch(0.86 0.03 242);
-  --sidebar-ring: oklch(0.62 0.11 245);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0.92 0.2 103);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.38 0 0);
+  --accent: oklch(0.97 0.1 103);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.55 0.24 28);
+  --border: oklch(0 0 0);
+  --input: oklch(0 0 0);
+  --ring: oklch(0.8 0.17 95);
+  --chart-1: oklch(0 0 0);
+  --chart-2: oklch(0.92 0.2 103);
+  --chart-3: oklch(0.55 0.24 28);
+  --chart-4: oklch(0.7 0.19 50);
+  --chart-5: oklch(0.6 0.17 150);
+  --radius: 0rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.92 0.2 103);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.8 0.17 95);
 }
 
-/* Deep-water variant: same shark, lights off. */
+/* Inverted brutalism: white on black, same yellow. */
 .dark {
-  --background: oklch(0.22 0.04 252);
-  --foreground: oklch(0.95 0.012 240);
-  --card: oklch(0.27 0.04 250);
-  --card-foreground: oklch(0.95 0.012 240);
-  --popover: oklch(0.27 0.04 250);
-  --popover-foreground: oklch(0.95 0.012 240);
-  --primary: oklch(0.74 0.1 240);
-  --primary-foreground: oklch(0.2 0.045 252);
-  --secondary: oklch(0.33 0.04 250);
-  --secondary-foreground: oklch(0.95 0.012 240);
-  --muted: oklch(0.31 0.035 250);
-  --muted-foreground: oklch(0.74 0.04 240);
-  --accent: oklch(0.36 0.05 248);
-  --accent-foreground: oklch(0.95 0.012 240);
-  --destructive: oklch(0.74 0.12 5);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.74 0.1 240);
-  --chart-1: oklch(0.74 0.1 240);
-  --chart-2: oklch(0.6 0.1 248);
-  --chart-3: oklch(0.85 0.05 235);
-  --chart-4: oklch(0.74 0.12 5);
-  --chart-5: oklch(0.95 0.012 240);
-  --sidebar: oklch(0.27 0.04 250);
-  --sidebar-foreground: oklch(0.95 0.012 240);
-  --sidebar-primary: oklch(0.74 0.1 240);
-  --sidebar-primary-foreground: oklch(0.2 0.045 252);
-  --sidebar-accent: oklch(0.36 0.05 248);
-  --sidebar-accent-foreground: oklch(0.95 0.012 240);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.74 0.1 240);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.92 0.2 103);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(1 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.78 0 0);
+  --accent: oklch(0.3 0.06 103);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.7 0.2 25);
+  --border: oklch(1 0 0);
+  --input: oklch(1 0 0);
+  --ring: oklch(0.92 0.2 103);
+  --chart-1: oklch(1 0 0);
+  --chart-2: oklch(0.92 0.2 103);
+  --chart-3: oklch(0.7 0.2 25);
+  --chart-4: oklch(0.75 0.17 50);
+  --chart-5: oklch(0.7 0.17 150);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.92 0.2 103);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.2 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0);
+  --sidebar-ring: oklch(0.92 0.2 103);
 }
 
 @layer base {
@@ -140,79 +142,53 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Archivo Black ships one weight; never let the browser fake a bolder one. */
+    font-synthesis: none;
   }
-  /* Belly-to-back gradient: paler at the bottom, a touch more blue up top, plus a soft fin-shaped glow. */
   body {
+    /* Graph-paper grid on white plus a thick black rule along the top edge. */
+    border-top: 8px solid var(--foreground);
     background-color: var(--background);
     background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 22%), transparent 70%),
-      radial-gradient(44rem 22rem at -10% 110%, oklch(0.68 0.12 5 / 10%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.93 0.03 240), var(--background) 40rem);
-    background-attachment: fixed;
-  }
-  /* Two gentle waves along the bottom edge of the viewport (inline SVG, no image files). */
-  body::before,
-  body::after {
-    content: "";
-    position: fixed;
-    inset: auto 0 0 0;
-    height: 7rem;
-    pointer-events: none;
-    z-index: -1;
-    background-color: oklch(0.62 0.11 245 / 16%);
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 112' preserveAspectRatio='none'%3E%3Cpath d='M0 64C180 24 300 24 480 56S780 112 960 80 1260 8 1440 48V112H0Z'/%3E%3C/svg%3E")
-      center bottom / 100% 100% no-repeat;
-  }
-  body::before {
-    height: 10rem;
-    background-color: oklch(0.62 0.11 245 / 8%);
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160' preserveAspectRatio='none'%3E%3Cpath d='M0 96C240 40 420 40 640 88S1040 160 1240 104 1440 56 1440 56V160H0Z'/%3E%3C/svg%3E");
-  }
-  .dark body {
-    background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 25%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.25 0.045 252), var(--background) 40rem);
-  }
-  .dark body::after {
-    background-color: oklch(0.62 0.11 245 / 20%);
-  }
-  .dark body::before {
-    background-color: oklch(0.62 0.11 245 / 10%);
+      linear-gradient(to right, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
   h1,
   h2,
-  h3,
-  [data-slot="card-title"] {
-    @apply font-heading;
-    letter-spacing: 0.005em;
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
-  h1 {
-    font-weight: 600;
-  }
-  [data-slot="input"],
-  [data-slot="textarea"],
-  [data-slot="select-trigger"] {
-    background-color: var(--card);
+  h1,
+  h2 {
+    text-transform: uppercase;
   }
   ::selection {
-    background-color: oklch(0.62 0.11 245 / 30%);
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
 }
 
-/* Press feedback (design-engineering skill): subtle scale, transform only, snappy ease-out. */
-@layer components {
-  [data-slot="button"],
-  [data-slot="toggle-group-item"],
-  .pressable {
-    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-    transition-duration: 160ms;
-    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
-  }
-  [data-slot="button"]:active:not(:disabled),
-  [data-slot="toggle-group-item"]:active:not(:disabled),
-  .pressable:active:not(:disabled) {
-    transform: scale(0.97);
-  }
+/* Press feedback: the block drops onto its shadow (translate + shadow collapse), snappy ease-out.
+   Unlayered so it beats the shadow-* utilities. */
+[data-slot="button"],
+[data-slot="toggle-group-item"],
+.pressable {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 120ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+[data-slot="button"]:active:not(:disabled),
+[data-slot="toggle-group-item"]:active:not(:disabled),
+.pressable:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+[data-slot="button"][class*="shadow-"]:active:not(:disabled),
+.pressable[class*="shadow-"]:active:not(:disabled) {
+  transform: translate(4px, 4px);
 }
 
 /* Enter animations: opacity + 4px translate only, under 250ms, staggered via --i. */
@@ -239,14 +215,35 @@
   }
   [data-slot="button"]:active:not(:disabled),
   [data-slot="toggle-group-item"]:active:not(:disabled),
-  .pressable:active:not(:disabled) {
+  .pressable:active:not(:disabled),
+  [data-slot="button"][class*="shadow-"]:active:not(:disabled),
+  .pressable[class*="shadow-"]:active:not(:disabled) {
     transform: none;
   }
 }
 
+/* Small uppercase label with wide tracking: the brutalist caption style. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Diagonal hatching for skeletons and empty states. */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 0 2px,
+    transparent 2px 8px
+  );
+}
+
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: oklch(0.72 0.06 240);
+  stroke: var(--foreground);
+  stroke-width: 2;
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);
