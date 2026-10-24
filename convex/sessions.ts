@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
+import { findParticipant, isValidSecret, getInstructorSession, getStaffSession, sha256 } from "./credentials";
 import { MAX_PROMPT_LENGTH } from "../lib/prompt";
 import { canAddPrerequisite, DESCRIPTION_MAX, LABEL_MAX, layoutConcepts, MAX_CONCEPTS, type LessonConcept } from "../lib/lessonGraph";
 
@@ -103,7 +103,7 @@ export const join = mutation({
     const participantId = await ctx.db.insert("participants", {
       sessionId: session._id,
       tokenHash: await sha256(token),
-      alias: `Student ${others.length + 1}`,
+      alias: `Student ${others.filter((p) => !p.isTa).length + 1}`,
       helperConceptIds: [],
       isSimulated: false,
       createdAt: Date.now(),
@@ -157,13 +157,16 @@ export const getInstructorView = query({
   handler: async (ctx, { sessionId, instructorSecret }) => {
     const id = ctx.db.normalizeId("sessions", sessionId);
     if (!id) return null;
-    const session = await getInstructorSession(ctx, id, instructorSecret);
-    if (!session) return null;
+    const staff = await getStaffSession(ctx, id, instructorSecret);
+    if (!staff) return null;
+    const { session, role } = staff;
 
-    const participants = await ctx.db
-      .query("participants")
-      .withIndex("by_session", (q) => q.eq("sessionId", id))
-      .collect();
+    const participants = (
+      await ctx.db
+        .query("participants")
+        .withIndex("by_session", (q) => q.eq("sessionId", id))
+        .collect()
+    ).filter((p) => !p.isTa);
     const concepts = await ctx.db
       .query("concepts")
       .withIndex("by_session", (q) => q.eq("sessionId", id))
@@ -190,6 +193,7 @@ export const getInstructorView = query({
       .withIndex("by_session", (q) => q.eq("sessionId", id))
       .collect();
     return {
+      role,
       title: session.title,
       code: session.code,
       state: session.state,

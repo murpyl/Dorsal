@@ -4,6 +4,7 @@ const subscribe = () => () => {};
 
 export const studentTokenKey = (code: string) => `dorsal:student:${code}`;
 export const instructorSecretKey = (sessionId: string) => `dorsal:instructor:${sessionId}`;
+export const taSecretKey = (sessionId: string) => `dorsal:ta:${sessionId}`;
 
 export function newSecret() {
   return crypto.randomUUID() + crypto.randomUUID();

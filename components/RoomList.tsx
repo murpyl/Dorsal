@@ -19,6 +19,8 @@ import { errorMessage } from "@/lib/errors";
 type Concept = { _id: Id<"concepts">; label: string };
 
 export const roomHref = (roomId: Id<"rooms">, code: string) => `/room/${roomId}?code=${encodeURIComponent(code)}`;
+/** A TA's room link: `?ta=<sessionId>` tells PeerRoom to use this device's TA secret and link back to the dashboard. */
+export const taRoomHref = (roomId: Id<"rooms">, sessionId: Id<"sessions">) => `/room/${roomId}?ta=${encodeURIComponent(sessionId)}`;
 
 export type StudentRoom = {
   _id: Id<"rooms">;
@@ -30,12 +32,13 @@ export type StudentRoom = {
   capacity: number;
   memberCount: number;
   helperCount: number;
+  taCount: number;
   isMember: boolean;
-  myRole: "helper" | "learner" | null;
+  myRole: "helper" | "learner" | "ta" | null;
 };
 
 export const roomSummary = (r: StudentRoom) =>
-  `${r.memberCount} / ${r.capacity} in room · ${r.helperCount} helper${r.helperCount === 1 ? "" : "s"}`;
+  `${r.memberCount} / ${r.capacity} in room · ${r.helperCount} helper${r.helperCount === 1 ? "" : "s"}${r.taCount > 0 ? ` · ${r.taCount} TA${r.taCount === 1 ? "" : "s"}` : ""}`;
 
 /** Join / Open / Full control shared by RoomList and PublishedClusters. Joins, then navigates to the room with the ?code= convention. */
 export function RoomJoinButton({
@@ -224,14 +227,18 @@ export function RoomStatus({
   sessionId,
   instructorSecret,
   concepts,
+  role,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
   concepts: Concept[];
+  role: "instructor" | "ta";
 }) {
   const rooms = useQuery(api.rooms.listInstructor, { sessionId, instructorSecret });
   const createForCluster = useMutation(api.rooms.createForCluster);
   const close = useMutation(api.rooms.close);
+  const joinAsTa = useMutation(api.rooms.joinAsTa);
+  const router = useRouter();
   const [conceptId, setConceptId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const chosen = concepts.find((c) => c._id === conceptId) ?? concepts[0] ?? null;
@@ -282,6 +289,7 @@ export function RoomStatus({
                   <p className="text-muted-foreground">
                     {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
                     {r.helperCount === 1 ? "" : "s"}
+                    {r.taCount > 0 && ` · ${r.taCount} TA${r.taCount === 1 ? "" : "s"}`}
                     {r.memberCount >= r.capacity && (
                       <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-900">
                         full
@@ -290,9 +298,25 @@ export function RoomStatus({
                   </p>
                   {r.clusterTitle && <p className="text-xs text-muted-foreground">For cluster “{r.clusterTitle}”</p>}
                 </div>
-                <Button size="sm" variant="outline" onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}>
-                  Close room
-                </Button>
+                <div className="flex gap-2">
+                  {role === "ta" && (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        guard(async () => {
+                          await joinAsTa({ roomId: r._id, instructorSecret });
+                          router.push(taRoomHref(r._id, sessionId));
+                        })
+                      }
+                    >
+                      Enter room
+                      <ArrowRight data-icon="inline-end" aria-hidden />
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}>
+                    Close room
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

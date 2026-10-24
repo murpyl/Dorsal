@@ -7,7 +7,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, SendHorizonal } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
+import { studentTokenKey, taSecretKey, useStoredCredential } from "@/lib/credentials";
 import { Brand } from "@/components/Brand";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
@@ -24,8 +24,13 @@ import { cn } from "@/lib/utils";
 
 export function PeerRoom() {
   const roomId = useParams<{ roomId: string }>().roomId as Id<"rooms">;
-  const code = (useSearchParams().get("code") ?? "").toUpperCase();
-  const token = useStoredCredential(code ? studentTokenKey(code) : "dorsal:none", false);
+  const searchParams = useSearchParams();
+  const code = (searchParams.get("code") ?? "").toUpperCase();
+  // `?ta=<sessionId>`: a TA entering from the dashboard; their TA secret is also their room identity.
+  const taSessionId = searchParams.get("ta");
+  const token = useStoredCredential(taSessionId ? taSecretKey(taSessionId) : code ? studentTokenKey(code) : "dorsal:none", false);
+  const backHref = taSessionId ? `/instructor/${taSessionId}` : `/join/${code}`;
+  const backLabel = taSessionId ? "Back to dashboard" : `Back to session ${code}`;
 
   const room = useQuery(api.rooms.get, token ? { roomId, token } : "skip");
   const messages = useQuery(api.messages.listByRoom, token ? { roomId, token } : "skip");
@@ -43,7 +48,9 @@ export function PeerRoom() {
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [messages?.length]);
 
-  if (!code || token === null)
+  if (taSessionId && token === null)
+    return <Gate text="Open your TA link on this device before entering a help room." href="/" cta="Go to the start page" />;
+  if (!taSessionId && (!code || token === null))
     return (
       <Gate
         text="You need to join the session on this device before entering a help room."
@@ -55,9 +62,9 @@ export function PeerRoom() {
   if (room === null)
     return (
       <Gate
-        text="You're not a member of this room (or it no longer exists). Join it from your session page."
-        href={`/join/${code}`}
-        cta={`Back to session ${code}`}
+        text={`You're not a member of this room (or it no longer exists). Join it from your ${taSessionId ? "dashboard" : "session page"}.`}
+        href={backHref}
+        cta={backLabel}
       />
     );
 
@@ -87,9 +94,9 @@ export function PeerRoom() {
       <header className="enter space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Brand />
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={`/join/${code}`} />}>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={backHref} />}>
             <ArrowLeft data-icon="inline-start" aria-hidden />
-            Back to session {code}
+            {backLabel}
           </Button>
         </div>
         <div className="space-y-1">
@@ -120,8 +127,11 @@ export function PeerRoom() {
               {room.members.map((m, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-1.5">
                   <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
-                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-100 text-emerald-900")}>
-                    {m.role}
+                  <Badge
+                    variant="secondary"
+                    className={cn(m.role === "helper" && "bg-emerald-100 text-emerald-900", m.role === "ta" && "bg-sky-100 text-sky-900")}
+                  >
+                    {m.role === "ta" ? "TA" : m.role}
                   </Badge>
                   {m.isSimulated && (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-900">
@@ -132,7 +142,9 @@ export function PeerRoom() {
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground">Helpers volunteered for this topic themselves; it is not a verified credential.</p>
+            <p className="text-xs text-muted-foreground">
+              Helpers volunteered for this topic themselves; it is not a verified credential. TAs are course staff invited by the instructor.
+            </p>
             <Separator />
             <div className="flex flex-col gap-2">
               <Button
@@ -141,13 +153,13 @@ export function PeerRoom() {
                 onClick={() =>
                   guard(async () => {
                     await leave({ roomId, token: token! });
-                    router.push(`/join/${code}`);
+                    router.push(backHref);
                   })
                 }
               >
                 Leave room
               </Button>
-              {room.myRole === "helper" && open && (
+              {(room.myRole === "helper" || room.myRole === "ta") && open && (
                 <Button variant="destructive" size="sm" onClick={() => guard(() => close({ roomId, token: token! }))}>
                   Close room
                 </Button>
@@ -202,26 +214,28 @@ export function PeerRoom() {
         </Card>
       </section>
 
-      <Card aria-labelledby="check-in">
-        <CardHeader>
-          <CardTitle id="check-in" render={<h2 />}>
-            Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
-          </CardTitle>
-          <CardDescription>
-            How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
-            your session page. Only aggregate counts are shown to the instructor.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
-          {room.myLevel && (
-            <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
-              <CheckCircle2 className="size-4" aria-hidden />
-              Rating saved. You can change it any time.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {room.myRole !== "ta" && (
+        <Card aria-labelledby="check-in">
+          <CardHeader>
+            <CardTitle id="check-in" render={<h2 />}>
+              Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
+            </CardTitle>
+            <CardDescription>
+              How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
+              your session page. Only aggregate counts are shown to the instructor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
+            {room.myLevel && (
+              <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+                <CheckCircle2 className="size-4" aria-hidden />
+                Rating saved. You can change it any time.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <InlineError message={error} />
     </main>
   );

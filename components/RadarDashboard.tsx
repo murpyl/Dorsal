@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Check, Copy, Megaphone, MousePointerClick } from "lucide-react";
+import { Check, Copy, Megaphone, MousePointerClick, UserPlus } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Brand } from "@/components/Brand";
@@ -22,14 +22,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { errorMessage } from "@/lib/errors";
-import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
+import { instructorSecretKey, newSecret, taSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
 import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
+import { TA_NAME_MAX } from "@/lib/staff";
 import { cn } from "@/lib/utils";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const secret = useStoredCredential(instructorSecretKey(sessionId), false);
+  // The instructor's own secret wins on a device that has both; otherwise a TA's personal link secret.
+  const instructorSecret = useStoredCredential(instructorSecretKey(sessionId), false);
+  const taSecret = useStoredCredential(taSecretKey(sessionId), false);
+  const secret = instructorSecret === undefined || taSecret === undefined ? undefined : (instructorSecret ?? taSecret);
   const view = useQuery(
     api.sessions.getInstructorView,
     secret ? { sessionId, instructorSecret: secret } : "skip",
@@ -70,7 +74,7 @@ export function RadarDashboard() {
         <div className="space-y-2">
           <Brand />
           <div>
-            <p className="text-sm text-muted-foreground">Instructor</p>
+            <p className="text-sm text-muted-foreground">{view.role === "ta" ? "TA" : "Instructor"}</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{view.title}</h1>
           </div>
         </div>
@@ -227,10 +231,118 @@ export function RadarDashboard() {
           <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
         </ErrorBoundary>
         <ErrorBoundary label="help rooms">
-          <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+          <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} role={view.role} />
         </ErrorBoundary>
       </section>
+
+      {view.role === "instructor" && (
+        <ErrorBoundary label="TAs">
+          <TaManager sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+        </ErrorBoundary>
+      )}
     </main>
+  );
+}
+
+/** Instructor only: one personal link per TA (shown once, right after adding), revocable one TA at a time. */
+function TaManager({ sessionId, instructorSecret }: { sessionId: Id<"sessions">; instructorSecret: string }) {
+  const tas = useQuery(api.tas.list, { sessionId, instructorSecret });
+  const invite = useMutation(api.tas.invite);
+  const revoke = useMutation(api.tas.revoke);
+  const [name, setName] = useState("");
+  const [created, setCreated] = useState<{ taId: Id<"participants">; name: string; href: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Only show the fresh link while that TA still exists (it may be revoked from another tab).
+  const fresh = created && tas?.some((t) => t._id === created.taId) ? created : null;
+
+  async function guard(action: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await action();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  function onInvite(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    guard(async () => {
+      const taSecret = newSecret();
+      const taId = await invite({ sessionId, instructorSecret, name: trimmed, taSecret });
+      setCreated({ taId, name: trimmed, href: `${window.location.origin}/ta/${sessionId}#${taSecret}` });
+      setCopied(false);
+      setName("");
+    });
+  }
+
+  return (
+    <Card aria-labelledby="tas-heading">
+      <CardHeader>
+        <CardTitle id="tas-heading" render={<h2 />}>TAs</CardTitle>
+        <CardDescription>
+          Each TA gets a personal link to this dashboard and can enter help rooms. The link is shown once; revoke a TA to cut off only
+          their access.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <form onSubmit={onInvite} className="flex flex-wrap items-center gap-2 text-sm">
+          <label htmlFor="ta-name">Add TA</label>
+          <Input
+            id="ta-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={TA_NAME_MAX}
+            placeholder="Name shown in help rooms"
+            className="h-8 w-56 bg-background"
+          />
+          <Button type="submit" size="sm" disabled={!name.trim()}>
+            <UserPlus data-icon="inline-start" aria-hidden />
+            Create TA link
+          </Button>
+        </form>
+        {fresh && (
+          <div className="space-y-1.5 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm">
+            <p>
+              Send this link to <strong>{fresh.name}</strong>. It won’t be shown again.
+            </p>
+            <div className="flex items-center gap-2">
+              <Input readOnly value={fresh.href} aria-label={`TA link for ${fresh.name}`} className="h-8 bg-background font-mono text-xs" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigator.clipboard?.writeText(fresh.href).then(() => setCopied(true))}
+              >
+                {copied ? <Check className="text-emerald-600" aria-hidden /> : <Copy aria-hidden />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+          </div>
+        )}
+        {tas === undefined ? null : tas === null || tas.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No TAs yet.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {tas.map((t) => (
+              <li key={t._id} className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
+                <span className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-sky-100 text-sky-900">
+                    TA
+                  </Badge>
+                  <span className="font-medium">{t.name}</span>
+                </span>
+                <Button size="sm" variant="outline" onClick={() => guard(() => revoke({ sessionId, instructorSecret, taId: t._id }))}>
+                  Revoke
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <InlineError message={error} />
+      </CardContent>
+    </Card>
   );
 }
 
