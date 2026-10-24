@@ -27,12 +27,11 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-/** Rose → amber → teal on the understanding score; soft fill, saturated accent bar. */
+/** Brick → ochre → moss on the understanding score; soft fill, inked accent bar. */
 export function scoreColors(score: number | null) {
   if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
-  // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
-  const hue = Math.round(10 + score * 160);
-  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.6 0.14 ${hue})` };
+  const hue = Math.round(25 + score * 120);
+  return { fill: `oklch(0.955 0.03 ${hue})`, accent: `oklch(0.5 0.12 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {

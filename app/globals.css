@@ -4,14 +4,77 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* Paper & Ink: print palette. The semantic hues (red / amber / emerald) keep their
+     meaning for the three understanding levels but are re-inked to brick, ochre and moss
+     so they sit on cream paper. Neutrals are warm greys (graph chrome, edges). */
+  --color-red-50: #f9ece9;
+  --color-red-100: #f1d9d5;
+  --color-red-200: #e4b8b2;
+  --color-red-300: #cf8a84;
+  --color-red-400: #b85a58;
+  --color-red-500: #9c2f2f;
+  --color-red-600: #8c2727;
+  --color-red-700: #74201f;
+  --color-red-800: #5c1a19;
+  --color-red-900: #471514;
+  --color-red-950: #2e0d0c;
+  --color-amber-50: #f8f0dc;
+  --color-amber-100: #f3e7cf;
+  --color-amber-200: #e9d3a5;
+  --color-amber-300: #dcbb72;
+  --color-amber-400: #d4a74c;
+  --color-amber-500: #a06a14;
+  --color-amber-600: #8a5a12;
+  --color-amber-700: #74490e;
+  --color-amber-800: #5a3a0c;
+  --color-amber-900: #452c09;
+  --color-amber-950: #2c1c05;
+  --color-emerald-50: #eaf0e6;
+  --color-emerald-100: #d9e4d3;
+  --color-emerald-200: #b8ccb0;
+  --color-emerald-300: #8fae8a;
+  --color-emerald-400: #628c66;
+  --color-emerald-500: #44724b;
+  --color-emerald-600: #3e6b45;
+  --color-emerald-700: #38613e;
+  --color-emerald-800: #2e4f32;
+  --color-emerald-900: #27422c;
+  --color-emerald-950: #182a1c;
+  --color-neutral-50: #f6f1e7;
+  --color-neutral-100: #efeadf;
+  --color-neutral-200: #e0d9cb;
+  --color-neutral-300: #cbc2b1;
+  --color-neutral-400: #a39a8b;
+  --color-neutral-500: #7d7467;
+  --color-neutral-600: #625b52;
+  --color-neutral-700: #4a443d;
+  --color-neutral-800: #332e29;
+  --color-neutral-900: #1d1a16;
+  --color-neutral-950: #120f0c;
+  /* Indigo (used by the lesson setup form) is re-inked: solid ink for fills, oxblood for links. */
+  --color-indigo-50: #f6f1e7;
+  --color-indigo-100: #efeadf;
+  --color-indigo-500: #8c2727;
+  --color-indigo-600: #1d1a16;
+  --color-indigo-700: #74201f;
+  --color-indigo-800: #5c1a19;
+  /* No drop shadows anywhere: surfaces are separated by hairlines and paper tone. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
+}
+
 @theme inline {
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
-  --color-blahaj: var(--blahaj);
-  --color-blahaj-belly: var(--blahaj-belly);
-  --color-blahaj-pink: var(--blahaj-pink);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-heading: var(--font-fraunces), Georgia, serif;
+--color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -51,151 +114,82 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Blåhaj: IKEA plush-shark palette. Blåhaj blue for actions, belly white-blue page,
-   denim text, with the toy's black eyes (foreground) and pink mouth (destructive) as accents. */
+/* Paper & Ink — light only. Cream stock, warm near-black ink, one oxblood accent. */
 :root {
-  --blahaj: oklch(0.62 0.11 245);
-  --blahaj-belly: oklch(0.955 0.016 240);
-  --blahaj-pink: oklch(0.54 0.15 5);
-  --background: oklch(0.955 0.016 240);
-  --foreground: oklch(0.3 0.065 252);
-  --card: oklch(0.985 0.006 235);
-  --card-foreground: oklch(0.3 0.065 252);
-  --popover: oklch(0.985 0.006 235);
-  --popover-foreground: oklch(0.3 0.065 252);
-  --primary: oklch(0.54 0.12 245);
-  --primary-foreground: oklch(0.99 0.004 235);
-  --secondary: oklch(0.9 0.03 240);
-  --secondary-foreground: oklch(0.3 0.065 252);
-  --muted: oklch(0.93 0.022 240);
-  --muted-foreground: oklch(0.5 0.055 250);
-  --accent: oklch(0.91 0.045 238);
-  --accent-foreground: oklch(0.3 0.065 252);
-  --destructive: oklch(0.54 0.15 5);
-  --border: oklch(0.86 0.03 242);
-  --input: oklch(0.84 0.035 242);
-  --ring: oklch(0.62 0.11 245);
-  --chart-1: oklch(0.62 0.11 245);
-  --chart-2: oklch(0.45 0.09 252);
-  --chart-3: oklch(0.78 0.07 235);
-  --chart-4: oklch(0.68 0.12 5);
-  --chart-5: oklch(0.3 0.065 252);
-  --radius: 1.25rem;
-  --sidebar: oklch(0.985 0.006 235);
-  --sidebar-foreground: oklch(0.3 0.065 252);
-  --sidebar-primary: oklch(0.54 0.12 245);
-  --sidebar-primary-foreground: oklch(0.99 0.004 235);
-  --sidebar-accent: oklch(0.91 0.045 238);
-  --sidebar-accent-foreground: oklch(0.3 0.065 252);
-  --sidebar-border: oklch(0.86 0.03 242);
-  --sidebar-ring: oklch(0.62 0.11 245);
-}
-
-/* Deep-water variant: same shark, lights off. */
-.dark {
-  --background: oklch(0.22 0.04 252);
-  --foreground: oklch(0.95 0.012 240);
-  --card: oklch(0.27 0.04 250);
-  --card-foreground: oklch(0.95 0.012 240);
-  --popover: oklch(0.27 0.04 250);
-  --popover-foreground: oklch(0.95 0.012 240);
-  --primary: oklch(0.74 0.1 240);
-  --primary-foreground: oklch(0.2 0.045 252);
-  --secondary: oklch(0.33 0.04 250);
-  --secondary-foreground: oklch(0.95 0.012 240);
-  --muted: oklch(0.31 0.035 250);
-  --muted-foreground: oklch(0.74 0.04 240);
-  --accent: oklch(0.36 0.05 248);
-  --accent-foreground: oklch(0.95 0.012 240);
-  --destructive: oklch(0.74 0.12 5);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.74 0.1 240);
-  --chart-1: oklch(0.74 0.1 240);
-  --chart-2: oklch(0.6 0.1 248);
-  --chart-3: oklch(0.85 0.05 235);
-  --chart-4: oklch(0.74 0.12 5);
-  --chart-5: oklch(0.95 0.012 240);
-  --sidebar: oklch(0.27 0.04 250);
-  --sidebar-foreground: oklch(0.95 0.012 240);
-  --sidebar-primary: oklch(0.74 0.1 240);
-  --sidebar-primary-foreground: oklch(0.2 0.045 252);
-  --sidebar-accent: oklch(0.36 0.05 248);
-  --sidebar-accent-foreground: oklch(0.95 0.012 240);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.74 0.1 240);
+  --background: oklch(0.959 0.014 85);
+  --foreground: oklch(0.22 0.009 75);
+  --card: oklch(0.985 0.008 92);
+  --card-foreground: oklch(0.22 0.009 75);
+  --popover: oklch(0.985 0.008 92);
+  --popover-foreground: oklch(0.22 0.009 75);
+  --primary: oklch(0.22 0.009 75);
+  --primary-foreground: oklch(0.975 0.01 90);
+  --secondary: oklch(0.921 0.02 85);
+  --secondary-foreground: oklch(0.22 0.009 75);
+  --muted: oklch(0.921 0.02 85);
+  --muted-foreground: oklch(0.475 0.017 74);
+  --accent: oklch(0.391 0.125 18);
+  --accent-foreground: oklch(0.975 0.01 90);
+  --destructive: oklch(0.432 0.136 25);
+  --border: oklch(0.857 0.024 82);
+  --input: oklch(0.799 0.026 81);
+  --ring: oklch(0.391 0.125 18);
+  --chart-1: oklch(0.22 0.009 75);
+  --chart-2: oklch(0.391 0.125 18);
+  --chart-3: oklch(0.475 0.017 74);
+  --chart-4: oklch(0.7 0.02 80);
+  --chart-5: oklch(0.857 0.024 82);
+  --radius: 0.35rem;
+  --sidebar: oklch(0.985 0.008 92);
+  --sidebar-foreground: oklch(0.22 0.009 75);
+  --sidebar-primary: oklch(0.22 0.009 75);
+  --sidebar-primary-foreground: oklch(0.975 0.01 90);
+  --sidebar-accent: oklch(0.921 0.02 85);
+  --sidebar-accent-foreground: oklch(0.22 0.009 75);
+  --sidebar-border: oklch(0.857 0.024 82);
+  --sidebar-ring: oklch(0.391 0.125 18);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
-  }
-}
-@layer base {
-  html {
+    font-size: 17px;
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
   }
-  /* Belly-to-back gradient: paler at the bottom, a touch more blue up top, plus a soft fin-shaped glow. */
   body {
-    background-color: var(--background);
-    background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 22%), transparent 70%),
-      radial-gradient(44rem 22rem at -10% 110%, oklch(0.68 0.12 5 / 10%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.93 0.03 240), var(--background) 40rem);
-    background-attachment: fixed;
+    @apply bg-background text-foreground;
+    /* Masthead rule + a whisper of paper grain (alpha ≤ 0.05, never affects contrast). */
+    border-top: 3px solid var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    font-feature-settings: "kern", "liga", "calt";
   }
-  /* Two gentle waves along the bottom edge of the viewport (inline SVG, no image files). */
-  body::before,
-  body::after {
-    content: "";
-    position: fixed;
-    inset: auto 0 0 0;
-    height: 7rem;
-    pointer-events: none;
-    z-index: -1;
-    background-color: oklch(0.62 0.11 245 / 16%);
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 112' preserveAspectRatio='none'%3E%3Cpath d='M0 64C180 24 300 24 480 56S780 112 960 80 1260 8 1440 48V112H0Z'/%3E%3C/svg%3E")
-      center bottom / 100% 100% no-repeat;
-  }
-  body::before {
-    height: 10rem;
-    background-color: oklch(0.62 0.11 245 / 8%);
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160' preserveAspectRatio='none'%3E%3Cpath d='M0 96C240 40 420 40 640 88S1040 160 1240 104 1440 56 1440 56V160H0Z'/%3E%3C/svg%3E");
-  }
-  .dark body {
-    background-image:
-      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 25%), transparent 70%),
-      linear-gradient(to bottom, oklch(0.25 0.045 252), var(--background) 40rem);
-  }
-  .dark body::after {
-    background-color: oklch(0.62 0.11 245 / 20%);
-  }
-  .dark body::before {
-    background-color: oklch(0.62 0.11 245 / 10%);
-  }
-  h1,
-  h2,
-  h3,
-  [data-slot="card-title"] {
+  h1, h2, h3, h4 {
     @apply font-heading;
-    letter-spacing: 0.005em;
+    letter-spacing: -0.01em;
+    font-variation-settings: "SOFT" 40, "WONK" 0;
+    text-wrap: balance;
   }
   h1 {
-    font-weight: 600;
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
   }
-  [data-slot="input"],
-  [data-slot="textarea"],
-  [data-slot="select-trigger"] {
-    background-color: var(--card);
+  h1 em, h2 em {
+    font-style: italic;
+    color: var(--accent);
   }
   ::selection {
-    background-color: oklch(0.62 0.11 245 / 30%);
+    background: oklch(0.391 0.125 18 / 0.18);
+  }
+  /* Hairlines, not shadows: the dashed low-sample border on graph nodes is kept. */
+  [data-slot="select-content"],
+  [data-slot="alert-dialog-popup"] {
+    @apply border border-border;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -246,7 +240,7 @@
 
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: oklch(0.72 0.06 240);
+  stroke: var(--color-neutral-400);
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);
