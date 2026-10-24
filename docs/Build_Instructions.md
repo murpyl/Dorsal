@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build an end-to-end working hackathon MVP of **A (Confusion Radar) + B (PeerMesh) + F (KnowledgeGraph)**. Prioritize a reliably functioning real-time multi-device demo over production breadth. Use **Next.js App Router + TypeScript + Tailwind CSS + Convex**, **React Flow / `@xyflow/react`** for the concept map, and the official **Anthropic TypeScript SDK** for Claude-powered clustering, graph suggestions, and opt-in peer-help recommendations. Avoid custom websocket servers, another database, and unnecessary abstractions.
+Build an end-to-end working hackathon MVP of **A (Confusion Radar) + B (PeerMesh) + F (KnowledgeGraph)**. Prioritize a reliably functioning real-time multi-device demo over production breadth. Use **Next.js App Router + TypeScript + Tailwind CSS + Convex**, **React Flow / `@xyflow/react`** for the concept map, and the official **Anthropic TypeScript SDK** for Claude-powered misconception clustering (graph-link and peer-help suggestions are stretch). Avoid custom websocket servers, another database, and unnecessary abstractions.
 
 See `docs/MVP_Outline.md` for product behavior, sponsor mapping, safety constraints, and demo narrative.
 
@@ -19,15 +19,18 @@ See `docs/MVP_Outline.md` for product behavior, sponsor mapping, safety constrai
 
 Prerequisites: recent Node.js LTS, npm, Convex account, and an Anthropic API key for the AI path.
 
-Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` refuses to run while `AGENTS.md` is present, so move it aside for the scaffold, then merge it with the `AGENTS.md` (Next.js agent rules) that the scaffold generates:
+Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` fails here twice over: the repo directory name has capitals (invalid npm package name) and `AGENTS.md` already exists. So scaffold into a temp dir, merge its generated `AGENTS.md` (Next.js agent rules, which `next dev` re-adds if missing) with ours, and copy the rest in:
 
 ```bash
-mv AGENTS.md /tmp/AGENTS.md
-npx create-next-app@latest . --typescript --tailwind --eslint --app --use-npm --yes
-cat /tmp/AGENTS.md AGENTS.md > AGENTS.merged && mv AGENTS.merged AGENTS.md  # keep repo rules + Next.js agent rules block
+npx create-next-app@latest /tmp/classpulse --typescript --tailwind --eslint --app --use-npm --yes --skip-install
+cat AGENTS.md /tmp/classpulse/AGENTS.md > AGENTS.merged && mv AGENTS.merged AGENTS.md && rm /tmp/classpulse/AGENTS.md
+cp -rn /tmp/classpulse/. .
+npm install
 npm install convex @xyflow/react zod @anthropic-ai/sdk
-npx convex dev            # coding agents without a Convex login: CONVEX_AGENT_MODE=anonymous npx convex dev
+npx convex dev            # needs `npx convex login` or a dev CONVEX_DEPLOY_KEY
 ```
+
+`CONVEX_AGENT_MODE=anonymous npx convex dev` (no login) runs a local backend binary that needs glibc >= 2.38 (e.g. Ubuntu 24.04+); on older hosts use a deploy key.
 
 Add `lucide-react` only if icons are actually needed. Add `convex-test` + `vitest` only when writing the mutation-invariant tests in section 8.
 
@@ -233,7 +236,7 @@ Example expected model response:
 - [ ] Gather and document evidence for a real problem: e.g., brief interviews with 3–5 students or a TA (do not fabricate testimonials).
 - [ ] `@anthropic-ai/sdk` runs **server-side within a Convex Node.js action** using `ANTHROPIC_API_KEY`; show a real successful Claude invocation.
 - [ ] Claude clusters differently worded questions into misconceptions, citing only valid input IDs; instructor reviews the result.
-- [ ] Claude proposes traceable concept mappings and/or opt-in peer groupings. These must meaningfully improve the core A+B+F workflow, not be a bolted-on chat interface.
+- [ ] Claude's cluster output maps each misconception to valid concept IDs, lighting up the graph. AI must meaningfully improve the core A+B+F workflow, not be a bolted-on chat interface. (New concept links / peer groupings are stretch.)
 - [ ] Display failures honestly; validate outputs, protect student data, and keep manual fallback.
 - [ ] Document model limitations (incorrect merging, fabricated relationships, bias, overconfidence) and mitigations.
 - [ ] Confirm official rules for API access, eligible models, routing, and submission before claiming eligibility.
@@ -301,7 +304,7 @@ Where possible, use Convex's testing helpers or a simple integration test suite 
 - **00:35–00:55:** Two more questions arrive; invoke **Claude** clustering via a Convex action. Show linked original evidence and instructor review.
 - **00:55–01:15:** Approve `Tracing recursive return values` cluster; affected nodes light up.
 - **01:15–01:40:** Helper opts in; students join a room and resolve a factorial trace collaboratively.
-- **01:40–02:00:** Post-help signals/checks update graph; state sponsor alignment: **Convex** synchronizes the class, **Claude** interprets shared misconceptions and suggests peer-help/graph links, **Meta** is served by actual peer interaction.
+- **01:40–02:00:** Post-help signals/checks update graph; state sponsor alignment: **Convex** synchronizes the class, **Claude** interprets shared misconceptions and maps them onto the concept graph, **Meta** is served by actual peer interaction.
 
 ## 10. Deliverables
 
