@@ -52,6 +52,10 @@ describe("seed.reset", () => {
     expect(view.coveredConceptIds).toHaveLength(4);
     expect(view.coveredConceptIds).not.toContain(view.activeConceptId);
     expect(view.answeredCount).toBe(24);
+    const prompts = (await t.query(api.prompts.list, { sessionId, instructorSecret }))!;
+    expect(prompts.map((p) => p.conceptLabel)).toEqual(["Call stack & frames", "Tree recursion", "Return values", "Recursive call", "Base case"]);
+    expect(prompts[0].current).toBe(true);
+    expect(prompts.map((p) => p.responseCount)).toEqual([24, 10, 24, 24, 24]);
 
     const returnValues = view.concepts.find((c) => c.label === "Return values")!._id;
     const callStack = view.concepts.find((c) => c.label === "Call stack & frames")!._id;

@@ -1,8 +1,9 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, getStaffSession, sha256 } from "./credentials";
-import { MAX_PROMPT_LENGTH } from "../lib/prompt";
+import { MAX_PROMPT_LENGTH, MAX_PROMPTS } from "../lib/prompt";
+import { promptKind } from "./schema";
 import { canAddPrerequisite, DESCRIPTION_MAX, LABEL_MAX, layoutConcepts, MAX_CONCEPTS, type LessonConcept } from "../lib/lessonGraph";
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -15,6 +16,16 @@ export function coveredConceptIds(session: Doc<"sessions">) {
 /** True when a student may rate this concept on the session page: it is current or has been current before. */
 export function hasBeenActive(session: Doc<"sessions">, conceptId: Id<"concepts">) {
   return session.activeConceptId === conceptId || (session.activeHistory ?? []).some((h) => h.conceptId === conceptId);
+}
+
+/** The current prompt row, or null for sessions from before prompts were stored. */
+export async function currentPrompt(ctx: QueryCtx, session: Doc<"sessions">) {
+  return session.activePromptId ? await ctx.db.get(session.activePromptId) : null;
+}
+
+/** Number of students who answered a prompt (one response row per participant). */
+export async function responseCount(ctx: QueryCtx, promptId: Id<"prompts">) {
+  return (await ctx.db.query("promptResponses").withIndex("by_prompt", (q) => q.eq("promptId", promptId)).collect()).length;
 }
 
 const lessonConcept = v.object({ label: v.string(), description: v.string(), prerequisites: v.array(v.number()) });
@@ -78,7 +89,9 @@ export const create = mutation({
       createdAt: Date.now(),
     });
     const conceptIds = await insertLesson(ctx, sessionId, lesson);
-    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0], activeHistory: [{ conceptId: conceptIds[0], at: Date.now() }] });
+    const now = Date.now();
+    const activePromptId = await ctx.db.insert("prompts", { sessionId, conceptId: conceptIds[0], kind: "rating", createdAt: now });
+    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0], activePromptId, activeHistory: [{ conceptId: conceptIds[0], at: now }] });
     return { sessionId, code };
   },
 });
@@ -139,13 +152,22 @@ export const getStudentView = query({
         return { _id: c._id, label: c.label, description: c.description, myLevel: mine?.level ?? null };
       }),
     );
+    const prompt = await currentPrompt(ctx, session);
+    const myResponse = prompt
+      ? await ctx.db
+          .query("promptResponses")
+          .withIndex("by_prompt_participant", (q) => q.eq("promptId", prompt._id).eq("participantId", participant._id))
+          .unique()
+      : null;
     return {
       sessionId: session._id,
       title: session.title,
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
       coveredConceptIds: coveredConceptIds(session),
-      activePrompt: session.activePrompt,
+      activePrompt: prompt
+        ? { _id: prompt._id, kind: prompt.kind, question: prompt.question, myLevel: myResponse?.level ?? null, myText: myResponse?.text ?? null }
+        : undefined,
       alias: participant.alias,
       concepts: withMyLevel,
     };
@@ -192,6 +214,7 @@ export const getInstructorView = query({
       .query("conceptEdges")
       .withIndex("by_session", (q) => q.eq("sessionId", id))
       .collect();
+    const prompt = await currentPrompt(ctx, session);
     return {
       role,
       taName: ta?.alias,
@@ -200,9 +223,11 @@ export const getInstructorView = query({
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
       coveredConceptIds: coveredConceptIds(session),
-      activePrompt: session.activePrompt,
-      // One `pre` signal per participant and concept, so the current concept's total is the number of participants who answered it.
-      answeredCount: conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0,
+      activePrompt: prompt ? { _id: prompt._id, kind: prompt.kind, question: prompt.question } : undefined,
+      // Sessions from before prompts were stored: one `pre` signal per participant and concept, so the current concept's total.
+      answeredCount: prompt
+        ? await responseCount(ctx, prompt._id)
+        : (conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0),
       participantCount: participants.length,
       simulatedCount: participants.filter((p) => p.isSimulated).length,
       publishedClusterCount: published.length,
@@ -212,9 +237,16 @@ export const getInstructorView = query({
   },
 });
 
+/** Pushes a new prompt (rating or open-ended) about a concept and makes it current; earlier prompts and their responses are kept. */
 export const setActiveConcept = mutation({
-  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts"), question: v.optional(v.string()) },
-  handler: async (ctx, { sessionId, instructorSecret, conceptId, question }) => {
+  args: {
+    sessionId: v.id("sessions"),
+    instructorSecret: v.string(),
+    conceptId: v.id("concepts"),
+    question: v.optional(v.string()),
+    kind: v.optional(promptKind),
+  },
+  handler: async (ctx, { sessionId, instructorSecret, conceptId, question, kind = "rating" }) => {
     const session = await getInstructorSession(ctx, sessionId, instructorSecret);
     if (!session) throw new ConvexError("Instructor access required");
     const concept = await ctx.db.get(conceptId);
@@ -222,12 +254,17 @@ export const setActiveConcept = mutation({
     // Sessions created before activeHistory existed: their current concept was active, so it counts as covered.
     const history =
       session.activeHistory ?? (session.activeConceptId ? [{ conceptId: session.activeConceptId, at: session.createdAt }] : []);
-    const activePrompt = question?.trim() || undefined;
-    if (activePrompt && activePrompt.length > MAX_PROMPT_LENGTH) throw new ConvexError(`Keep the prompt under ${MAX_PROMPT_LENGTH} characters`);
+    const text = question?.trim() || undefined;
+    if (text && text.length > MAX_PROMPT_LENGTH) throw new ConvexError(`Keep the prompt under ${MAX_PROMPT_LENGTH} characters`);
+    if (kind === "open" && !text) throw new ConvexError("Open-ended prompts need a question");
+    const pushed = await ctx.db.query("prompts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
+    if (pushed.length >= MAX_PROMPTS) throw new ConvexError(`A session can have at most ${MAX_PROMPTS} prompts`);
+    const now = Date.now();
+    const activePromptId = await ctx.db.insert("prompts", { sessionId, conceptId, kind, question: text, createdAt: now });
     await ctx.db.patch(sessionId, {
       activeConceptId: conceptId,
-      activePrompt,
-      activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: Date.now() }],
+      activePromptId,
+      activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: now }],
     });
   },
 });

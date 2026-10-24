@@ -75,6 +75,11 @@ async function deleteSession(ctx: MutationCtx, session: Doc<"sessions">) {
       await ctx.db.query("questions").withIndex("by_session_state", (q) => q.eq("sessionId", sessionId).eq("state", state)).collect(),
     );
   }
+  const prompts = await ctx.db.query("prompts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
+  for (const prompt of prompts) {
+    await deleteAll(ctx, await ctx.db.query("promptResponses").withIndex("by_prompt", (q) => q.eq("promptId", prompt._id)).collect());
+  }
+  await deleteAll(ctx, prompts);
   const concepts = await ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
   for (const concept of concepts) {
     for (const phase of ["pre", "post"] as const) {
@@ -112,9 +117,21 @@ export const reset = internalMutation({
     });
 
     const conceptIds = await insertLesson(ctx, sessionId, RECURSION_LESSON);
-    // Every concept has already been current (so all seeded `pre` signals are ratable); Call stack & frames is current now.
+    // Every concept has already been current (so all seeded `pre` signals are ratable), each through one rating prompt
+    // in concept order with Call stack & frames pushed last, so it is the current prompt.
+    const pushOrder = [0, 1, 3, 4, 2];
+    const promptIds: Id<"prompts">[] = [];
+    for (const [i, c] of pushOrder.entries()) {
+      promptIds[c] = await ctx.db.insert("prompts", {
+        sessionId,
+        conceptId: conceptIds[c],
+        kind: "rating",
+        createdAt: now - (pushOrder.length - i) * 60_000,
+      });
+    }
     await ctx.db.patch(sessionId, {
       activeConceptId: conceptIds[2],
+      activePromptId: promptIds[2],
       activeHistory: conceptIds.map((conceptId, i) => ({ conceptId, at: now - (conceptIds.length - i) * 60_000 })),
     });
 
@@ -139,14 +156,10 @@ export const reset = internalMutation({
       const responders = confused + partial + canExplain;
       for (let k = 0; k < responders; k++) {
         const level = k < confused ? "confused" : k < confused + partial ? "partial" : "can_explain";
-        await ctx.db.insert("signals", {
-          sessionId,
-          conceptId: conceptIds[c],
-          participantId: participantIds[(k + c * 7) % PARTICIPANTS],
-          level,
-          phase: "pre",
-          updatedAt: now - (responders - k) * 5_000,
-        });
+        const participantId = participantIds[(k + c * 7) % PARTICIPANTS];
+        const updatedAt = now - (responders - k) * 5_000;
+        await ctx.db.insert("signals", { sessionId, conceptId: conceptIds[c], participantId, level, phase: "pre", updatedAt });
+        await ctx.db.insert("promptResponses", { sessionId, promptId: promptIds[c], participantId, level, updatedAt });
         signalCount++;
       }
     }
