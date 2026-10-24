@@ -30,10 +30,10 @@ import { cn } from "@/lib/utils";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  // The instructor's own secret wins on a device that has both; otherwise a TA's personal link secret.
+  // A TA link opened on this device takes over (even where the instructor's secret is also stored), so a revoked TA is locked out.
   const instructorSecret = useStoredCredential(instructorSecretKey(sessionId), false);
   const taSecret = useStoredCredential(taSecretKey(sessionId), false);
-  const secret = instructorSecret === undefined || taSecret === undefined ? undefined : (instructorSecret ?? taSecret);
+  const secret = instructorSecret === undefined || taSecret === undefined ? undefined : (taSecret ?? instructorSecret);
   const view = useQuery(
     api.sessions.getInstructorView,
     secret ? { sessionId, instructorSecret: secret } : "skip",
@@ -45,7 +45,19 @@ export function RadarDashboard() {
   if (secret === null || view === null)
     return (
       <main className="mx-auto w-full max-w-xl p-8">
-        <InlineError message="No instructor access for this session on this device." />
+        <InlineError message={taSecret ? "Your TA access to this session was revoked." : "No instructor access for this session on this device."} />
+        {taSecret && instructorSecret && (
+          <Button
+            className="mt-4"
+            variant="outline"
+            onClick={() => {
+              localStorage.removeItem(taSecretKey(sessionId));
+              window.location.reload();
+            }}
+          >
+            Use instructor access on this device
+          </Button>
+        )}
       </main>
     );
   if (view === undefined) return <PageSkeleton wide />;
@@ -74,7 +86,7 @@ export function RadarDashboard() {
         <div className="space-y-2">
           <Brand />
           <div>
-            <p className="text-sm text-muted-foreground">{view.role === "ta" ? "TA" : "Instructor"}</p>
+            <p className="text-sm text-muted-foreground">{view.role === "ta" ? `TA · ${view.taName}` : "Instructor"}</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{view.title}</h1>
           </div>
         </div>

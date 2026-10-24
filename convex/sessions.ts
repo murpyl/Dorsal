@@ -159,7 +159,7 @@ export const getInstructorView = query({
     if (!id) return null;
     const staff = await getStaffSession(ctx, id, instructorSecret);
     if (!staff) return null;
-    const { session, role } = staff;
+    const { session, role, ta } = staff;
 
     const participants = (
       await ctx.db
@@ -194,6 +194,7 @@ export const getInstructorView = query({
       .collect();
     return {
       role,
+      taName: ta?.alias,
       title: session.title,
       code: session.code,
       state: session.state,

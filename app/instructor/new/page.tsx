@@ -14,7 +14,7 @@ import {
   LESSON_MAX_TOTAL_BYTES,
   LESSON_NOTES_MAX,
 } from "@/lib/aiSchemas";
-import { instructorSecretKey, newSecret } from "@/lib/credentials";
+import { instructorSecretKey, newSecret, taSecretKey } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import {
   canAddPrerequisite,
@@ -114,6 +114,7 @@ export default function NewSession() {
         concepts: concepts.map(({ label, description, prerequisites }) => ({ label, description, prerequisites })),
       });
       localStorage.setItem(instructorSecretKey(sessionId), secret);
+      localStorage.removeItem(taSecretKey(sessionId));
       router.push(`/instructor/${sessionId}`);
     } catch (err) {
       setCreateError(errorMessage(err));

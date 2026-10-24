@@ -29,6 +29,7 @@ describe("TA role", () => {
     for (const secret of [TA1, TA2]) {
       const view = (await t.query(api.sessions.getInstructorView, { sessionId, instructorSecret: secret }))!;
       expect(view.role).toBe("ta");
+      expect(view.taName).toBe(secret === TA1 ? "Maya" : "Leo");
       expect(view.participantCount).toBe(1);
       expect(JSON.stringify(view)).not.toContain("null");
     }
