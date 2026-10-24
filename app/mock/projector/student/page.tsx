@@ -22,7 +22,7 @@ const TABS: { id: Tab; label: string; icon: typeof ListChecks }[] = [
   { id: "help", label: "Help", icon: HandHelping },
 ];
 const MAX_LENGTH = 500;
-const roomHref = (roomId: string) => `/mock/projector/room?room=${roomId}`;
+const roomHref = (roomId: string, asHelper = false) => `/mock/projector/room?room=${roomId}${asHelper ? "&as=helper" : ""}`;
 const newRoomHref = (conceptId: string) => `/mock/projector/room?concept=${conceptId}`;
 
 export default function StudentProjectorMock() {
@@ -480,7 +480,7 @@ function RoomButton({ room, asHelper, wide }: { room: (typeof rooms)[number]; as
     );
   if (room.members.length >= room.capacity) return <Badge variant="secondary">Full</Badge>;
   return (
-    <Button size={wide ? "lg" : "sm"} variant="outline" className={cls} nativeButton={false} render={<Link href={roomHref(room._id)} />}>
+    <Button size={wide ? "lg" : "sm"} variant="outline" className={cls} nativeButton={false} render={<Link href={roomHref(room._id, asHelper)} />}>
       {asHelper ? "Join as helper" : "Join"}
     </Button>
   );

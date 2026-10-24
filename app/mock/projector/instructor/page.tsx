@@ -78,6 +78,7 @@ export default function InstructorProjectorMock() {
   const suggested = clusters.filter((c) => c.status === "suggested");
   const clusteredIds = new Set(published.flatMap((c) => c.questionIds));
   const pending = questions.filter((q) => q.state !== "hidden" && !hidden.includes(q._id) && !clusteredIds.has(q._id));
+  const visibleClusteredIds = new Set([...clusteredIds].filter((id) => !hidden.includes(id)));
   // The graph and metrics follow the selected signal phase; the comparison panel keeps both tallies.
   const concepts = fixtureConcepts.map((c) => ({
     ...c,
@@ -469,7 +470,7 @@ export default function InstructorProjectorMock() {
                 {drawerTab === "queue" && (
                   <QueuePanel
                     pending={pending}
-                    clusteredIds={clusteredIds}
+                    clusteredIds={visibleClusteredIds}
                     selected={selectedQs}
                     onToggle={(id) => setSelectedQs((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))}
                     onHide={(id) => setHidden((h) => [...h, id])}

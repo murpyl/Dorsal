@@ -28,7 +28,7 @@ export default function RoomProjectorMockPage() {
   );
 }
 
-/** `?room=<id>` opens a fixture room; `?concept=<id>` opens a fresh room the student just created as helper. */
+/** `?room=<id>[&as=helper]` opens a fixture room (joining in that role if not a member); `?concept=<id>` opens a fresh room the student just created as helper. */
 function resolveRoom(params: URLSearchParams): { room: Room; messages: Message[] } {
   const conceptId = params.get("concept");
   if (conceptId && conceptById[conceptId]) {
@@ -47,8 +47,9 @@ function resolveRoom(params: URLSearchParams): { room: Room; messages: Message[]
     };
   }
   const room = rooms.find((r) => r._id === params.get("room")) ?? rooms[0];
+  const role = params.get("as") === "helper" ? "helper" : "learner";
   return {
-    room: room.isMember ? room : { ...room, isMember: true, myRole: "learner", members: [...room.members, { alias: session.me.alias, role: "learner", isMe: true }] },
+    room: room.isMember ? room : { ...room, isMember: true, myRole: role, members: [...room.members, { alias: session.me.alias, role, isMe: true }] },
     messages: room._id === rooms[0]._id ? fixtureMessages : [],
   };
 }
