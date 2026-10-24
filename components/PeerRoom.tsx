@@ -23,8 +23,8 @@ import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
-  { level: "can_explain", label: "I understand now", className: "bg-emerald-600 text-white hover:bg-emerald-700" },
-  { level: "confused", label: "Still confused", className: "bg-red-500 text-white hover:bg-red-600" },
+  { level: "can_explain", label: "I understand now", className: "bg-emerald-400 text-emerald-950 hover:bg-emerald-300" },
+  { level: "confused", label: "Still confused", className: "bg-rose-400 text-rose-950 hover:bg-rose-300" },
 ];
 
 export function PeerRoom() {
@@ -103,7 +103,7 @@ export function PeerRoom() {
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{room.title}</h1>
             {!open && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+              <Badge variant="secondary" className="bg-amber-300/15 text-amber-200">
                 closed
               </Badge>
             )}
@@ -127,11 +127,11 @@ export function PeerRoom() {
               {room.members.map((m, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-1.5">
                   <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
-                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-100 text-emerald-900")}>
+                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-300/15 text-emerald-200")}>
                     {m.role}
                   </Badge>
                   {m.isSimulated && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                    <Badge variant="secondary" className="bg-amber-300/15 text-amber-200">
                       simulated
                     </Badge>
                   )}
@@ -183,7 +183,7 @@ export function PeerRoom() {
                   >
                     <p className={cn("mb-0.5 text-[11px] font-medium", m.isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {m.isMine ? "You" : m.authorAlias}
-                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-900">simulated</span>}
+                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-300/15 px-1 text-amber-200">simulated</span>}
                     </p>
                     <p className="break-words whitespace-pre-wrap">{m.body}</p>
                   </div>
@@ -241,7 +241,7 @@ export function PeerRoom() {
             ))}
           </div>
           {checkedIn && (
-            <p className="enter text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>
+            <p className="enter text-sm text-emerald-300">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>
           )}
         </CardContent>
       </Card>

@@ -60,13 +60,13 @@ export function HelperOptIn({
                 <label
                   className={cn(
                     "pressable flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                    checked ? "border-emerald-300 bg-emerald-50 text-emerald-950" : "border-border bg-background hover:bg-muted",
+                    checked ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-100" : "border-border bg-background hover:bg-muted",
                   )}
                 >
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(value) => toggle(c._id, value === true)}
-                    className={cn(checked && "border-emerald-600 bg-emerald-600 text-white data-checked:border-emerald-600 data-checked:bg-emerald-600")}
+                    className={cn(checked && "border-emerald-400 bg-emerald-400 text-emerald-950 data-checked:border-emerald-400 data-checked:bg-emerald-400 data-checked:text-emerald-950")}
                   />
                   <span>
                     I can help with <span className="font-medium">{c.label}</span>

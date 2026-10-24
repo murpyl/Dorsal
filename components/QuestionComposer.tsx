@@ -91,7 +91,7 @@ export function QuestionComposer({
           </Button>
         </div>
         {status?.kind === "ok" && (
-          <p className="enter flex items-start gap-1.5 text-sm text-emerald-700">
+          <p className="enter flex items-start gap-1.5 text-sm text-emerald-300">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
             {status.text}
           </p>
