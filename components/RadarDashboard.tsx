@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
-import { LEVELS, PHASE_LABEL } from "@/lib/levels";
+import { LEVELS } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
 export function RadarDashboard() {
@@ -62,13 +62,13 @@ export function RadarDashboard() {
         <div className="space-y-2">
           <Brand />
           <div>
-            <p className="text-sm text-muted-foreground">Instructor · signals: {PHASE_LABEL[view.phase]}</p>
+            <p className="text-sm text-muted-foreground">Instructor</p>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{view.title}</h1>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <JoinCode code={view.code} />
-          <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} phase={view.phase} state={view.state} />
+          <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} state={view.state} />
         </div>
       </header>
       <ConnectionStatus />
@@ -80,7 +80,7 @@ export function RadarDashboard() {
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
         />
-        <Metric i={1} label="Responses" value={responses} detail="this phase" />
+        <Metric i={1} label="Responses" value={responses} />
         <Metric i={2} label="Confused responses" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
         <Metric i={3} label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
@@ -191,8 +191,8 @@ export function RadarDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2" aria-label="Pre/post comparison and help rooms">
-        <ErrorBoundary label="the pre/post comparison">
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Peer help comparison and help rooms">
+        <ErrorBoundary label="the peer help comparison">
           <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
         </ErrorBoundary>
         <ErrorBoundary label="help rooms">
