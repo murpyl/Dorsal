@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
+import { PublishedClusters } from "@/components/PublishedClusters";
+import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
 import { RoomList } from "@/components/RoomList";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
@@ -44,6 +46,7 @@ export function StudentCockpit() {
         <h1 className="text-2xl font-semibold">{view.title}</h1>
         {view.state === "closed" && <p className="text-amber-600">This session is closed.</p>}
       </header>
+      <QuestionComposer sessionId={view.sessionId} token={token} concepts={view.concepts} activeConceptId={view.activeConceptId} />
       {ordered.map((c) => (
         <section
           key={c._id}
@@ -61,6 +64,7 @@ export function StudentCockpit() {
           />
         </section>
       ))}
+      <PublishedClusters sessionId={view.sessionId} token={token} />
       <HelperOptIn sessionId={view.sessionId} token={token} concepts={view.concepts} />
       <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
     </main>
