@@ -67,15 +67,19 @@ export function sanitizeClusterSuggestions(raw: unknown, input: ClusterInput) {
 
   for (const cluster of parsed.data.clusters) {
     const questionIds: string[] = [];
-    for (const id of cluster.questionIds) {
+    for (const id of new Set(cluster.questionIds)) {
       if (!questionConcept.has(id) || usedQuestions.has(id)) {
         droppedIds++;
         continue;
       }
-      usedQuestions.add(id);
       questionIds.push(id);
     }
-    if (questionIds.length < MIN_CLUSTER_QUESTIONS) continue;
+    droppedIds += cluster.questionIds.length - new Set(cluster.questionIds).size;
+    if (questionIds.length < MIN_CLUSTER_QUESTIONS) {
+      droppedIds += questionIds.length;
+      continue;
+    }
+    for (const id of questionIds) usedQuestions.add(id);
 
     let conceptIds = [...new Set(cluster.conceptIds)].filter((id) => validConcepts.has(id));
     droppedIds += cluster.conceptIds.length - conceptIds.length;
