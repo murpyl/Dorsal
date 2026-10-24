@@ -50,7 +50,7 @@ export function SessionControls({
 
   if (state === "closed")
     return (
-      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+      <Badge variant="secondary" className="bg-amber-400/15 text-amber-200">
         Session closed · no new signals accepted
       </Badge>
     );
@@ -161,7 +161,7 @@ function PhaseBar({ phase, tally }: { phase: Phase; tally: Tally }) {
         {tally.total === 0 ? (
           <span className="ml-1 text-muted-foreground/60">none</span>
         ) : (
-          tally.total < LOW_SAMPLE && <span className="ml-1 text-amber-600">low</span>
+          tally.total < LOW_SAMPLE && <span className="ml-1 text-amber-300">low</span>
         )}
       </span>
     </div>

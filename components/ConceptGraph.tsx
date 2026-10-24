@@ -29,9 +29,9 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
+  if (score === null) return { fill: "var(--muted)", accent: "var(--input)" };
   const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  return { fill: `hsl(${hue + 10} 35% 15%)`, accent: `hsl(${hue} 70% 58%)` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -63,7 +63,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       }}
       className={cn(
         "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        low ? "border-dashed border-neutral-300" : "border-neutral-200",
+        low ? "border-dashed border-input" : "border-border",
         active && "ring-4 ring-foreground/15 border-foreground",
         selected && "border-foreground shadow-md",
       )}
@@ -73,7 +73,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-semibold text-amber-950"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}
@@ -135,7 +135,7 @@ export function ConceptGraph({
         id: e._id,
         source: e.fromId,
         target: e.toId,
-        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-neutral-400)" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--input)" },
         label: "prerequisite",
         labelStyle: { fontSize: 10, fill: "var(--color-muted-foreground)" },
         labelBgStyle: { fill: "var(--color-background)" },
@@ -153,17 +153,17 @@ export function ConceptGraph({
           confused
           <span
             className="inline-block h-1.5 w-16 rounded-full"
-            style={{ background: "linear-gradient(to right, hsl(0 72% 48%), hsl(65 72% 48%), hsl(130 72% 48%))" }}
+            style={{ background: "linear-gradient(to right, hsl(0 70% 58%), hsl(65 70% 58%), hsl(130 70% 58%))" }}
             aria-hidden
           />
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded border border-neutral-300 bg-neutral-100" aria-hidden /> no responses
+          <span className="inline-block size-3 rounded border border-input bg-muted" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" aria-hidden>
+          <span className="inline-block rounded-full bg-amber-400 px-1.5 text-[10px] font-semibold text-amber-950" aria-hidden>
             n clusters
           </span>
           published question clusters on this concept
@@ -186,7 +186,7 @@ export function ConceptGraph({
           fitView
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--color-neutral-300)" />
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--border)" />
         </ReactFlow>
       </div>
     </figure>

@@ -168,17 +168,17 @@ export function RoomList({
       <CardContent className="space-y-3">
         {chosen && (
           <form
-            className="enter flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm"
+            className="enter flex flex-wrap items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-500/10 p-3 text-sm"
             onSubmit={(e) => {
               e.preventDefault();
               run(() => createAsHelper({ sessionId, token, conceptId: chosen._id }));
             }}
           >
-            <label htmlFor="helper-room-concept" className="font-medium text-emerald-950">
+            <label htmlFor="helper-room-concept" className="font-medium text-emerald-200">
               Open a help room as a helper for
             </label>
             <ConceptSelect id="helper-room-concept" concepts={helperConcepts} value={chosen._id} onChange={setConceptId} label="Topic" />
-            <Button type="submit" size="sm" disabled={busy} className="bg-emerald-600 text-white hover:bg-emerald-700">
+            <Button type="submit" size="sm" disabled={busy} className="border-emerald-400 bg-emerald-400 text-emerald-950 hover:bg-emerald-300">
               Open room
             </Button>
           </form>
@@ -283,7 +283,7 @@ export function RoomStatus({
                     {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
                     {r.helperCount === 1 ? "" : "s"}
                     {r.memberCount >= r.capacity && (
-                      <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-900">
+                      <Badge variant="secondary" className="ml-2 bg-amber-400/15 text-amber-200">
                         full
                       </Badge>
                     )}

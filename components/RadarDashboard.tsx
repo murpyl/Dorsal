@@ -119,7 +119,7 @@ export function RadarDashboard() {
                     ))}
                   </ul>
                   {selected.total < LOW_SAMPLE && (
-                    <p className="text-sm text-amber-700">
+                    <p className="text-sm text-amber-300">
                       {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
                     </p>
                   )}
@@ -164,14 +164,14 @@ export function RadarDashboard() {
                     {c.label}
                     {active && <Badge>current topic</Badge>}
                     {c.openClusters > 0 && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                      <Badge variant="secondary" className="bg-amber-400/15 text-amber-200">
                         {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
                       </Badge>
                     )}
                   </CardTitle>
                   <CardDescription className="tabular-nums">
                     N = {c.total}
-                    {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
+                    {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-300">{c.total === 0 ? "no responses" : "low sample"}</span>}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -223,7 +223,7 @@ function JoinCode({ code }: { code: string }) {
           });
         }}
       >
-        {copied ? <Check className="text-emerald-600" aria-hidden /> : <Copy aria-hidden />}
+        {copied ? <Check className="text-emerald-400" aria-hidden /> : <Copy aria-hidden />}
       </Button>
     </div>
   );
@@ -235,7 +235,7 @@ function Metric({ i, label, value, detail, tone }: { i: number; label: string; v
       <CardContent>
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="mt-1 flex items-baseline gap-1.5">
-          <span className={cn("text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</span>
+          <span className={cn("text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-400")}>{value}</span>
           {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
         </p>
       </CardContent>
