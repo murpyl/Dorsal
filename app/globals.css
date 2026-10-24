@@ -189,13 +189,6 @@
   h1 {
     font-weight: 600;
   }
-  [data-slot="card"],
-  [data-slot="alert"],
-  [data-slot="select-content"],
-  [data-slot="alert-dialog-content"],
-  .react-flow__node > [role="button"] {
-    box-shadow: none !important;
-  }
   [data-slot="input"],
   [data-slot="textarea"],
   [data-slot="select-trigger"] {
