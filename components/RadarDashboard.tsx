@@ -100,7 +100,7 @@ export function RadarDashboard() {
         </div>
       </header>
       <ConnectionStatus />
-      <div className="grid shrink-0 gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-stretch">
+      <div className="grid shrink-0 gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
       <PushPromptForm
         concepts={view.concepts}
         activeConceptId={view.activeConceptId}
@@ -130,7 +130,7 @@ export function RadarDashboard() {
           }}
           className="min-h-72 flex-1"
         />
-          <div className="max-h-56 shrink-0 overflow-y-auto rounded-xl">
+          <div className="max-h-56 shrink-0 overflow-y-auto px-1">
           <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
             <div>
               <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
