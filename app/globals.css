@@ -5,9 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-archivo);
+  /* Swiss Modern: tight display tracking, large headings on a 1.05 leading. */
+  --tracking-tight: -0.035em;
+  --tracking-tighter: -0.05em;
+  --text-2xl--line-height: 1.1;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.05;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 1;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,82 +47,93 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  /* One radius for everything: Swiss corners are 4px, never pill-shaped. */
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
 }
 
+/*
+ * Swiss Modern — International Typographic Style.
+ * Pure white, black type, 1px grey rules, signal red (#e30613) for the one
+ * action that matters, black for the rest, Bauhaus yellow/blue in small doses.
+ */
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.12 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.12 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.12 0 0);
+  --primary: oklch(0.577 0.237 29); /* signal red #e30613 */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.12 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.42 0 0);
+  --accent: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.12 0 0);
+  --destructive: oklch(0.52 0.22 29);
+  --border: oklch(0.84 0 0);
+  --input: oklch(0.72 0 0);
+  --ring: oklch(0.45 0.19 262); /* Bauhaus blue focus ring */
+  --swiss-yellow: oklch(0.87 0.17 92); /* Bauhaus yellow */
+  --swiss-blue: oklch(0.45 0.19 262);
+  --chart-1: var(--primary);
+  --chart-2: var(--swiss-blue);
+  --chart-3: var(--swiss-yellow);
+  --chart-4: oklch(0.12 0 0);
+  --chart-5: oklch(0.72 0 0);
+  --radius: 0.25rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.12 0 0);
+  --sidebar-primary: oklch(0.577 0.237 29);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.12 0 0);
+  --sidebar-border: oklch(0.84 0 0);
+  --sidebar-ring: oklch(0.45 0.19 262);
 }
 
+/* Light theme only; .dark mirrors the same grammar in negative. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.62 0.23 29);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(1 0 0);
+  --secondary-foreground: oklch(0.12 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.75 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.68 0.2 25);
+  --border: oklch(0.3 0 0);
+  --input: oklch(0.4 0 0);
+  --ring: oklch(0.7 0.15 262);
+  --swiss-yellow: oklch(0.87 0.17 92);
+  --swiss-blue: oklch(0.7 0.15 262);
+  --chart-1: var(--primary);
+  --chart-2: var(--swiss-blue);
+  --chart-3: var(--swiss-yellow);
+  --chart-4: oklch(1 0 0);
+  --chart-5: oklch(0.5 0 0);
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.62 0.23 29);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.2 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.3 0 0);
+  --sidebar-ring: oklch(0.7 0.15 262);
 }
 
 @layer base {
@@ -126,14 +145,44 @@
   }
   html {
     @apply font-sans;
-  }
-}
-@layer base {
-  html {
     scroll-behavior: smooth;
+    font-feature-settings: "cv11", "ss01", "tnum";
   }
+  /* Paper-white page; surfaces are separated by rules, never by shadows or tints. */
   body {
-    @apply bg-muted/40;
+    @apply bg-background;
+  }
+  /* Signal-red rule across the top of every page: the one piece of colour the layout owns. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--primary);
+    z-index: 60;
+    pointer-events: none;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+  }
+  h1 {
+    font-weight: 700;
+    letter-spacing: var(--tracking-tighter);
+  }
+  /* Overline-style labels (badges) read like Swiss poster captions. */
+  [data-slot="badge"] {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+  ::selection {
+    background: var(--swiss-yellow);
+    color: oklch(0.12 0 0);
   }
 }
 
@@ -184,7 +233,8 @@
 
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: var(--color-neutral-400);
+  stroke: var(--border);
+  stroke-width: 1.5;
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);

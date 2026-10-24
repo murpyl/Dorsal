@@ -29,9 +29,10 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
-  const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
+  // Signal red (hue 29) through Bauhaus yellow to green; flat, printed-ink saturation.
+  const hue = Math.round(29 + score * 120);
+  return { fill: `oklch(0.965 0.03 ${hue})`, accent: `oklch(0.58 0.2 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -62,10 +63,10 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
         }
       }}
       className={cn(
-        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         low ? "border-dashed border-neutral-300" : "border-neutral-200",
         active && "ring-4 ring-foreground/15 border-foreground",
-        selected && "border-foreground shadow-md",
+        selected && "border-foreground",
       )}
       style={{ background: fill }}
       data-testid="concept-node"
@@ -73,7 +74,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[11px] font-semibold text-neutral-950"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}
@@ -163,7 +164,7 @@ export function ConceptGraph({
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" aria-hidden>
+          <span className="inline-block rounded-full bg-yellow-400 px-1.5 text-[10px] font-semibold text-neutral-950" aria-hidden>
             n clusters
           </span>
           published question clusters on this concept
