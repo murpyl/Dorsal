@@ -1,10 +1,21 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query, type MutationCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
+import { MAX_PROMPT_LENGTH } from "../lib/prompt";
 import { canAddPrerequisite, DESCRIPTION_MAX, LABEL_MAX, layoutConcepts, MAX_CONCEPTS, type LessonConcept } from "../lib/lessonGraph";
 
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Previously-current concept ids in the order they first became current, excluding the current one. */
+export function coveredConceptIds(session: Doc<"sessions">) {
+  return (session.activeHistory ?? []).map((h) => h.conceptId).filter((id) => id !== session.activeConceptId);
+}
+
+/** True when a student may rate this concept on the session page: it is current or has been current before. */
+export function hasBeenActive(session: Doc<"sessions">, conceptId: Id<"concepts">) {
+  return session.activeConceptId === conceptId || (session.activeHistory ?? []).some((h) => h.conceptId === conceptId);
+}
 
 const lessonConcept = v.object({ label: v.string(), description: v.string(), prerequisites: v.array(v.number()) });
 
@@ -67,7 +78,7 @@ export const create = mutation({
       createdAt: Date.now(),
     });
     const conceptIds = await insertLesson(ctx, sessionId, lesson);
-    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0] });
+    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0], activeHistory: [{ conceptId: conceptIds[0], at: Date.now() }] });
     return { sessionId, code };
   },
 });
@@ -133,6 +144,8 @@ export const getStudentView = query({
       title: session.title,
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
+      coveredConceptIds: coveredConceptIds(session),
+      activePrompt: session.activePrompt,
       alias: participant.alias,
       concepts: withMyLevel,
     };
@@ -181,6 +194,10 @@ export const getInstructorView = query({
       code: session.code,
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
+      coveredConceptIds: coveredConceptIds(session),
+      activePrompt: session.activePrompt,
+      // One `pre` signal per participant and concept, so the current concept's total is the number of participants who answered it.
+      answeredCount: conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0,
       participantCount: participants.length,
       simulatedCount: participants.filter((p) => p.isSimulated).length,
       publishedClusterCount: published.length,
@@ -191,13 +208,22 @@ export const getInstructorView = query({
 });
 
 export const setActiveConcept = mutation({
-  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts") },
-  handler: async (ctx, { sessionId, instructorSecret, conceptId }) => {
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), conceptId: v.id("concepts"), question: v.optional(v.string()) },
+  handler: async (ctx, { sessionId, instructorSecret, conceptId, question }) => {
     const session = await getInstructorSession(ctx, sessionId, instructorSecret);
     if (!session) throw new ConvexError("Instructor access required");
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
-    await ctx.db.patch(sessionId, { activeConceptId: conceptId });
+    // Sessions created before activeHistory existed: their current concept was active, so it counts as covered.
+    const history =
+      session.activeHistory ?? (session.activeConceptId ? [{ conceptId: session.activeConceptId, at: session.createdAt }] : []);
+    const activePrompt = question?.trim() || undefined;
+    if (activePrompt && activePrompt.length > MAX_PROMPT_LENGTH) throw new ConvexError(`Keep the prompt under ${MAX_PROMPT_LENGTH} characters`);
+    await ctx.db.patch(sessionId, {
+      activeConceptId: conceptId,
+      activePrompt,
+      activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: Date.now() }],
+    });
   },
 });
 
