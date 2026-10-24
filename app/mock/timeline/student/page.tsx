@@ -256,7 +256,7 @@ export default function StudentTimelinePage() {
                   </p>
                 </div>
                 {member ? (
-                  <Button size="sm" className="shrink-0" nativeButton={false} render={<Link href="/mock/timeline/room" />}>
+                  <Button size="sm" className="shrink-0" nativeButton={false} render={<Link href={`/mock/timeline/room?room=${r._id}`} />}>
                     Open
                     <ArrowRight data-icon="inline-end" aria-hidden />
                   </Button>

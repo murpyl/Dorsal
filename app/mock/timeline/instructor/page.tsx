@@ -41,20 +41,23 @@ import {
 } from "../fixtures";
 import { ConceptChips, roomCount, roomFull, roomHelpers } from "../parts";
 
-const SUGGESTION_COPY: Record<string, { title: string; summary: string }> = {
-  base: {
+/** Deterministic stand-in for Claude: only these pairs share a misconception; everything else stays pending. */
+const MOCK_SUGGESTIONS: { questionIds: string[]; conceptIds: string[]; title: string; summary: string; confidence: number }[] = [
+  {
+    questionIds: ["q3", "q5"],
+    conceptIds: ["stack"],
+    title: "What the stack holds while recursion runs",
+    summary: "Both ask what the waiting frames are for: what happens to them after the base case returns, and why there are so many of them for fib(30).",
+    confidence: 0.74,
+  },
+  {
+    questionIds: ["q1", "q10"],
+    conceptIds: ["base"],
     title: "What the base case returns",
     summary: "Questions treat the base case as a stop signal and miss that its return value seeds every multiplication above it.",
+    confidence: 0.69,
   },
-  stack: {
-    title: "Frames after the base case",
-    summary: "What happens to waiting frames once the base case returns, and why the stack grows with input size.",
-  },
-  recursive: {
-    title: "Recursive case vs a loop",
-    summary: "How calling the function again differs from repeating a loop body.",
-  },
-};
+];
 
 export default function InstructorTimelinePage() {
   const [activeId, setActiveId] = useState(initialActive);
@@ -95,22 +98,23 @@ export default function InstructorTimelinePage() {
     setRunning(true);
     setNewPending(0);
     window.setTimeout(() => {
-      const byConcept = new Map<string, string[]>();
-      for (const q of pending) byConcept.set(q.conceptId, [...(byConcept.get(q.conceptId) ?? []), q._id]);
-      const groups = [...byConcept.entries()].filter(([, ids]) => ids.length >= 2);
-      const grouped = groups.flatMap(([, ids]) => ids);
+      const pendingIds = new Set(pending.map((q) => q._id));
+      const groups = MOCK_SUGGESTIONS.map((g) => ({ ...g, questionIds: g.questionIds.filter((id) => pendingIds.has(id)) })).filter(
+        (g) => g.questionIds.length >= 2,
+      );
+      const grouped = groups.flatMap((g) => g.questionIds);
       markClustered(grouped);
       setClusters((cs) => [
         ...cs,
-        ...groups.map(([conceptId, ids], k) => ({
+        ...groups.map((g, k) => ({
           _id: `c${Date.now()}-${k}`,
-          title: SUGGESTION_COPY[conceptId]?.title ?? `Questions about ${conceptLabel(conceptId)}`,
-          summary: SUGGESTION_COPY[conceptId]?.summary ?? `${ids.length} questions circle the same misunderstanding about ${conceptLabel(conceptId)}.`,
-          conceptIds: [conceptId],
-          questionIds: ids,
+          title: g.title,
+          summary: g.summary,
+          conceptIds: g.conceptIds,
+          questionIds: g.questionIds,
           status: "suggested" as const,
           source: "ai" as const,
-          confidence: 0.66 + 0.05 * k,
+          confidence: g.confidence,
           helperCount: 0,
         })),
       ]);
@@ -325,7 +329,7 @@ export default function InstructorTimelinePage() {
             {running
               ? "Claude is grouping pending questions…"
               : lastRun
-                ? `Just now · ${aiRun.model} · grouped ${lastRun.grouped} question${lastRun.grouped === 1 ? "" : "s"}, left ${lastRun.left} ungrouped (no second question on the same point yet) · suggestions only`
+                ? `Just now · ${aiRun.model} · grouped ${lastRun.grouped} question${lastRun.grouped === 1 ? "" : "s"}, left ${lastRun.left} ungrouped (no other question makes the same point) · suggestions only`
                 : `Last AI run ${aiRun.at} · ${aiRun.model} · ${aiRun.latencyMs} ms · suggestions only, nothing is published automatically`}
           </p>
         </div>
@@ -820,10 +824,11 @@ function JoinCode({ code, large }: { code: string; large: boolean }) {
       <Button
         variant="outline"
         size="icon-sm"
-        aria-label={copied ? "Link copied" : "Copy join link"}
+        aria-label={copied ? "Link copied" : "Copy join link (mock: opens the student mockup)"}
+        title="Mock: copies the student mockup URL, not a live join link"
         onClick={async () => {
           try {
-            await navigator.clipboard.writeText(`${window.location.origin}/join/${code}`);
+            await navigator.clipboard.writeText(`${window.location.origin}/mock/timeline/student`);
             setCopied(true);
             window.setTimeout(() => setCopied(false), 1500);
           } catch {

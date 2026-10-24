@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, DoorOpen, HandHelping, SendHorizontal, Sparkles } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
@@ -22,17 +23,30 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { LEVELS, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { clusterById, conceptById, me, messages as initialMessages, rooms, type Message } from "../fixtures";
+import { clusterById, conceptById, me, messages as initialMessages, roomById, rooms, type Message, type Room } from "../fixtures";
 import { LevelChip, MockNav, roomCount, roomFull, roomHelpers } from "../parts";
 
-const room = rooms[0];
-const concept = conceptById[room.conceptId];
-const cluster = room.clusterId ? clusterById[room.clusterId] : null;
-const isHelper = room.members.some((m) => m.isMe && m.role === "helper");
-const before = me.answers[concept._id];
-
 export default function RoomTimelinePage() {
-  const [msgs, setMsgs] = useState<Message[]>(initialMessages);
+  return (
+    <Suspense>
+      <RoomFromQuery />
+    </Suspense>
+  );
+}
+
+function RoomFromQuery() {
+  const id = useSearchParams().get("room");
+  return <RoomScreen key={id ?? "default"} room={(id && roomById[id]) || rooms[0]} />;
+}
+
+/** `room` comes from `?room=<id>` so the student feed can open whichever room was joined; r1 is the one the fixture student belongs to. */
+function RoomScreen({ room }: { room: Room }) {
+  const concept = conceptById[room.conceptId];
+  const cluster = room.clusterId ? clusterById[room.clusterId] : null;
+  const isHelper = room.members.some((m) => m.isMe && m.role === "helper");
+  const before = me.answers[concept._id];
+  const initialMsgs = room._id === "r1" ? initialMessages : [];
+  const [msgs, setMsgs] = useState<Message[]>(initialMsgs);
   const [draft, setDraft] = useState("");
   const [left, setLeft] = useState(false);
   const [checkin, setCheckin] = useState<Level | null>(null);
@@ -95,7 +109,7 @@ export default function RoomTimelinePage() {
           <Badge variant="secondary" className={cn("hidden tabular-nums sm:inline-flex", roomFull(room) && "bg-amber-100 text-amber-900")}>
             {roomFull(room) ? "Room full" : `${room.capacity - room.members.length} seat${room.capacity - room.members.length === 1 ? "" : "s"} left`}
           </Badge>
-          <LeaveDialog hasCheckin={checkin !== null} onLeave={() => setLeft(true)} onCheckinFirst={() => setCheckinOpen(true)} />
+          <LeaveDialog conceptLabel={concept.label} hasCheckin={checkin !== null} onLeave={() => setLeft(true)} onCheckinFirst={() => setCheckinOpen(true)} />
         </div>
       </header>
 
@@ -117,6 +131,8 @@ export default function RoomTimelinePage() {
           </section>
 
           <CheckinCard
+            conceptLabel={concept.label}
+            before={before}
             value={checkin}
             open={checkinOpen}
             onOpenChange={setCheckinOpen}
@@ -248,11 +264,15 @@ export default function RoomTimelinePage() {
 }
 
 function CheckinCard({
+  conceptLabel,
+  before,
   value,
   open,
   onOpenChange,
   onChange,
 }: {
+  conceptLabel: string;
+  before: Level | undefined;
   value: Level | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -268,7 +288,7 @@ function CheckinCard({
         <>
           <p className="mt-1 text-sm">
             <Check className="mr-1 inline size-4 text-teal-700" aria-hidden />
-            {concept.label}: <strong>{l.label}</strong>
+            {conceptLabel}: <strong>{l.label}</strong>
             {before && before !== value && (
               <span className="text-muted-foreground">
                 {" "}
@@ -288,7 +308,7 @@ function CheckinCard({
       ) : (
         <>
           <p className="mt-1 text-sm">
-            How is <strong>{concept.label}</strong> going now?
+            How is <strong>{conceptLabel}</strong> going now?
           </p>
           {before && (
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -305,7 +325,17 @@ function CheckinCard({
   );
 }
 
-function LeaveDialog({ hasCheckin, onLeave, onCheckinFirst }: { hasCheckin: boolean; onLeave: () => void; onCheckinFirst: () => void }) {
+function LeaveDialog({
+  conceptLabel,
+  hasCheckin,
+  onLeave,
+  onCheckinFirst,
+}: {
+  conceptLabel: string;
+  hasCheckin: boolean;
+  onLeave: () => void;
+  onCheckinFirst: () => void;
+}) {
   if (hasCheckin)
     return (
       <Button variant="outline" onClick={onLeave}>
@@ -319,7 +349,7 @@ function LeaveDialog({ hasCheckin, onLeave, onCheckinFirst }: { hasCheckin: bool
         <AlertDialogHeader>
           <AlertDialogTitle>Check in before you go?</AlertDialogTitle>
           <AlertDialogDescription>
-            A one-tap answer to &ldquo;How is {concept.label} going now?&rdquo; tells your instructor whether peer help worked. It is anonymous and optional.
+            A one-tap answer to &ldquo;How is {conceptLabel} going now?&rdquo; tells your instructor whether peer help worked. It is anonymous and optional.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
