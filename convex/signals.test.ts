@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
 
 const SECRET = "instructor-secret-0123456789abcdef0123456789abcdef";
@@ -10,7 +11,7 @@ const TOKEN_B = "student-token-b-0123456789abcdef0123456789abcdef";
 
 async function setup() {
   const t = convexTest(schema, modules);
-  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET });
+  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET, concepts: RECURSION_LESSON });
   const instructorView = () => t.query(api.sessions.getInstructorView, { sessionId, instructorSecret: SECRET });
   return { t, sessionId, code, instructorView };
 }
@@ -50,7 +51,7 @@ describe("signals.upsert (scenario 1: counts and denominators, no double countin
   test("rejects a concept from another session", async () => {
     const { t, sessionId, code } = await setup();
     await t.mutation(api.sessions.join, { code, token: TOKEN_A });
-    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET });
+    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET, concepts: RECURSION_LESSON });
     const [foreign] = await t.run((ctx) =>
       ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", other.sessionId)).collect(),
     );

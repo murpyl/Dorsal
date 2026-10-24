@@ -2,8 +2,17 @@ import { v } from "convex/values";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
 import { sha256 } from "./credentials";
-import { SEED_CONCEPTS, SEED_EDGES } from "./sessions";
+import { insertLesson } from "./sessions";
+import type { LessonConcept } from "../lib/lessonGraph";
 
+/** The simulated demo lesson (concept order matters: SEED_SIGNALS, SEED_QUESTIONS and FALLBACK_CLUSTER index into it). */
+export const RECURSION_LESSON: LessonConcept[] = [
+  { label: "Base case", description: "When the function stops recursing and returns directly.", prerequisites: [] },
+  { label: "Recursive call", description: "Calling the function on a smaller version of the problem.", prerequisites: [0] },
+  { label: "Call stack & frames", description: "Each call gets its own frame; frames stack up until a base case.", prerequisites: [1] },
+  { label: "Return values", description: "How results flow back up the stack and combine.", prerequisites: [2] },
+  { label: "Tree recursion", description: "A function that makes more than one recursive call.", prerequisites: [1] },
+];
 const DEMO_CODE = "DEMO01";
 const DEMO_TITLE = "Recursion: how return values propagate";
 const PARTICIPANTS = 24;
@@ -14,7 +23,7 @@ const FALLBACK_CLUSTER = {
   questionConcept: 3,
 };
 
-/** `pre` signals per concept (same order as SEED_CONCEPTS): [confused, partial, can_explain]. */
+/** `pre` signals per concept (same order as RECURSION_LESSON): [confused, partial, can_explain]. */
 const SEED_SIGNALS: [number, number, number][] = [
   [2, 5, 17], // Base case: mostly can_explain
   [5, 10, 9], // Recursive call
@@ -102,13 +111,7 @@ export const reset = internalMutation({
       createdAt: now,
     });
 
-    const conceptIds: Id<"concepts">[] = [];
-    for (const [order, concept] of SEED_CONCEPTS.entries()) {
-      conceptIds.push(await ctx.db.insert("concepts", { sessionId, order, ...concept }));
-    }
-    for (const [from, to] of SEED_EDGES) {
-      await ctx.db.insert("conceptEdges", { sessionId, fromId: conceptIds[from], toId: conceptIds[to], relation: "prerequisite_for" });
-    }
+    const conceptIds = await insertLesson(ctx, sessionId, RECURSION_LESSON);
     await ctx.db.patch(sessionId, { activeConceptId: conceptIds[2] });
 
     // Simulated participants can never be impersonated: findParticipant compares against a 64-char hex
