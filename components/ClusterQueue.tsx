@@ -2,11 +2,21 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
+import { Inbox, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { InlineError } from "@/components/InlineError";
+import { EmptyRow } from "@/components/PublishedClusters";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { RUN_STALE_MS } from "@/lib/aiSchemas";
 import { errorMessage } from "@/lib/errors";
-import { btnPrimary as primary, btnSecondary as secondary } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 type Concept = { _id: Id<"concepts">; label: string };
 type Cluster = {
@@ -53,8 +63,8 @@ export function ClusterQueue({
     return () => clearInterval(t);
   }, []);
 
-  if (data === undefined || questions === undefined) return <p className="text-sm text-zinc-500">Loading questions…</p>;
-  if (data === null || questions === null) return <p className="text-sm text-zinc-500">Couldn’t load questions (no instructor access).</p>;
+  if (data === undefined || questions === undefined) return <Skeleton className="h-48" />;
+  if (data === null || questions === null) return <p className="text-sm text-muted-foreground">Couldn’t load questions (no instructor access).</p>;
 
   const pending = questions.filter((q) => q.state === "pending");
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;
@@ -75,140 +85,152 @@ export function ClusterQueue({
 
   return (
     <section className="space-y-4" aria-label="Question clusters">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold">Questions &amp; clusters</h2>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-tight">Questions &amp; clusters</h2>
           <AiStatus run={data.latestRun} />
         </div>
-        <button
+        <Button
           onClick={() => run(() => requestSuggestions(creds))}
           disabled={running || pending.length === 0}
-          className={primary}
           title={pending.length === 0 ? "No pending questions" : undefined}
         >
+          <Sparkles data-icon="inline-start" aria-hidden className={cn(running && "animate-pulse")} />
           {running ? "Claude is grouping…" : `Suggest clusters (${pending.length} pending)`}
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <InlineError message={error} />
 
       {data.suggested.length > 0 && (
         <div className="space-y-2">
-          <h3 className="font-medium">Suggested by Claude — review before publishing</h3>
-          {data.suggested.map((c) => (
-            <ClusterCard
-              key={c._id}
-              cluster={c}
-              concepts={concepts}
-              onSave={(patch) => run(() => update({ ...creds, clusterId: c._id, ...patch }))}
-              actions={
-                <>
-                  <button onClick={() => run(() => publish({ ...creds, clusterId: c._id }))} className={primary}>
-                    Publish
-                  </button>
-                  <button onClick={() => run(() => discard({ ...creds, clusterId: c._id }))} className={secondary}>
-                    Discard
-                  </button>
-                </>
-              }
-            />
-          ))}
+          <h3 className="text-sm font-medium">Suggested by Claude — review before publishing</h3>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {data.suggested.map((c, i) => (
+              <ClusterCard
+                key={c._id}
+                i={i}
+                cluster={c}
+                concepts={concepts}
+                onSave={(patch) => run(() => update({ ...creds, clusterId: c._id, ...patch }))}
+                actions={
+                  <>
+                    <Button size="sm" onClick={() => run(() => publish({ ...creds, clusterId: c._id }))}>
+                      Publish
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => run(() => discard({ ...creds, clusterId: c._id }))}>
+                      Discard
+                    </Button>
+                  </>
+                }
+              />
+            ))}
+          </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <h3 className="font-medium">Published ({data.published.length})</h3>
+        <h3 className="text-sm font-medium">Published ({data.published.length})</h3>
         {data.published.length === 0 ? (
-          <p className="text-sm text-zinc-500">Nothing published yet. Students only see clusters listed here.</p>
+          <EmptyRow icon={<Inbox aria-hidden />} text="Nothing published yet. Students only see clusters listed here." />
         ) : (
-          data.published.map((c) => (
-            <ClusterCard
-              key={c._id}
-              cluster={c}
-              concepts={concepts}
-              onSave={(patch) => run(() => update({ ...creds, clusterId: c._id, ...patch }))}
-              actions={
-                <>
-                  <button
-                    onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: c.conceptIds[0] }))}
-                    disabled={c.conceptIds.length === 0}
-                    className={primary}
-                  >
-                    Open help room
-                  </button>
-                  <button onClick={() => run(() => discard({ ...creds, clusterId: c._id }))} className={secondary}>
-                    Unpublish &amp; discard
-                  </button>
-                </>
-              }
-              footer={<ClusterRooms rooms={(rooms ?? []).filter((r) => r.clusterId === c._id)} />}
-            />
-          ))
+          <div className="grid gap-3 lg:grid-cols-2">
+            {data.published.map((c, i) => (
+              <ClusterCard
+                key={c._id}
+                i={i}
+                cluster={c}
+                concepts={concepts}
+                onSave={(patch) => run(() => update({ ...creds, clusterId: c._id, ...patch }))}
+                actions={
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: c.conceptIds[0] }))}
+                      disabled={c.conceptIds.length === 0}
+                    >
+                      Open help room
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => run(() => discard({ ...creds, clusterId: c._id }))}>
+                      Unpublish &amp; discard
+                    </Button>
+                  </>
+                }
+                footer={<ClusterRooms rooms={(rooms ?? []).filter((r) => r.clusterId === c._id)} />}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Moderation queue ({pending.length} pending)</h3>
-          <button onClick={() => setGrouping(true)} disabled={selectedQuestions.length === 0} className={secondary}>
-            Group selected ({selectedQuestions.length}) into a cluster
-          </button>
-        </div>
-        <p className="text-xs text-zinc-500">
-          Raw questions are only visible here. Tick pending questions to group them manually if AI suggestions are unavailable.
-        </p>
-        {grouping && selectedQuestions.length > 0 && (
-          <ManualClusterForm
-            concepts={concepts}
-            questions={selectedQuestions}
-            onCancel={() => setGrouping(false)}
-            onCreate={(fields) =>
-              run(() => createManual({ ...creds, ...fields, questionIds: selectedQuestions.map((q) => q._id) })).then((ok) => {
-                if (!ok) return;
-                setSelected([]);
-                setGrouping(false);
-              })
-            }
-          />
-        )}
-        {questions.length === 0 ? (
-          <p className="text-sm text-zinc-500">No questions yet.</p>
-        ) : (
-          <ul className="divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-            {questions.map((q) => (
-              <li key={q._id} className="flex items-start gap-3 p-3 text-sm">
-                <input
-                  type="checkbox"
-                  aria-label="Select question for manual grouping"
-                  checked={selected.includes(q._id)}
-                  disabled={q.state !== "pending"}
-                  onChange={() => toggle(q._id)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <p>{q.content}</p>
-                  <p className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-500">
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">{q.conceptLabel}</span>
-                    <span>{time(q.createdAt)}</span>
-                    {q.state === "clustered" && <span className="text-emerald-700">in a cluster</span>}
-                    {q.isSimulated && <span className="rounded bg-zinc-100 px-1">simulated</span>}
-                  </p>
-                </div>
-                <button onClick={() => run(() => hide({ ...creds, questionId: q._id }))} className={secondary}>
-                  Hide
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Moderation queue ({pending.length} pending)</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setGrouping(true)} disabled={selectedQuestions.length === 0}>
+              Group selected ({selectedQuestions.length}) into a cluster
+            </Button>
+          </div>
+          <CardDescription>
+            Raw questions are only visible here. Tick pending questions to group them manually if AI suggestions are unavailable.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {grouping && selectedQuestions.length > 0 && (
+            <ManualClusterForm
+              concepts={concepts}
+              questions={selectedQuestions}
+              onCancel={() => setGrouping(false)}
+              onCreate={(fields) =>
+                run(() => createManual({ ...creds, ...fields, questionIds: selectedQuestions.map((q) => q._id) })).then((ok) => {
+                  if (!ok) return;
+                  setSelected([]);
+                  setGrouping(false);
+                })
+              }
+            />
+          )}
+          {questions.length === 0 ? (
+            <EmptyRow icon={<Inbox aria-hidden />} text="No questions yet." />
+          ) : (
+            <ul className="divide-y rounded-lg border">
+              {questions.map((q) => {
+                const checked = selected.includes(q._id);
+                return (
+                  <li key={q._id} className={cn("flex items-start gap-3 p-3 text-sm", checked && "bg-muted/60")}>
+                    <Checkbox
+                      aria-label="Select question for manual grouping"
+                      checked={checked}
+                      disabled={q.state !== "pending"}
+                      onCheckedChange={() => toggle(q._id)}
+                      className="mt-0.5"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="break-words">{q.content}</p>
+                      <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant="secondary">{q.conceptLabel}</Badge>
+                        <span className="tabular-nums">{time(q.createdAt)}</span>
+                        {q.state === "clustered" && <span className="text-emerald-700">in a cluster</span>}
+                        {q.isSimulated && <Badge variant="outline">simulated</Badge>}
+                      </p>
+                    </div>
+                    <Button size="xs" variant="ghost" onClick={() => run(() => hide({ ...creds, questionId: q._id }))}>
+                      Hide
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }
 
 function AiStatus({ run }: { run: Run | null }) {
-  if (!run) return <p className="text-sm text-zinc-500">No AI run yet. Suggestions only start when you press the button.</p>;
+  if (!run) return <p className="text-sm text-muted-foreground">No AI run yet. Suggestions only start when you press the button.</p>;
   if (run.status === "running")
-    return <p className="text-sm text-indigo-700">Claude is grouping pending questions… (started {time(run.createdAt)})</p>;
+    return <p className="text-sm text-foreground">Claude is grouping pending questions… (started {time(run.createdAt)})</p>;
   if (run.status === "ok")
     return (
       <p className="text-sm text-emerald-700">
@@ -216,7 +238,7 @@ function AiStatus({ run }: { run: Run | null }) {
       </p>
     );
   return (
-    <p className="text-sm text-red-600">
+    <p className="text-sm text-destructive">
       AI suggestions unavailable ({run.error ?? "unknown error"}). Group questions manually from the queue below.
     </p>
   );
@@ -232,31 +254,48 @@ function ConceptPicker({
   onChange: (ids: Id<"concepts">[]) => void;
 }) {
   return (
-    <fieldset className="flex flex-wrap gap-2 text-sm">
+    <fieldset className="flex flex-wrap gap-1.5 text-sm">
       <legend className="sr-only">Concepts</legend>
-      {concepts.map((c) => (
-        <label key={c._id} className="flex items-center gap-1 rounded-full border border-zinc-300 px-2 py-0.5">
-          <input
-            type="checkbox"
-            checked={value.includes(c._id)}
-            onChange={(e) => onChange(e.target.checked ? [...value, c._id] : value.filter((id) => id !== c._id))}
-          />
-          {c.label}
-        </label>
-      ))}
+      {concepts.map((c) => {
+        const on = value.includes(c._id);
+        return (
+          <label
+            key={c._id}
+            className={cn(
+              "pressable flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+              on ? "border-foreground bg-foreground text-background" : "border-border bg-background hover:bg-muted",
+            )}
+          >
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={on}
+              onChange={(e) => onChange(e.target.checked ? [...value, c._id] : value.filter((id) => id !== c._id))}
+            />
+            {c.label}
+          </label>
+        );
+      })}
     </fieldset>
   );
 }
 
 function ClusterRooms({ rooms }: { rooms: { _id: string; title: string; memberCount: number; capacity: number; helperCount: number }[] }) {
-  if (rooms.length === 0) return <p className="text-xs text-zinc-500">No help room open for this cluster yet.</p>;
+  if (rooms.length === 0) return <p className="text-xs text-muted-foreground">No help room open for this cluster yet.</p>;
   return (
-    <ul className="space-y-1 text-xs" aria-label="Help rooms for this cluster">
+    <ul className="w-full space-y-1 text-xs" aria-label="Help rooms for this cluster">
       {rooms.map((r) => (
-        <li key={r._id} className="rounded-lg bg-zinc-50 px-3 py-1.5 text-zinc-700">
-          <span className="font-medium">{r.title}</span> · <strong>{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
-          {r.helperCount === 1 ? "" : "s"}
-          {r.memberCount >= r.capacity && <span className="ml-2 text-amber-700">full</span>}
+        <li key={r._id} className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
+          <span className="font-medium text-foreground">{r.title}</span>
+          <span className="tabular-nums">
+            <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
+            {r.helperCount === 1 ? "" : "s"}
+          </span>
+          {r.memberCount >= r.capacity && (
+            <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+              full
+            </Badge>
+          )}
         </li>
       ))}
     </ul>
@@ -264,12 +303,14 @@ function ClusterRooms({ rooms }: { rooms: { _id: string; title: string; memberCo
 }
 
 function ClusterCard({
+  i,
   cluster,
   concepts,
   onSave,
   actions,
   footer,
 }: {
+  i: number;
   cluster: Cluster;
   concepts: Concept[];
   onSave: (patch: { title: string; summary: string; conceptIds: Id<"concepts">[] }) => Promise<boolean>;
@@ -289,59 +330,66 @@ function ClusterCard({
   };
 
   return (
-    <article className="space-y-2 rounded-xl border border-zinc-200 bg-white p-4 text-sm">
+    <Card className="enter" style={{ "--i": i } as React.CSSProperties}>
       {editing ? (
-        <>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="w-full rounded-md border border-zinc-300 px-2 py-1 font-medium" />
-          <textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" className="w-full rounded-md border border-zinc-300 px-2 py-1" />
+        <CardContent className="space-y-2">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="font-medium" />
+          <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" />
           <ConceptPicker concepts={concepts} value={conceptIds} onChange={setConceptIds} />
           <div className="flex gap-2">
-            <button onClick={() => onSave({ title, summary, conceptIds }).then((ok) => ok && setEditing(false))} disabled={!title.trim() || conceptIds.length === 0} className={primary}>
+            <Button size="sm" onClick={() => onSave({ title, summary, conceptIds }).then((ok) => ok && setEditing(false))} disabled={!title.trim() || conceptIds.length === 0}>
               Save
-            </button>
-            <button onClick={() => setEditing(false)} className={secondary}>
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
-        </>
+        </CardContent>
       ) : (
-        <>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h4 className="text-base font-medium">{cluster.title}</h4>
-              {cluster.summary && <p className="text-zinc-600">{cluster.summary}</p>}
-            </div>
-            <button onClick={startEdit} className={secondary}>
+        <CardHeader>
+          <CardTitle>{cluster.title}</CardTitle>
+          {cluster.summary && <CardDescription>{cluster.summary}</CardDescription>}
+          <div className="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
+            <Button size="xs" variant="ghost" onClick={startEdit}>
               Edit
-            </button>
+            </Button>
           </div>
-          <p className="flex flex-wrap gap-2 text-xs text-zinc-500">
+          <p className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
             {cluster.conceptLabels.map((label, i) => (
-              <span key={cluster.conceptIds[i]} className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
+              <Badge key={cluster.conceptIds[i]} variant="secondary">
                 {label}
-              </span>
+              </Badge>
             ))}
             <span>{cluster.source === "ai" ? "suggested by Claude" : "grouped manually"}</span>
             {cluster.confidence !== null && <span>model confidence {Math.round(cluster.confidence * 100)}% (not calibrated)</span>}
           </p>
-          {footer}
-        </>
+        </CardHeader>
       )}
-      <details open={cluster.status === "suggested"}>
-        <summary className="cursor-pointer text-zinc-600">
-          {cluster.questions.length} original question{cluster.questions.length === 1 ? "" : "s"}
-        </summary>
-        <ul className="mt-1 list-disc space-y-1 pl-5 text-zinc-700">
-          {cluster.questions.map((q) => (
-            <li key={q._id}>
-              {q.content}
-              {q.isSimulated && <span className="ml-2 rounded bg-zinc-100 px-1 text-xs text-zinc-500">simulated</span>}
-            </li>
-          ))}
-        </ul>
-      </details>
-      <div className="flex gap-2">{actions}</div>
-    </article>
+      <CardContent className="space-y-3">
+        {!editing && footer}
+        <details open={cluster.status === "suggested"} className="group/details">
+          <summary className="cursor-pointer list-none text-sm text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <span className="mr-1 inline-block transition-transform duration-150 ease-out group-open/details:rotate-90" aria-hidden>
+              ›
+            </span>
+            {cluster.questions.length} original question{cluster.questions.length === 1 ? "" : "s"}
+          </summary>
+          <ul className="mt-2 space-y-1.5 border-l-2 pl-3 text-sm">
+            {cluster.questions.map((q) => (
+              <li key={q._id} className="break-words">
+                {q.content}
+                {q.isSimulated && (
+                  <Badge variant="outline" className="ml-2">
+                    simulated
+                  </Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </CardContent>
+      <CardFooter className="gap-2">{actions}</CardFooter>
+    </Card>
   );
 }
 
@@ -366,19 +414,19 @@ function ManualClusterForm({
         e.preventDefault();
         onCreate({ title, summary, conceptIds });
       }}
-      className="space-y-2 rounded-xl border border-indigo-300 bg-indigo-50 p-4 text-sm"
+      className="enter space-y-2 rounded-lg border border-foreground/20 bg-muted/60 p-4 text-sm"
     >
       <h4 className="font-medium">Manual cluster from {questions.length} selected question{questions.length === 1 ? "" : "s"}</h4>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Title, e.g. Tracing recursive return values" aria-label="Cluster title" className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1" />
-      <textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} placeholder="Summary (optional)" aria-label="Cluster summary" className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1" />
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Title, e.g. Tracing recursive return values" aria-label="Cluster title" className="bg-background" />
+      <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} placeholder="Summary (optional)" aria-label="Cluster summary" className="bg-background" />
       <ConceptPicker concepts={concepts} value={conceptIds} onChange={setConceptIds} />
       <div className="flex gap-2">
-        <button type="submit" disabled={!title.trim() || conceptIds.length === 0} className={primary}>
+        <Button type="submit" size="sm" disabled={!title.trim() || conceptIds.length === 0}>
           Publish cluster
-        </button>
-        <button type="button" onClick={onCancel} className={secondary}>
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -395,23 +443,27 @@ export function ConceptClusters({
 }) {
   const clusters = useQuery(api.clusters.listForConcept, { sessionId, instructorSecret, conceptId });
   return (
-    <div className="border-t border-zinc-200 pt-3">
+    <div className="space-y-2 text-sm">
       <h3 className="font-medium">Published question clusters</h3>
       {clusters === undefined ? (
-        <p className="text-zinc-500">Loading…</p>
+        <Skeleton className="h-10" />
       ) : !clusters || clusters.length === 0 ? (
-        <p className="text-zinc-500">None published for this concept yet.</p>
+        <p className="text-muted-foreground">None published for this concept yet.</p>
       ) : (
-        <ul className="mt-1 space-y-2">
+        <ul className="space-y-3">
           {clusters.map((c) => (
-            <li key={c._id}>
+            <li key={c._id} className="space-y-1">
               <p className="font-medium">{c.title}</p>
-              {c.summary && <p className="text-zinc-600">{c.summary}</p>}
-              <ul className="mt-1 list-disc space-y-0.5 pl-5 text-zinc-700">
+              {c.summary && <p className="text-muted-foreground">{c.summary}</p>}
+              <ul className="space-y-1 border-l-2 pl-3 text-muted-foreground">
                 {c.questions.map((q) => (
-                  <li key={q._id}>
+                  <li key={q._id} className="break-words">
                     {q.content}
-                    {q.isSimulated && <span className="ml-2 rounded bg-zinc-100 px-1 text-xs text-zinc-500">simulated</span>}
+                    {q.isSimulated && (
+                      <Badge variant="outline" className="ml-2">
+                        simulated
+                      </Badge>
+                    )}
                   </li>
                 ))}
               </ul>

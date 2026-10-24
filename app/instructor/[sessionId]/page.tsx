@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { RadarDashboard } from "@/components/RadarDashboard";
 
 export default function InstructorPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-zinc-500">Loading…</p>}>
+    <Suspense fallback={<PageSkeleton wide />}>
       <RadarDashboard />
     </Suspense>
   );

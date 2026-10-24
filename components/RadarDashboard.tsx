@@ -3,18 +3,26 @@
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { Check, Copy, MousePointerClick } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { Brand } from "@/components/Brand";
 import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { PrePostComparison, SessionControls } from "@/components/PrePostComparison";
+import { InlineError } from "@/components/InlineError";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { DistributionBar, PrePostComparison, SessionControls } from "@/components/PrePostComparison";
 import { RoomStatus } from "@/components/RoomList";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS, PHASE_LABEL } from "@/lib/levels";
-import { btnPrimary } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -28,8 +36,12 @@ export function RadarDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   if (secret === null || view === null)
-    return <p className="p-8 text-red-600">No instructor access for this session on this device.</p>;
-  if (view === undefined) return <p className="p-8 text-zinc-500">Loading dashboard…</p>;
+    return (
+      <main className="mx-auto w-full max-w-xl p-8">
+        <InlineError message="No instructor access for this session on this device." />
+      </main>
+    );
+  if (view === undefined) return <PageSkeleton wide />;
 
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
@@ -45,29 +57,32 @@ export function RadarDashboard() {
   }
 
   return (
-    <main className="w-full space-y-6 px-4 py-6 md:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-zinc-500">Instructor · signals: {PHASE_LABEL[view.phase]}</p>
-          <h1 className="text-3xl font-semibold">{view.title}</h1>
+    <main className="w-full space-y-6 px-4 py-5 pb-12 md:px-8">
+      <header className="enter flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Brand />
+          <div>
+            <p className="text-sm text-muted-foreground">Instructor · signals: {PHASE_LABEL[view.phase]}</p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{view.title}</h1>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-zinc-500">Students join at /join/{view.code}</p>
-          <p className="font-mono text-4xl font-bold tracking-widest">{view.code}</p>
+        <div className="flex flex-col items-end gap-2">
+          <JoinCode code={view.code} />
           <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} phase={view.phase} state={view.state} />
         </div>
       </header>
       <ConnectionStatus />
 
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="Session metrics">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" aria-label="Session metrics">
         <Metric
+          i={0}
           label="Participants"
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
         />
-        <Metric label="Responses" value={responses} detail={`this phase`} />
-        <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
-        <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
+        <Metric i={1} label="Responses" value={responses} detail="this phase" />
+        <Metric i={2} label="Confused responses" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
+        <Metric i={3} label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
@@ -78,92 +93,103 @@ export function RadarDashboard() {
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <aside className="rounded-xl border border-zinc-200 bg-white p-4 text-sm" aria-label="Concept details">
+        <Card aria-label="Concept details" className="h-fit lg:sticky lg:top-4">
           {selected ? (
-            <div className="space-y-3">
-              <div>
-                <h2 className="text-lg font-semibold">{selected.label}</h2>
-                <p className="text-zinc-600">{selected.description}</p>
-              </div>
-              <ul className="space-y-1">
-                {LEVELS.map((l) => (
-                  <li key={l.value} className="flex items-center gap-2">
-                    <span className={`inline-block h-3 w-3 rounded-full ${l.color}`} aria-hidden />
-                    {l.label}: <strong>{selected.counts[l.value]}</strong> / {selected.total}
-                  </li>
-                ))}
-              </ul>
-              {selected.total < LOW_SAMPLE && (
-                <p className="text-amber-700">
-                  {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
-                </p>
-              )}
-              {selected._id === view.activeConceptId ? (
-                <p className="font-medium text-indigo-700">Current topic</p>
-              ) : (
-                <button
-                  onClick={() => makeCurrent(selected._id)}
-                  className={btnPrimary}
-                >
-                  Make current topic
-                </button>
-              )}
-              {error && <p className="text-red-600">{error}</p>}
-              <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
-            </div>
+            <>
+              <CardHeader>
+                {selected._id === view.activeConceptId && <Badge className="mb-1 w-fit">Current topic</Badge>}
+                <CardTitle className="text-lg">{selected.label}</CardTitle>
+                <CardDescription>{selected.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <DistributionBar tally={selected} />
+                  <ul className="space-y-1 text-sm">
+                    {LEVELS.map((l) => (
+                      <li key={l.value} className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2">
+                          <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
+                          {l.label}
+                        </span>
+                        <span className="tabular-nums">
+                          <strong>{selected.counts[l.value]}</strong>
+                          <span className="text-muted-foreground"> / {selected.total}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {selected.total < LOW_SAMPLE && (
+                    <p className="text-sm text-amber-700">
+                      {selected.total === 0 ? "No responses yet." : `Low sample (N = ${selected.total}); treat the colour as tentative.`}
+                    </p>
+                  )}
+                </div>
+                {selected._id !== view.activeConceptId && (
+                  <Button className="w-full" onClick={() => makeCurrent(selected._id)}>
+                    Make current topic
+                  </Button>
+                )}
+                <InlineError message={error} />
+                <Separator />
+                <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
+              </CardContent>
+            </>
           ) : (
-            <p className="text-zinc-500">Click a concept (or Tab to it and press Enter) to see its signal breakdown.</p>
+            <CardContent className="flex flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+              <MousePointerClick className="size-5" aria-hidden />
+              Click a concept (or Tab to it and press Enter) to see its signal breakdown.
+            </CardContent>
           )}
-        </aside>
+        </Card>
       </section>
 
       <ErrorBoundary label="the cluster queue">
-      <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+        <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
       </ErrorBoundary>
 
       <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
-        <h2 id="per-concept-heading" className="text-lg font-semibold">
-          Per-concept distribution <span className="text-sm font-normal text-zinc-500">(text alternative to the graph colours)</span>
-        </h2>
-        {view.concepts.map((c) => (
-          <div
-            key={c._id}
-            className={`rounded-xl border bg-white p-4 ${c._id === view.activeConceptId ? "border-indigo-400" : "border-zinc-200"}`}
-          >
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="font-medium">
-                {c.label}
-                {c._id === view.activeConceptId && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
-                {c.openClusters > 0 && (
-                  <span className="ml-2 text-xs font-normal text-amber-700">
-                    {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
-                  </span>
-                )}
-              </h3>
-              <p className="text-sm text-zinc-600">
-                N = {c.total}
-                {c.total < LOW_SAMPLE && (
-                  <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>
-                )}
-              </p>
-            </div>
-            <div className="flex h-3 overflow-hidden rounded-full bg-zinc-100" aria-hidden>
-              {c.total > 0 &&
-                LEVELS.map((l) => (
-                  <div key={l.value} className={l.color} style={{ width: `${(c.counts[l.value] / c.total) * 100}%` }} />
-                ))}
-            </div>
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-              {LEVELS.map((l) => (
-                <span key={l.value}>
-                  {l.label}: <strong>{c.counts[l.value]}</strong> / {c.total}
-                </span>
-              ))}
-            </p>
-          </div>
-        ))}
+        <div>
+          <h2 id="per-concept-heading" className="text-lg font-semibold tracking-tight">
+            Per-concept distribution
+          </h2>
+          <p className="text-sm text-muted-foreground">Text alternative to the graph colours.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {view.concepts.map((c) => {
+            const active = c._id === view.activeConceptId;
+            return (
+              <Card key={c._id} size="sm" className={cn(active && "ring-2 ring-foreground/80")}>
+                <CardHeader>
+                  <CardTitle className="flex flex-wrap items-center gap-2">
+                    {c.label}
+                    {active && <Badge>current topic</Badge>}
+                    {c.openClusters > 0 && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                        {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="tabular-nums">
+                    N = {c.total}
+                    {c.total < LOW_SAMPLE && <span className="ml-2 text-amber-600">{c.total === 0 ? "no responses" : "low sample"}</span>}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <DistributionBar tally={c} />
+                  <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {LEVELS.map((l) => (
+                      <span key={l.value} className="flex items-center gap-1.5 tabular-nums">
+                        <span className={`inline-block size-2 rounded-full ${l.dot}`} aria-hidden />
+                        {l.label}: <strong className="text-foreground">{c.counts[l.value]}</strong> / {c.total}
+                      </span>
+                    ))}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </section>
-
 
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Pre/post comparison and help rooms">
         <ErrorBoundary label="the pre/post comparison">
@@ -177,13 +203,42 @@ export function RadarDashboard() {
   );
 }
 
-function Metric({ label, value, detail }: { label: string; value: number; detail?: string }) {
+function JoinCode({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  const href = typeof window === "undefined" ? `/join/${code}` : `${window.location.origin}/join/${code}`;
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="text-sm text-zinc-500">{label}</p>
-      <p className="text-3xl font-semibold">
-        {value} {detail && <span className="text-base font-normal text-zinc-500">{detail}</span>}
-      </p>
+    <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-2.5 ring-1 ring-foreground/5">
+      <div className="text-right">
+        <p className="text-xs text-muted-foreground">Students join at /join/{code}</p>
+        <p className="font-mono text-3xl font-bold tracking-[0.25em] sm:text-4xl">{code}</p>
+      </div>
+      <Button
+        variant="outline"
+        size="icon-sm"
+        aria-label={copied ? "Link copied" : "Copy join link"}
+        onClick={() => {
+          navigator.clipboard?.writeText(href).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          });
+        }}
+      >
+        {copied ? <Check className="text-emerald-600" aria-hidden /> : <Copy aria-hidden />}
+      </Button>
     </div>
+  );
+}
+
+function Metric({ i, label, value, detail, tone }: { i: number; label: string; value: number; detail?: string; tone?: "warn" }) {
+  return (
+    <Card size="sm" className="enter" style={{ "--i": i } as React.CSSProperties}>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="mt-1 flex items-baseline gap-1.5">
+          <span className={cn("text-3xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</span>
+          {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
