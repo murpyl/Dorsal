@@ -242,6 +242,14 @@ export const listForConcept = query({
   },
 });
 
+/** Open rooms that were opened "for" this cluster stop pointing at it when the cluster is discarded or no longer covers their concept. */
+async function detachRooms(ctx: MutationCtx, sessionId: Id<"sessions">, clusterId: Id<"clusters">, keepConceptIds: Id<"concepts">[]) {
+  const rooms = await ctx.db.query("rooms").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
+  for (const room of rooms) {
+    if (room.clusterId === clusterId && !keepConceptIds.includes(room.conceptId)) await ctx.db.patch(room._id, { clusterId: undefined });
+  }
+}
+
 export const update = mutation({
   args: {
     sessionId: v.id("sessions"),
@@ -266,7 +274,10 @@ export const update = mutation({
       if (trimmed.length > 500) throw new ConvexError("Summary must be at most 500 characters");
       patch.summary = trimmed;
     }
-    if (conceptIds !== undefined) patch.conceptIds = await validateConceptIds(ctx, sessionId, conceptIds);
+    if (conceptIds !== undefined) {
+      patch.conceptIds = await validateConceptIds(ctx, sessionId, conceptIds);
+      await detachRooms(ctx, sessionId, clusterId, patch.conceptIds);
+    }
     await ctx.db.patch(clusterId, patch);
   },
 });
@@ -288,6 +299,7 @@ export const discard = mutation({
     const cluster = await getCluster(ctx, sessionId, clusterId);
     if (cluster.status === "discarded") return;
     await ctx.db.patch(clusterId, { status: "discarded" });
+    await detachRooms(ctx, sessionId, clusterId, []);
     for (const question of await clusterQuestions(ctx, cluster)) {
       if (question.state === "clustered") await ctx.db.patch(question._id, { state: "pending" });
     }
