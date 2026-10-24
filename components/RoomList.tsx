@@ -174,7 +174,7 @@ export function RoomList({
               run(() => createAsHelper({ sessionId, token, conceptId: chosen._id }));
             }}
           >
-            <label htmlFor="helper-room-concept" className="font-medium text-emerald-950">
+            <label htmlFor="helper-room-concept" className="font-medium text-emerald-200">
               Open a help room as a helper for
             </label>
             <ConceptSelect id="helper-room-concept" concepts={helperConcepts} value={chosen._id} onChange={setConceptId} label="Topic" />
