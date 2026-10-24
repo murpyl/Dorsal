@@ -2,8 +2,14 @@
 
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { CheckCircle2, Send } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { InlineError } from "@/components/InlineError";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/errors";
 
 const MAX_LENGTH = 500;
@@ -26,6 +32,7 @@ export function QuestionComposer({
   const [sending, setSending] = useState(false);
   const conceptId = picked ?? activeConceptId ?? concepts[0]?._id ?? null;
   const trimmed = content.trim();
+  const items = concepts.map((c) => ({ value: c._id, label: c._id === activeConceptId ? `${c.label} (current topic)` : c.label }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,52 +51,59 @@ export function QuestionComposer({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-2 rounded-xl border border-zinc-200 bg-white p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-medium">Ask a question</h2>
-        <label className="text-sm text-zinc-600">
-          about{" "}
-          <select
-            value={conceptId ?? ""}
-            onChange={(e) => setPicked(e.target.value as Id<"concepts">)}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm"
-          >
-            {concepts.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.label}
-                {c._id === activeConceptId ? " (current topic)" : ""}
-              </option>
-            ))}
-          </select>
+    <form onSubmit={onSubmit} className="enter">
+    <Card>
+      <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+        <CardTitle render={<h2 />}>Ask a question</CardTitle>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          about
+          <Select items={items} value={conceptId ?? ""} onValueChange={(v) => v && setPicked(v as Id<"concepts">)}>
+            <SelectTrigger size="sm" aria-label="Question topic" className="max-w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {items.map((it) => (
+                <SelectItem key={it.value} value={it.value}>
+                  {it.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
-      </div>
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
-        maxLength={MAX_LENGTH}
-        rows={3}
-        placeholder="What's confusing you? Describe it in your own words."
-        aria-label="Your question"
-        className="w-full rounded-lg border border-zinc-300 p-2 text-sm"
-      />
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-zinc-500">
-          {content.length}/{MAX_LENGTH}
-        </span>
-        <button
-          type="submit"
-          disabled={!trimmed || !conceptId || sending}
-          className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {sending ? "Sending…" : "Send anonymously"}
-        </button>
-      </div>
-      {status && <p className={`text-sm ${status.kind === "ok" ? "text-emerald-700" : "text-red-600"}`}>{status.text}</p>}
-      <p className="text-xs text-zinc-500">
-        Asking is optional. Classmates never see who asked; your instructor sees the question under your alias, not your name,
-        and operators of this service could still link it to your device (pseudonymous, not fully anonymous). Question text is
-        sent to an external AI (Claude, by Anthropic) to group similar questions — don&apos;t include names or personal details.
-      </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
+          maxLength={MAX_LENGTH}
+          rows={3}
+          placeholder="What's confusing you? Describe it in your own words."
+          aria-label="Your question"
+          className="resize-none"
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
+            {content.length}/{MAX_LENGTH}
+          </span>
+          <Button type="submit" disabled={!trimmed || !conceptId || sending}>
+            {sending ? "Sending…" : "Send anonymously"}
+            <Send data-icon="inline-end" aria-hidden />
+          </Button>
+        </div>
+        {status?.kind === "ok" && (
+          <p className="enter flex items-start gap-1.5 text-sm text-emerald-700">
+            <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {status.text}
+          </p>
+        )}
+        {status?.kind === "error" && <InlineError message={status.text} />}
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Asking is optional. Classmates never see who asked; your instructor sees the question under your alias, not your name,
+          and operators of this service could still link it to your device (pseudonymous, not fully anonymous). Question text is
+          sent to an external AI (Claude, by Anthropic) to group similar questions — don&apos;t include names or personal details.
+        </p>
+      </CardContent>
+    </Card>
     </form>
   );
 }

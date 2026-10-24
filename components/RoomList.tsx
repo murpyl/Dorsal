@@ -4,10 +4,17 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ArrowRight, DoorOpen } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { InlineError } from "@/components/InlineError";
+import { EmptyRow } from "@/components/PublishedClusters";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
-import { btnHelper, btnOutline, btnPrimary, btnSecondary } from "@/lib/ui";
 
 type Concept = { _id: Id<"concepts">; label: string };
 
@@ -52,16 +59,19 @@ export function RoomJoinButton({
   const join = useMutation(api.rooms.join);
   if (room.isMember) {
     return (
-      <Link href={roomHref(room._id, code)} className={btnPrimary}>
+      <Button size="sm" nativeButton={false} render={<Link href={roomHref(room._id, code)} />}>
         Open ({room.myRole})
-      </Link>
+        <ArrowRight data-icon="inline-end" aria-hidden />
+      </Button>
     );
   }
   if (room.memberCount >= room.capacity) {
-    return <span className="rounded-lg bg-zinc-100 px-3 py-1.5 text-sm text-zinc-500">Full</span>;
+    return <Badge variant="secondary">Full</Badge>;
   }
   return (
-    <button
+    <Button
+      size="sm"
+      variant="outline"
       disabled={busy}
       onClick={async () => {
         onBusy(true);
@@ -75,10 +85,39 @@ export function RoomJoinButton({
           onBusy(false);
         }
       }}
-      className={btnOutline}
     >
       {asHelper ? "Join as helper" : "Join"}
-    </button>
+    </Button>
+  );
+}
+
+function ConceptSelect({
+  id,
+  concepts,
+  value,
+  onChange,
+  label,
+}: {
+  id: string;
+  concepts: Concept[];
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+}) {
+  const items = concepts.map((c) => ({ value: c._id, label: c.label }));
+  return (
+    <Select items={items} value={value} onValueChange={(v) => v && onChange(v)}>
+      <SelectTrigger id={id} size="sm" aria-label={label} className="min-w-40 bg-background">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {items.map((it) => (
+          <SelectItem key={it.value} value={it.value}>
+            {it.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -101,8 +140,8 @@ export function RoomList({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (rooms === undefined || me === undefined) return <p className="text-sm text-zinc-500">Loading help rooms…</p>;
-  if (rooms === null || me === null) return <p className="text-sm text-zinc-500">Couldn’t load help rooms for this session.</p>;
+  if (rooms === undefined || me === undefined) return <Skeleton className="h-32" />;
+  if (rooms === null || me === null) return <p className="text-sm text-muted-foreground">Couldn’t load help rooms for this session.</p>;
   const helperConcepts = concepts.filter((c) => me.helperConceptIds.includes(c._id));
   const chosen = helperConcepts.find((c) => c._id === conceptId) ?? helperConcepts[0] ?? null;
 
@@ -119,73 +158,65 @@ export function RoomList({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4" aria-labelledby="help-rooms">
-      <div>
-        <h2 id="help-rooms" className="font-medium">
-          Peer help rooms
-        </h2>
-        <p className="text-sm text-zinc-600">
+    <Card className="enter" aria-labelledby="help-rooms">
+      <CardHeader>
+        <CardTitle id="help-rooms" render={<h2 />}>Peer help rooms</CardTitle>
+        <CardDescription>
           Small live chat rooms (max {rooms[0]?.capacity ?? 6} people) on one topic. Join only if you want to; you can leave any time.
-        </p>
-      </div>
-
-      {chosen && (
-        <form
-          className="flex flex-wrap items-center gap-2 rounded-lg bg-emerald-50 p-3 text-sm"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(() => createAsHelper({ sessionId, token, conceptId: chosen._id }));
-          }}
-        >
-          <label htmlFor="helper-room-concept" className="font-medium text-emerald-900">
-            Open a help room as a helper for
-          </label>
-          <select
-            id="helper-room-concept"
-            value={chosen._id}
-            onChange={(e) => setConceptId(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-2 py-1"
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {chosen && (
+          <form
+            className="enter flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run(() => createAsHelper({ sessionId, token, conceptId: chosen._id }));
+            }}
           >
-            {helperConcepts.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-          <button disabled={busy} className={btnHelper}>
-            Open room
-          </button>
-        </form>
-      )}
+            <label htmlFor="helper-room-concept" className="font-medium text-emerald-950">
+              Open a help room as a helper for
+            </label>
+            <ConceptSelect id="helper-room-concept" concepts={helperConcepts} value={chosen._id} onChange={setConceptId} label="Topic" />
+            <Button type="submit" size="sm" disabled={busy} className="bg-emerald-600 text-white hover:bg-emerald-700">
+              Open room
+            </Button>
+          </form>
+        )}
 
-      {rooms.length === 0 ? (
-        <p className="text-sm text-zinc-500">No open help rooms yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {rooms.map((r) => (
-            <li key={r._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 p-3 text-sm">
-              <div>
-                <p className="font-medium">{r.title}</p>
-                <p className="text-zinc-600">
-                  {r.conceptLabel} · {roomSummary(r)}
-                </p>
-                {r.clusterTitle && <p className="text-xs text-zinc-500">For cluster “{r.clusterTitle}”</p>}
-              </div>
-              <RoomJoinButton
-                room={r}
-                token={token}
-                code={code}
-                asHelper={me.helperConceptIds.includes(r.conceptId)}
-                busy={busy}
-                onBusy={setBusy}
-                onError={setError}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </section>
+        {rooms.length === 0 ? (
+          <EmptyRow icon={<DoorOpen aria-hidden />} text="No open help rooms yet." />
+        ) : (
+          <ul className="space-y-2">
+            {rooms.map((r, i) => (
+              <li
+                key={r._id}
+                className="enter flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+                style={{ "--i": i } as React.CSSProperties}
+              >
+                <div className="space-y-0.5">
+                  <p className="font-medium">{r.title}</p>
+                  <p className="text-muted-foreground">
+                    {r.conceptLabel} · {roomSummary(r)}
+                  </p>
+                  {r.clusterTitle && <p className="text-xs text-muted-foreground">For cluster “{r.clusterTitle}”</p>}
+                </div>
+                <RoomJoinButton
+                  room={r}
+                  token={token}
+                  code={code}
+                  asHelper={me.helperConceptIds.includes(r.conceptId)}
+                  busy={busy}
+                  onBusy={setBusy}
+                  onError={setError}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        <InlineError message={error} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -215,64 +246,59 @@ export function RoomStatus({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4" aria-labelledby="room-status">
-      <h2 id="room-status" className="font-medium">
-        Help rooms (live)
-      </h2>
-      {chosen && (
-        <form
-          className="flex flex-wrap items-center gap-2 text-sm"
-          onSubmit={(e) => {
-            e.preventDefault();
-            guard(() => createForCluster({ sessionId, instructorSecret, conceptId: chosen._id }));
-          }}
-        >
-          <label htmlFor="instructor-room-concept">Open help room for</label>
-          <select
-            id="instructor-room-concept"
-            value={chosen._id}
-            onChange={(e) => setConceptId(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-2 py-1"
+    <Card aria-labelledby="room-status">
+      <CardHeader>
+        <CardTitle id="room-status" render={<h2 />}>Help rooms (live)</CardTitle>
+        <CardDescription>Open a room from a published cluster, or pick a topic here.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {chosen && (
+          <form
+            className="flex flex-wrap items-center gap-2 text-sm"
+            onSubmit={(e) => {
+              e.preventDefault();
+              guard(() => createForCluster({ sessionId, instructorSecret, conceptId: chosen._id }));
+            }}
           >
-            {concepts.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.label}
-              </option>
+            <label htmlFor="instructor-room-concept">Open help room for</label>
+            <ConceptSelect id="instructor-room-concept" concepts={concepts} value={chosen._id} onChange={setConceptId} label="Topic" />
+            <Button type="submit" size="sm">
+              Open help room
+            </Button>
+          </form>
+        )}
+        {rooms === undefined ? (
+          <Skeleton className="h-16" />
+        ) : rooms === null ? (
+          <p className="text-sm text-muted-foreground">Couldn’t load rooms (no instructor access).</p>
+        ) : rooms.length === 0 ? (
+          <EmptyRow icon={<DoorOpen aria-hidden />} text="No open rooms." />
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {rooms.map((r) => (
+              <li key={r._id} className="enter flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3">
+                <div className="space-y-0.5">
+                  <p className="font-medium">{r.title}</p>
+                  <p className="text-muted-foreground">
+                    {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
+                    {r.helperCount === 1 ? "" : "s"}
+                    {r.memberCount >= r.capacity && (
+                      <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-900">
+                        full
+                      </Badge>
+                    )}
+                  </p>
+                  {r.clusterTitle && <p className="text-xs text-muted-foreground">For cluster “{r.clusterTitle}”</p>}
+                </div>
+                <Button size="sm" variant="outline" onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}>
+                  Close room
+                </Button>
+              </li>
             ))}
-          </select>
-          <button className={btnPrimary}>Open help room</button>
-        </form>
-      )}
-      {rooms === undefined ? (
-        <p className="text-sm text-zinc-500">Loading rooms…</p>
-      ) : rooms === null ? (
-        <p className="text-sm text-zinc-500">Couldn’t load rooms (no instructor access).</p>
-      ) : rooms.length === 0 ? (
-        <p className="text-sm text-zinc-500">No open rooms. Open one from a published cluster above or pick a topic here.</p>
-      ) : (
-        <ul className="space-y-2 text-sm">
-          {rooms.map((r) => (
-            <li key={r._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 p-3">
-              <div>
-                <p className="font-medium">{r.title}</p>
-                <p className="text-zinc-600">
-                  {r.conceptLabel} · <strong>{r.memberCount}</strong> / {r.capacity} members · {r.helperCount} helper
-                  {r.helperCount === 1 ? "" : "s"}
-                  {r.memberCount >= r.capacity && <span className="ml-2 text-amber-700">full</span>}
-                </p>
-                {r.clusterTitle && <p className="text-xs text-zinc-500">For cluster “{r.clusterTitle}”</p>}
-              </div>
-              <button
-                onClick={() => guard(() => close({ roomId: r._id, instructorSecret }))}
-                className={btnSecondary}
-              >
-                Close room
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </section>
+          </ul>
+        )}
+        <InlineError message={error} />
+      </CardContent>
+    </Card>
   );
 }

@@ -1,6 +1,253 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --color-blahaj: var(--blahaj);
+  --color-blahaj-belly: var(--blahaj-belly);
+  --color-blahaj-pink: var(--blahaj-pink);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Blåhaj: IKEA plush-shark palette. Blåhaj blue for actions, belly white-blue page,
+   denim text, with the toy's black eyes (foreground) and pink mouth (destructive) as accents. */
+:root {
+  --blahaj: oklch(0.62 0.11 245);
+  --blahaj-belly: oklch(0.955 0.016 240);
+  --blahaj-pink: oklch(0.54 0.15 5);
+  --background: oklch(0.955 0.016 240);
+  --foreground: oklch(0.3 0.065 252);
+  --card: oklch(0.985 0.006 235);
+  --card-foreground: oklch(0.3 0.065 252);
+  --popover: oklch(0.985 0.006 235);
+  --popover-foreground: oklch(0.3 0.065 252);
+  --primary: oklch(0.54 0.12 245);
+  --primary-foreground: oklch(0.99 0.004 235);
+  --secondary: oklch(0.9 0.03 240);
+  --secondary-foreground: oklch(0.3 0.065 252);
+  --muted: oklch(0.93 0.022 240);
+  --muted-foreground: oklch(0.5 0.055 250);
+  --accent: oklch(0.91 0.045 238);
+  --accent-foreground: oklch(0.3 0.065 252);
+  --destructive: oklch(0.54 0.15 5);
+  --border: oklch(0.86 0.03 242);
+  --input: oklch(0.84 0.035 242);
+  --ring: oklch(0.62 0.11 245);
+  --chart-1: oklch(0.62 0.11 245);
+  --chart-2: oklch(0.45 0.09 252);
+  --chart-3: oklch(0.78 0.07 235);
+  --chart-4: oklch(0.68 0.12 5);
+  --chart-5: oklch(0.3 0.065 252);
+  --radius: 1.25rem;
+  --sidebar: oklch(0.985 0.006 235);
+  --sidebar-foreground: oklch(0.3 0.065 252);
+  --sidebar-primary: oklch(0.54 0.12 245);
+  --sidebar-primary-foreground: oklch(0.99 0.004 235);
+  --sidebar-accent: oklch(0.91 0.045 238);
+  --sidebar-accent-foreground: oklch(0.3 0.065 252);
+  --sidebar-border: oklch(0.86 0.03 242);
+  --sidebar-ring: oklch(0.62 0.11 245);
+}
+
+/* Deep-water variant: same shark, lights off. */
+.dark {
+  --background: oklch(0.22 0.04 252);
+  --foreground: oklch(0.95 0.012 240);
+  --card: oklch(0.27 0.04 250);
+  --card-foreground: oklch(0.95 0.012 240);
+  --popover: oklch(0.27 0.04 250);
+  --popover-foreground: oklch(0.95 0.012 240);
+  --primary: oklch(0.74 0.1 240);
+  --primary-foreground: oklch(0.2 0.045 252);
+  --secondary: oklch(0.33 0.04 250);
+  --secondary-foreground: oklch(0.95 0.012 240);
+  --muted: oklch(0.31 0.035 250);
+  --muted-foreground: oklch(0.74 0.04 240);
+  --accent: oklch(0.36 0.05 248);
+  --accent-foreground: oklch(0.95 0.012 240);
+  --destructive: oklch(0.74 0.12 5);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.74 0.1 240);
+  --chart-1: oklch(0.74 0.1 240);
+  --chart-2: oklch(0.6 0.1 248);
+  --chart-3: oklch(0.85 0.05 235);
+  --chart-4: oklch(0.74 0.12 5);
+  --chart-5: oklch(0.95 0.012 240);
+  --sidebar: oklch(0.27 0.04 250);
+  --sidebar-foreground: oklch(0.95 0.012 240);
+  --sidebar-primary: oklch(0.74 0.1 240);
+  --sidebar-primary-foreground: oklch(0.2 0.045 252);
+  --sidebar-accent: oklch(0.36 0.05 248);
+  --sidebar-accent-foreground: oklch(0.95 0.012 240);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.74 0.1 240);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  /* Belly-to-back gradient: paler at the bottom, a touch more blue up top, plus a soft fin-shaped glow. */
+  body {
+    background-color: var(--background);
+    background-image:
+      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 22%), transparent 70%),
+      radial-gradient(44rem 22rem at -10% 110%, oklch(0.68 0.12 5 / 10%), transparent 70%),
+      linear-gradient(to bottom, oklch(0.93 0.03 240), var(--background) 40rem);
+    background-attachment: fixed;
+  }
+  /* Two gentle waves along the bottom edge of the viewport (inline SVG, no image files). */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: auto 0 0 0;
+    height: 7rem;
+    pointer-events: none;
+    z-index: -1;
+    background-color: oklch(0.62 0.11 245 / 16%);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 112' preserveAspectRatio='none'%3E%3Cpath d='M0 64C180 24 300 24 480 56S780 112 960 80 1260 8 1440 48V112H0Z'/%3E%3C/svg%3E")
+      center bottom / 100% 100% no-repeat;
+  }
+  body::before {
+    height: 10rem;
+    background-color: oklch(0.62 0.11 245 / 8%);
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 160' preserveAspectRatio='none'%3E%3Cpath d='M0 96C240 40 420 40 640 88S1040 160 1240 104 1440 56 1440 56V160H0Z'/%3E%3C/svg%3E");
+  }
+  .dark body {
+    background-image:
+      radial-gradient(60rem 28rem at 85% -8rem, oklch(0.62 0.11 245 / 25%), transparent 70%),
+      linear-gradient(to bottom, oklch(0.25 0.045 252), var(--background) 40rem);
+  }
+  .dark body::after {
+    background-color: oklch(0.62 0.11 245 / 20%);
+  }
+  .dark body::before {
+    background-color: oklch(0.62 0.11 245 / 10%);
+  }
+  h1,
+  h2,
+  h3,
+  [data-slot="card-title"] {
+    @apply font-heading;
+    letter-spacing: 0.005em;
+  }
+  h1 {
+    font-weight: 600;
+  }
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"] {
+    background-color: var(--card);
+  }
+  ::selection {
+    background-color: oklch(0.62 0.11 245 / 30%);
+  }
+}
+
+/* Press feedback (design-engineering skill): subtle scale, transform only, snappy ease-out. */
+@layer components {
+  [data-slot="button"],
+  [data-slot="toggle-group-item"],
+  .pressable {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  [data-slot="button"]:active:not(:disabled),
+  [data-slot="toggle-group-item"]:active:not(:disabled),
+  .pressable:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+/* Enter animations: opacity + 4px translate only, under 250ms, staggered via --i. */
+@utility enter {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0, 0, 1),
+    transform 220ms cubic-bezier(0.2, 0, 0, 1);
+  transition-delay: calc(var(--i, 0) * 35ms);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    transform: none;
+    transition-delay: 0ms;
+    @starting-style {
+      transform: none;
+    }
+  }
+  [data-slot="button"]:active:not(:disabled),
+  [data-slot="toggle-group-item"]:active:not(:disabled),
+  .pressable:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* React Flow chrome in our palette */
+.react-flow__edge-path {
+  stroke: oklch(0.72 0.06 240);
+}
+.react-flow__edge-text {
+  fill: var(--color-muted-foreground);
 }

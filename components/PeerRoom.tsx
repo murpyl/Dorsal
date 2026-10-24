@@ -4,12 +4,23 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { ArrowLeft, CheckCircle2, SendHorizonal } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
-import { ConnectionStatus } from "@/components/ConnectionStatus";
-import { errorMessage } from "@/lib/errors";
+import { Brand } from "@/components/Brand";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { InlineError } from "@/components/InlineError";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { errorMessage } from "@/lib/errors";
+import { cn } from "@/lib/utils";
 
 export function PeerRoom() {
   const roomId = useParams<{ roomId: string }>().roomId as Id<"rooms">;
@@ -34,22 +45,20 @@ export function PeerRoom() {
 
   if (!code || token === null)
     return (
-      <main className="mx-auto max-w-xl space-y-3 p-8">
-        <p className="text-zinc-700">You need to join the session on this device before entering a help room.</p>
-        <Link href={code ? `/join/${code}` : "/"} className="font-medium text-indigo-700 underline">
-          {code ? `Join session ${code}` : "Go to the start page"}
-        </Link>
-      </main>
+      <Gate
+        text="You need to join the session on this device before entering a help room."
+        href={code ? `/join/${code}` : "/"}
+        cta={code ? `Join session ${code}` : "Go to the start page"}
+      />
     );
-  if (room === undefined || token === undefined) return <p className="p-8 text-zinc-500">Opening room…</p>;
+  if (room === undefined || token === undefined) return <PageSkeleton />;
   if (room === null)
     return (
-      <main className="mx-auto max-w-xl space-y-3 p-8">
-        <p className="text-zinc-700">You&apos;re not a member of this room (or it no longer exists). Join it from your session page.</p>
-        <Link href={`/join/${code}`} className="font-medium text-indigo-700 underline">
-          Back to session {code}
-        </Link>
-      </main>
+      <Gate
+        text="You're not a member of this room (or it no longer exists). Join it from your session page."
+        href={`/join/${code}`}
+        cta={`Back to session ${code}`}
+      />
     );
 
   const open = room.status === "open" && room.sessionState === "open";
@@ -74,118 +83,158 @@ export function PeerRoom() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 p-4">
-      <header className="space-y-1">
-        <Link href={`/join/${code}`} className="text-sm text-indigo-700 underline">
-          ← Back to session {code}
-        </Link>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-2xl font-semibold">{room.title}</h1>
-          <p className="text-sm text-zinc-500">
-            Help room · {room.conceptLabel} · {room.members.length} / {room.capacity}
-            {room.clusterTitle && <> · for cluster “{room.clusterTitle}”</>}
-            {!open && <span className="ml-2 font-medium text-amber-700">closed</span>}
-          </p>
+    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 p-4 pb-12">
+      <header className="enter space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Brand />
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={`/join/${code}`} />}>
+            <ArrowLeft data-icon="inline-start" aria-hidden />
+            Back to session {code}
+          </Button>
         </div>
-        <p className="text-sm text-zinc-600">{room.conceptDescription}</p>
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{room.title}</h1>
+            {!open && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                closed
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Help room · {room.conceptLabel} · <span className="tabular-nums">{room.members.length} / {room.capacity}</span>
+            {room.clusterTitle && <> · for cluster “{room.clusterTitle}”</>}
+          </p>
+          <p className="text-sm text-muted-foreground">{room.conceptDescription}</p>
+        </div>
         <ConnectionStatus />
       </header>
 
       <section className="grid gap-4 md:grid-cols-[14rem_1fr]">
-        <aside className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 text-sm" aria-labelledby="members">
-          <h2 id="members" className="font-medium">
-            In this room
-          </h2>
-          <ul className="space-y-1">
-            {room.members.map((m, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-1">
-                <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
-                <span className={`rounded px-1.5 text-xs ${m.role === "helper" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>
-                  {m.role}
-                </span>
-                {m.isSimulated && <span className="rounded bg-amber-100 px-1.5 text-xs text-amber-800">simulated</span>}
-                {m.isMe && <span className="text-xs text-zinc-500">(you)</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-zinc-500">Helpers volunteered for this topic themselves; it is not a verified credential.</p>
-          <div className="flex flex-col gap-2 border-t border-zinc-200 pt-3">
-            <button
-              onClick={() =>
-                guard(async () => {
-                  await leave({ roomId, token: token! });
-                  router.push(`/join/${code}`);
-                })
-              }
-              className="rounded-lg border border-zinc-300 px-3 py-1.5 hover:bg-zinc-50"
-            >
-              Leave room
-            </button>
-            {room.myRole === "helper" && open && (
-              <button
-                onClick={() => guard(() => close({ roomId, token: token! }))}
-                className="rounded-lg border border-red-300 px-3 py-1.5 text-red-700 hover:bg-red-50"
+        <Card size="sm" aria-labelledby="members" className="h-fit">
+          <CardHeader>
+            <CardTitle id="members" render={<h2 />}>In this room</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <ul className="space-y-1.5">
+              {room.members.map((m, i) => (
+                <li key={i} className="flex flex-wrap items-center gap-1.5">
+                  <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
+                  <Badge variant="secondary" className={cn(m.role === "helper" && "bg-emerald-100 text-emerald-900")}>
+                    {m.role}
+                  </Badge>
+                  {m.isSimulated && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                      simulated
+                    </Badge>
+                  )}
+                  {m.isMe && <span className="text-xs text-muted-foreground">(you)</span>}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground">Helpers volunteered for this topic themselves; it is not a verified credential.</p>
+            <Separator />
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  guard(async () => {
+                    await leave({ roomId, token: token! });
+                    router.push(`/join/${code}`);
+                  })
+                }
               >
-                Close room
-              </button>
-            )}
-          </div>
-        </aside>
+                Leave room
+              </Button>
+              {room.myRole === "helper" && open && (
+                <Button variant="destructive" size="sm" onClick={() => guard(() => close({ roomId, token: token! }))}>
+                  Close room
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="flex flex-col rounded-xl border border-zinc-200 bg-white">
+        <Card className="gap-0 py-0">
           <div className="flex-1 space-y-2 overflow-y-auto p-4" style={{ maxHeight: "24rem", minHeight: "16rem" }} aria-live="polite">
             {messages === undefined ? (
-              <p className="text-sm text-zinc-500">Loading messages…</p>
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-2/3" />
+                <Skeleton className="ml-auto h-10 w-1/2" />
+              </div>
             ) : messages === null || messages.length === 0 ? (
-              <p className="text-sm text-zinc-500">No messages yet. Say hi and describe where you got stuck.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">No messages yet. Say hi and describe where you got stuck.</p>
             ) : (
               messages.map((m) => (
-                <div key={m._id} className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.isMine ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-900"}`}>
-                    <p className={`text-xs ${m.isMine ? "text-indigo-200" : "text-zinc-500"}`}>
+                <div key={m._id} className={cn("enter flex", m.isMine ? "justify-end" : "justify-start")}>
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
+                      m.isMine ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md bg-muted text-foreground",
+                    )}
+                  >
+                    <p className={cn("mb-0.5 text-[11px] font-medium", m.isMine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                       {m.isMine ? "You" : m.authorAlias}
-                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-800">simulated</span>}
+                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-900">simulated</span>}
                     </p>
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    <p className="break-words whitespace-pre-wrap">{m.body}</p>
                   </div>
                 </div>
               ))
             )}
             <div ref={bottomRef} />
           </div>
-          <form onSubmit={onSend} className="flex gap-2 border-t border-zinc-200 p-3">
-            <input
+          <form onSubmit={onSend} className="flex gap-2 border-t bg-muted/40 p-3">
+            <Input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={500}
               disabled={!open}
               placeholder={open ? "Message the room (max 500 chars)" : "Room is closed"}
               aria-label="Message"
-              className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              className="h-9 bg-background"
             />
-            <button disabled={!open || !draft.trim()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-              Send
-            </button>
+            <Button type="submit" size="icon-lg" disabled={!open || !draft.trim()} aria-label="Send">
+              <SendHorizonal aria-hidden />
+            </Button>
           </form>
-        </div>
+        </Card>
       </section>
 
-      <section className="space-y-2 rounded-xl border border-zinc-200 bg-white p-4" aria-labelledby="check-in">
-        <h2 id="check-in" className="font-medium">
-          Update your rating for <span className="text-indigo-700">{room.conceptLabel}</span>
-        </h2>
-        <p className="text-sm text-zinc-600">
-          How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on your
-          session page. Only aggregate counts are shown to the instructor.
-        </p>
-        <ConfidenceSelector
-          value={room.myLevel}
-          disabled={!open}
-          onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))}
-        />
-        {room.myLevel && <p className="text-sm text-emerald-700">Rating saved. You can change it any time.</p>}
-      </section>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <Card aria-labelledby="check-in">
+        <CardHeader>
+          <CardTitle id="check-in" render={<h2 />}>
+            Update your rating for <span className="underline decoration-foreground/30 underline-offset-4">{room.conceptLabel}</span>
+          </CardTitle>
+          <CardDescription>
+            How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on
+            your session page. Only aggregate counts are shown to the instructor.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
+          {room.myLevel && (
+            <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+              <CheckCircle2 className="size-4" aria-hidden />
+              Rating saved. You can change it any time.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      <InlineError message={error} />
+    </main>
+  );
+}
+
+function Gate({ text, href, cta }: { text: string; href: string; cta: string }) {
+  return (
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+      <Brand />
+      <p className="text-muted-foreground">{text}</p>
+      <Button nativeButton={false} render={<Link href={href} />}>
+        {cta}
+      </Button>
     </main>
   );
 }

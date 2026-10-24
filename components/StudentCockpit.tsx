@@ -5,13 +5,18 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { Brand } from "@/components/Brand";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { InlineError } from "@/components/InlineError";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { PublishedClusters } from "@/components/PublishedClusters";
 import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
 import { RoomList } from "@/components/RoomList";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
@@ -35,7 +40,6 @@ export function StudentCockpit() {
   const promptKey = view?.activeConceptId ? `${view.activeConceptId}\n${view.activePrompt ?? ""}` : null;
 
   // "New prompt" cue: shown for a few seconds after the prompt changes while the page is open.
-  // Keyed to the prompt so it can only ever describe the card that is currently rendered.
   const previousPrompt = useRef<string | null | undefined>(undefined);
   const [cueFor, setCueFor] = useState<string | null>(null);
   useEffect(() => {
@@ -48,8 +52,13 @@ export function StudentCockpit() {
     return () => clearTimeout(timer);
   }, [view, promptKey]);
 
-  if (error) return <p className="p-8 text-red-600">{error}</p>;
-  if (!view || !token) return <p className="p-8 text-zinc-500">Joining session {code}…</p>;
+  if (error)
+    return (
+      <main className="mx-auto w-full max-w-xl p-4">
+        <InlineError message={error} />
+      </main>
+    );
+  if (!view || !token) return <PageSkeleton />;
 
   const sendSignal = (conceptId: Id<"concepts">, level: Level) =>
     upsert({ sessionId: view.sessionId, token, conceptId, level }).catch((err) => setError(errorMessage(err)));
@@ -61,56 +70,84 @@ export function StudentCockpit() {
   const disabled = view.state !== "open";
 
   return (
-    <main className="mx-auto w-full max-w-xl space-y-4 p-3 sm:p-4">
-      <header className="space-y-1">
-        <p className="text-sm break-words text-zinc-500">
-          {code} · you are <span className="font-medium">{view.alias}</span> (pseudonymous to classmates)
-        </p>
-        <h1 className="text-xl font-semibold sm:text-2xl">{view.title}</h1>
-        {view.state === "closed" && <p className="text-amber-600">This session is closed.</p>}
+    <main className="mx-auto w-full max-w-xl space-y-4 p-3 pb-12 sm:p-4">
+      <header className="enter space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Brand />
+          <Badge variant="outline" className="font-mono tracking-widest">
+            {code}
+          </Badge>
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{view.title}</h1>
+          <p className="text-sm break-words text-muted-foreground">
+            You appear as <span className="font-medium text-foreground">{view.alias}</span> · pseudonymous to classmates
+          </p>
+        </div>
+        {view.state === "closed" && (
+          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+            This session is closed
+          </Badge>
+        )}
       </header>
       <ConnectionStatus />
+
       {current ? (
-        <section
-          className="space-y-2 rounded-xl border border-indigo-400 bg-indigo-50 p-4"
-          aria-live="polite"
-          aria-label={`Prompt ${promptNumber} of ${view.concepts.length}`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Current topic</p>
-            {cueFor === promptKey && (
-              <span className="animate-pulse rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">New prompt</span>
-            )}
-          </div>
-          <h2 className="text-lg font-semibold">
-            Prompt {promptNumber} of {view.concepts.length}
-          </h2>
-          <p className="font-medium">{current.label}</p>
-          <p className="text-sm text-zinc-600">{current.description}</p>
-          {view.activePrompt && <p className="rounded-lg bg-white px-3 py-2 text-base font-medium text-indigo-900">{view.activePrompt}</p>}
-          <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
-        </section>
+        <Card className="enter ring-2 ring-foreground/80" aria-live="polite" aria-label={`Prompt ${promptNumber} of ${view.concepts.length}`}>
+          <CardHeader>
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <Badge>
+                <span className="relative flex size-1.5" aria-hidden>
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground/70 motion-reduce:hidden" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-primary-foreground" />
+                </span>
+                Current topic
+              </Badge>
+              {cueFor === promptKey && (
+                <Badge variant="secondary" className="enter animate-pulse bg-amber-100 text-amber-900 motion-reduce:animate-none">
+                  New prompt
+                </Badge>
+              )}
+            </div>
+            <CardDescription className="text-xs font-medium tracking-wide uppercase">
+              Prompt {promptNumber} of {view.concepts.length}
+            </CardDescription>
+            <CardTitle render={<h2 />} className="text-lg">
+              {current.label}
+            </CardTitle>
+            <CardDescription>{current.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {view.activePrompt && <p className="rounded-lg bg-muted px-3 py-2 text-base font-medium">{view.activePrompt}</p>}
+            <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
+          </CardContent>
+        </Card>
       ) : (
-        <section className="rounded-xl border border-dashed border-zinc-300 bg-white p-4 text-sm text-zinc-600">
+        <div className="enter rounded-xl border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
           Waiting for the instructor&apos;s first prompt.
-        </section>
+        </div>
       )}
       {covered.length > 0 && (
-        <details className="rounded-xl border border-zinc-200 bg-white">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-700">
-            Already covered ({covered.length}) <span className="font-normal text-zinc-500">— you can still change your answer</span>
+        <details className="enter group/covered rounded-xl bg-card ring-1 ring-foreground/10" style={{ "--i": 1 } as React.CSSProperties}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
+            <span className="inline-block transition-transform duration-150 ease-out group-open/covered:rotate-90" aria-hidden>
+              ›
+            </span>
+            Already covered ({covered.length})
+            <span className="font-normal text-muted-foreground">— you can still change your answer</span>
           </summary>
-          <div className="space-y-4 border-t border-zinc-200 p-4">
+          <div className="space-y-5 border-t p-4">
             {covered.map((c) => (
               <section key={c._id} className="space-y-2" aria-label={c.label}>
                 <h3 className="font-medium">{c.label}</h3>
-                <p className="text-sm text-zinc-600">{c.description}</p>
+                <p className="text-sm text-muted-foreground">{c.description}</p>
                 <ConfidenceSelector value={c.myLevel} disabled={disabled} onChange={(level) => sendSignal(c._id, level)} />
               </section>
             ))}
           </div>
         </details>
       )}
+
       <ErrorBoundary label="the question box">
         <QuestionComposer sessionId={view.sessionId} token={token} concepts={view.concepts} activeConceptId={view.activeConceptId} />
       </ErrorBoundary>

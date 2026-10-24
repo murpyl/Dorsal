@@ -1,9 +1,10 @@
 import { Suspense } from "react";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { StudentCockpit } from "@/components/StudentCockpit";
 
 export default function JoinPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-zinc-500">Loading…</p>}>
+    <Suspense fallback={<PageSkeleton />}>
       <StudentCockpit />
     </Suspense>
   );

@@ -1,8 +1,9 @@
 "use client";
 
-import { Background, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
+import { Background, BackgroundVariant, Handle, MarkerType, Position, ReactFlow, type Edge, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 export const LOW_SAMPLE = 5;
 
@@ -26,9 +27,17 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
+/** Rose → amber → teal on the understanding score; soft fill, saturated accent bar. */
+export function scoreColors(score: number | null) {
+  if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
+  // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
+  const hue = Math.round(10 + score * 160);
+  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.6 0.14 ${hue})` };
+}
+
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
   const { label, total, score, active, selected, openClusters, counts, onSelect } = data;
-  const fill = score === null ? "#e4e4e7" : `hsl(${Math.round(score * 130)} 75% 60%)`;
+  const { fill, accent } = scoreColors(score);
   const low = total < LOW_SAMPLE;
   const description = [
     `${label}.`,
@@ -53,25 +62,35 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
           onSelect(id);
         }
       }}
-      className={`relative w-48 rounded-xl px-3 py-2 text-center text-zinc-900 shadow-sm focus:outline-2 focus:outline-offset-2 focus:outline-indigo-700 ${low ? "border-2 border-dashed border-zinc-500" : "border-2 border-zinc-700"} ${active ? "ring-4 ring-indigo-400" : ""} ${selected ? "outline-2 outline-offset-2 outline-zinc-900" : ""}`}
+      className={cn(
+        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        low ? "border-dashed border-neutral-300" : "border-neutral-200",
+        active && "ring-4 ring-foreground/15 border-foreground",
+        selected && "border-foreground",
+      )}
       style={{ background: fill }}
       data-testid="concept-node"
     >
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white shadow"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}
         </span>
       )}
-      <p className="font-medium">{label}</p>
-      <p className="text-xs">
-        N = {total}
-        {low && <span className="ml-1">· {total === 0 ? "no responses" : "low sample"}</span>}
-      </p>
-      {active && <p className="text-xs font-semibold text-indigo-900">current topic</p>}
+      <div className="flex items-start gap-2">
+        <span className="mt-1 h-7 w-1 shrink-0 rounded-full" style={{ background: accent }} aria-hidden />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{label}</p>
+          <p className="text-xs tabular-nums text-muted-foreground">
+            N = {total}
+            {low && <span className="ml-1">· {total === 0 ? "no responses" : "low sample"}</span>}
+          </p>
+        </div>
+      </div>
+      {active && <p className="mt-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">current topic</p>}
       <Handle type="source" position={Position.Right} className="opacity-0" />
     </div>
   );
@@ -117,56 +136,64 @@ export function ConceptGraph({
         id: e._id,
         source: e.fromId,
         target: e.toId,
-        markerEnd: { type: MarkerType.ArrowClosed },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-neutral-400)" },
         label: "prerequisite",
-        labelStyle: { fontSize: 10 },
+        labelStyle: { fontSize: 10, fill: "var(--color-muted-foreground)" },
+        labelBgStyle: { fill: "var(--color-background)" },
+        labelBgPadding: [4, 2] as [number, number],
+        labelBgBorderRadius: 4,
       })),
     [edges],
   );
 
   return (
-    <figure className="flex flex-col rounded-xl border border-zinc-200 bg-white">
-      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-zinc-200 px-3 py-2 text-xs text-zinc-600">
-        <span className="font-semibold text-zinc-800">Self-reported understanding</span>
-        <span className="flex items-center gap-1">
+    <figure className="flex flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10">
+      <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">Self-reported understanding</span>
+        <span className="flex items-center gap-1.5">
           confused
           <span
-            className="inline-block h-2 w-16 rounded-full"
-            style={{ background: "linear-gradient(to right, hsl(0 75% 60%), hsl(65 75% 60%), hsl(130 75% 60%))" }}
+            className="inline-block h-1.5 w-16 rounded-full"
+            style={{ background: `linear-gradient(to right, ${scoreColors(0).accent}, ${scoreColors(0.5).accent}, ${scoreColors(1).accent})` }}
             aria-hidden
           />
           can explain
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded border border-zinc-500 bg-zinc-200" aria-hidden /> no responses
+        <span className="flex items-center gap-1.5">
+          <span
+            className="inline-block size-3 rounded border"
+            style={{ background: scoreColors(null).fill, borderColor: scoreColors(null).accent }}
+            aria-hidden
+          />{" "}
+          no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1.5">
           <span className="inline-block rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" aria-hidden>
             n clusters
           </span>
           published question clusters on this concept
         </span>
         <span>Student confidence, not measured mastery</span>
-        <a href="#per-concept" className="text-indigo-700 underline">
+        <a href="#per-concept" className="text-foreground underline underline-offset-3 hover:text-muted-foreground">
           Text version: per-concept distribution
         </a>
       </figcaption>
       <div className="h-80 lg:h-[26rem]">
-      <ReactFlow
-        nodes={nodes}
-        edges={flowEdges}
-        nodeTypes={nodeTypes}
-        onNodeClick={(_, node) => onSelect(node.id)}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        nodesFocusable={false}
-        elementsSelectable={false}
-        fitView
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background />
-      </ReactFlow>
+        <ReactFlow
+          nodes={nodes}
+          edges={flowEdges}
+          nodeTypes={nodeTypes}
+          onNodeClick={(_, node) => onSelect(node.id)}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          nodesFocusable={false}
+          elementsSelectable={false}
+          fitView
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--color-neutral-300)" />
+        </ReactFlow>
       </div>
     </figure>
   );

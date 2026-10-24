@@ -4,7 +4,12 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { InlineError } from "@/components/InlineError";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
+import { cn } from "@/lib/utils";
 
 export function HelperOptIn({
   sessionId,
@@ -22,8 +27,8 @@ export function HelperOptIn({
   });
   const [error, setError] = useState<string | null>(null);
 
-  if (me === undefined) return <p className="text-sm text-zinc-500">Loading helper settings…</p>;
-  if (me === null) return <p className="text-sm text-zinc-500">Couldn’t load helper settings for this session.</p>;
+  if (me === undefined) return <Skeleton className="h-40" />;
+  if (me === null) return <p className="text-sm text-muted-foreground">Couldn’t load helper settings for this session.</p>;
   const helping = new Set(me.helperConceptIds);
 
   async function toggle(conceptId: Id<"concepts">, checked: boolean) {
@@ -37,33 +42,42 @@ export function HelperOptIn({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4" aria-labelledby="helper-opt-in">
-      <div>
-        <h2 id="helper-opt-in" className="font-medium">
-          Volunteer as a peer helper
-        </h2>
-        <p className="text-sm text-zinc-600">
-          Tick the topics you feel comfortable explaining. This is your own call, not a test or an AI rating. Nobody
-          is enrolled or contacted automatically: classmates only see you as <span className="font-medium">{me.alias}</span>{" "}
+    <Card className="enter" aria-labelledby="helper-opt-in">
+      <CardHeader>
+        <CardTitle id="helper-opt-in" render={<h2 />}>Volunteer as a peer helper</CardTitle>
+        <CardDescription>
+          Tick the topics you feel comfortable explaining. This is your own call, not a test or an AI rating. Nobody is enrolled
+          or contacted automatically: classmates only see you as <span className="font-medium text-foreground">{me.alias}</span>{" "}
           in a help room you choose to open or join, and you can untick at any time.
-        </p>
-      </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {concepts.map((c) => (
-          <li key={c._id}>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:bg-zinc-50">
-              <input
-                type="checkbox"
-                checked={helping.has(c._id)}
-                onChange={(e) => toggle(c._id, e.target.checked)}
-                className="h-4 w-4"
-              />
-              I can help with <span className="font-medium">{c.label}</span>
-            </label>
-          </li>
-        ))}
-      </ul>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </section>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {concepts.map((c) => {
+            const checked = helping.has(c._id);
+            return (
+              <li key={c._id}>
+                <label
+                  className={cn(
+                    "pressable flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                    checked ? "border-emerald-300 bg-emerald-50 text-emerald-950" : "border-border bg-background hover:bg-muted",
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(value) => toggle(c._id, value === true)}
+                    className={cn(checked && "border-emerald-600 bg-emerald-600 text-white data-checked:border-emerald-600 data-checked:bg-emerald-600")}
+                  />
+                  <span>
+                    I can help with <span className="font-medium">{c.label}</span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <InlineError message={error} />
+      </CardContent>
+    </Card>
   );
 }
