@@ -109,7 +109,11 @@ export const reset = internalMutation({
     for (const [from, to] of SEED_EDGES) {
       await ctx.db.insert("conceptEdges", { sessionId, fromId: conceptIds[from], toId: conceptIds[to], relation: "prerequisite_for" });
     }
-    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[2] });
+    // Every concept has already been current (so all seeded `pre` signals are ratable); Call stack & frames is current now.
+    await ctx.db.patch(sessionId, {
+      activeConceptId: conceptIds[2],
+      activeHistory: conceptIds.map((conceptId, i) => ({ conceptId, at: now - (conceptIds.length - i) * 60_000 })),
+    });
 
     // Simulated participants can never be impersonated: findParticipant compares against a 64-char hex
     // SHA-256 digest, and this sentinel is not one, so no token hashes to it.

@@ -34,6 +34,9 @@ export function RadarDashboard() {
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
+  const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
+  const coverage = (id: string) =>
+    id === view.activeConceptId ? "current" : view.coveredConceptIds.includes(id as Id<"concepts">) ? "covered" : "upcoming";
 
   async function makeCurrent(conceptId: Id<"concepts">) {
     setError(null);
@@ -59,16 +62,22 @@ export function RadarDashboard() {
       </header>
       <ConnectionStatus />
 
-      <section className="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="Session metrics">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-5" aria-label="Session metrics">
         <Metric
           label="Participants"
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
         />
+        <Metric
+          label="Participation"
+          value={`${view.answeredCount} / ${view.participantCount}`}
+          detail={`${participation}% answered the current prompt${view.simulatedCount > 0 ? ` · incl. ${view.simulatedCount} simulated` : ""}`}
+        />
         <Metric label="Responses" value={responses} />
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
         <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
+      {/* Lecture Listener (session G): <LectureListener sessionId instructorSecret /> goes here, directly below the metrics grid. */}
 
       <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
         <ConceptGraph
@@ -133,7 +142,13 @@ export function RadarDashboard() {
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-medium">
                 {c.label}
-                {c._id === view.activeConceptId && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
+                {coverage(c._id) === "current" && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
+                {coverage(c._id) === "covered" && (
+                  <span className="ml-2 text-xs font-normal text-zinc-500">
+                    covered · {c.total} answered
+                  </span>
+                )}
+                {coverage(c._id) === "upcoming" && <span className="ml-2 text-xs font-normal text-zinc-400">not yet covered</span>}
                 {c.openClusters > 0 && (
                   <span className="ml-2 text-xs font-normal text-amber-700">
                     {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
@@ -177,13 +192,12 @@ export function RadarDashboard() {
   );
 }
 
-function Metric({ label, value, detail }: { label: string; value: number; detail?: string }) {
+function Metric({ label, value, detail }: { label: string; value: number | string; detail?: string }) {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4">
       <p className="text-sm text-zinc-500">{label}</p>
-      <p className="text-3xl font-semibold">
-        {value} {detail && <span className="text-base font-normal text-zinc-500">{detail}</span>}
-      </p>
+      <p className="text-3xl font-semibold">{value}</p>
+      {detail && <p className="text-sm text-zinc-500">{detail}</p>}
     </div>
   );
 }

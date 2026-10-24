@@ -22,6 +22,8 @@ export default defineSchema({
     phase: v.optional(phase),
     instructorSecretHash: v.string(),
     activeConceptId: v.optional(v.id("concepts")),
+    /** Every concept that has been made current in this session, in the order it first became current. */
+    activeHistory: v.optional(v.array(v.object({ conceptId: v.id("concepts"), at: v.number() }))),
     createdAt: v.number(),
   }).index("by_code", ["code"]),
   participants: defineTable({

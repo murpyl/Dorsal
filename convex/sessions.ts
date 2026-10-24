@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
 
 export const SEED_CONCEPTS = [
@@ -17,6 +17,16 @@ export const SEED_EDGES: [number, number][] = [
   [1, 4],
 ];
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+/** Previously-current concept ids in the order they first became current, excluding the current one. */
+export function coveredConceptIds(session: Doc<"sessions">) {
+  return (session.activeHistory ?? []).map((h) => h.conceptId).filter((id) => id !== session.activeConceptId);
+}
+
+/** True when a student may rate this concept on the session page: it is current or has been current before. */
+export function hasBeenActive(session: Doc<"sessions">, conceptId: Id<"concepts">) {
+  return session.activeConceptId === conceptId || (session.activeHistory ?? []).some((h) => h.conceptId === conceptId);
+}
 
 export const create = mutation({
   args: { title: v.string(), instructorSecret: v.string() },
@@ -49,7 +59,7 @@ export const create = mutation({
         relation: "prerequisite_for",
       });
     }
-    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0] });
+    await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0], activeHistory: [{ conceptId: conceptIds[0], at: Date.now() }] });
     return { sessionId, code };
   },
 });
@@ -115,6 +125,7 @@ export const getStudentView = query({
       title: session.title,
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
+      coveredConceptIds: coveredConceptIds(session),
       alias: participant.alias,
       concepts: withMyLevel,
     };
@@ -163,6 +174,9 @@ export const getInstructorView = query({
       code: session.code,
       state: session.state,
       activeConceptId: session.activeConceptId ?? null,
+      coveredConceptIds: coveredConceptIds(session),
+      // One `pre` signal per participant and concept, so the current concept's total is the number of participants who answered it.
+      answeredCount: conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0,
       participantCount: participants.length,
       simulatedCount: participants.filter((p) => p.isSimulated).length,
       publishedClusterCount: published.length,
@@ -179,7 +193,11 @@ export const setActiveConcept = mutation({
     if (!session) throw new ConvexError("Instructor access required");
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
-    await ctx.db.patch(sessionId, { activeConceptId: conceptId });
+    const history = session.activeHistory ?? [];
+    await ctx.db.patch(sessionId, {
+      activeConceptId: conceptId,
+      activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: Date.now() }],
+    });
   },
 });
 
