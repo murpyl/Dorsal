@@ -19,12 +19,12 @@ See `docs/MVP_Outline.md` for product behavior, sponsor mapping, safety constrai
 
 Prerequisites: recent Node.js LTS, npm, Convex account, and an Anthropic API key for the AI path.
 
-Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` refuses to run while `AGENTS.md` is present, so move it aside for the scaffold:
+Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` refuses to run while `AGENTS.md` is present, so move it aside for the scaffold, then merge it with the `AGENTS.md` (Next.js agent rules) that the scaffold generates:
 
 ```bash
 mv AGENTS.md /tmp/AGENTS.md
 npx create-next-app@latest . --typescript --tailwind --eslint --app --use-npm --yes
-mv /tmp/AGENTS.md AGENTS.md
+cat /tmp/AGENTS.md AGENTS.md > AGENTS.merged && mv AGENTS.merged AGENTS.md  # keep repo rules + Next.js agent rules block
 npm install convex @xyflow/react zod @anthropic-ai/sdk
 npx convex dev            # coding agents without a Convex login: CONVEX_AGENT_MODE=anonymous npx convex dev
 ```
