@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClassPulse",
+  title: "Dorsal",
   description: "Live classroom confusion radar",
 };
 

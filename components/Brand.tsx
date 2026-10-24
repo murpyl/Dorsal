@@ -26,7 +26,7 @@ export function Brand({ className }: { className?: string }) {
           <path d="M20.3 15.4c.5-.2.9-.5 1.3-.9" stroke="oklch(0.68 0.12 5)" strokeWidth="0.9" strokeLinecap="round" />
         </svg>
       </span>
-      ClassPulse
+      Dorsal
     </Link>
   );
 }
