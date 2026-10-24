@@ -1,7 +1,7 @@
 export const LEVELS = [
-  { value: "confused", label: "Confused", color: "bg-red-500", selected: "bg-red-500 text-white border-red-500", dot: "bg-red-500" },
-  { value: "partial", label: "Partly get it", color: "bg-amber-400", selected: "bg-amber-400 text-amber-950 border-amber-400", dot: "bg-amber-400" },
-  { value: "can_explain", label: "Can explain it", color: "bg-emerald-500", selected: "bg-emerald-500 text-white border-emerald-500", dot: "bg-emerald-500" },
+  { value: "confused", label: "Confused", color: "bg-level-confused", selected: "bg-level-confused text-white border-level-confused", dot: "bg-level-confused" },
+  { value: "partial", label: "Partly get it", color: "bg-level-partial", selected: "bg-level-partial text-accent-foreground border-level-partial", dot: "bg-level-partial" },
+  { value: "can_explain", label: "Can explain it", color: "bg-level-explain", selected: "bg-level-explain text-white border-level-explain", dot: "bg-level-explain" },
 ] as const;
 
 export type Phase = "pre" | "post";
