@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { findParticipant, getInstructorSession, requireParticipant } from "./credentials";
+import { findParticipant, getInstructorSession, getStaffSession, requireParticipant } from "./credentials";
 
 export const DEFAULT_CAPACITY = 6;
 const MIN_CAPACITY = 2;
@@ -72,8 +72,9 @@ const publicRoom = (
   clusterId: room.clusterId ?? null,
   clusterTitle,
   capacity: room.capacity,
-  memberCount: members.length,
+  memberCount: members.filter((m) => m.role !== "ta").length,
   helperCount: members.filter((m) => m.role === "helper").length,
+  taCount: members.filter((m) => m.role === "ta").length,
 });
 
 export const createForCluster = mutation({
@@ -214,8 +215,20 @@ export const join = mutation({
       throw new ConvexError("Opt in as a helper for this concept to join as a helper");
     if (await findMembership(ctx, roomId, participant._id)) throw new ConvexError("You are already in this room");
     const members = await listMembers(ctx, roomId);
-    if (members.length >= room.capacity) throw new ConvexError("Room is full");
+    if (members.filter((m) => m.role !== "ta").length >= room.capacity) throw new ConvexError("Room is full");
     await ctx.db.insert("roomMembers", { roomId, participantId: participant._id, role, joinedAt: Date.now() });
+  },
+});
+
+/** A TA enters an open room with their personal TA secret (which is also their room identity). Entering twice is a no-op. */
+export const joinAsTa = mutation({
+  args: { roomId: v.id("rooms"), instructorSecret: v.string() },
+  handler: async (ctx, { roomId, instructorSecret }) => {
+    const room = await requireOpenRoom(ctx, roomId);
+    const staff = await getStaffSession(ctx, room.sessionId, instructorSecret);
+    if (!staff?.ta) throw new ConvexError("TA access required");
+    if (await findMembership(ctx, roomId, staff.ta._id)) return;
+    await ctx.db.insert("roomMembers", { roomId, participantId: staff.ta._id, role: "ta", joinedAt: Date.now() });
   },
 });
 
@@ -224,7 +237,8 @@ export const leave = mutation({
   handler: async (ctx, { roomId, token }) => {
     const room = await ctx.db.get(roomId);
     if (!room) throw new ConvexError("Room not found");
-    const participant = await requireParticipant(ctx, room.sessionId, token);
+    const participant = await findParticipant(ctx, room.sessionId, token);
+    if (!participant) throw new ConvexError("Not a participant in this session");
     const mine = await findMembership(ctx, roomId, participant._id);
     if (mine) await ctx.db.delete(mine._id);
   },
@@ -240,9 +254,9 @@ export const close = mutation({
     if (!allowed && token) {
       const participant = await findParticipant(ctx, room.sessionId, token);
       const mine = participant && (await findMembership(ctx, roomId, participant._id));
-      allowed = mine?.role === "helper";
+      allowed = mine?.role === "helper" || mine?.role === "ta";
     }
-    if (!allowed) throw new ConvexError("Only the instructor or a helper in this room can close it");
+    if (!allowed) throw new ConvexError("Only the instructor, a TA or a helper in this room can close it");
     if (room.status === "open") await ctx.db.patch(roomId, { status: "closed" });
   },
 });

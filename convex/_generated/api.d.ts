@@ -20,6 +20,7 @@ import type * as rooms from "../rooms.js";
 import type * as seed from "../seed.js";
 import type * as sessions from "../sessions.js";
 import type * as signals from "../signals.js";
+import type * as tas from "../tas.js";
 
 import type {
   ApiFromModules,
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   sessions: typeof sessions;
   signals: typeof signals;
+  tas: typeof tas;
 }>;
 
 /**

@@ -34,6 +34,10 @@ export default defineSchema({
     alias: v.string(),
     helperConceptIds: v.array(v.id("concepts")),
     isSimulated: v.boolean(),
+    /** A TA invited by the instructor (`tas.invite`); `alias` is their name and `tokenHash` hashes their TA link secret. Never counted as a student. */
+    isTa: v.optional(v.boolean()),
+    /** Set by `tas.revoke`; the row is kept (with an empty `tokenHash`) so the TA's chat messages keep their name. */
+    revokedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_session", ["sessionId"])
@@ -98,7 +102,7 @@ export default defineSchema({
   roomMembers: defineTable({
     roomId: v.id("rooms"),
     participantId: v.id("participants"),
-    role: v.union(v.literal("helper"), v.literal("learner")),
+    role: v.union(v.literal("helper"), v.literal("learner"), v.literal("ta")),
     joinedAt: v.number(),
   })
     .index("by_room", ["roomId"])
