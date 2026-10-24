@@ -230,7 +230,7 @@ export default function InstructorDenseTable() {
                 aria-label={copied ? "Link copied" : "Copy join link"}
                 onClick={() => {
                   navigator.clipboard
-                    .writeText(`${window.location.origin}/join/${SESSION.code}`)
+                    .writeText(`${window.location.origin}/mock/dense-table/student`)
                     .then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 1500);
