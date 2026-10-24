@@ -1,3 +1,5 @@
+import dagre from "@dagrejs/dagre";
+
 export const MAX_CONCEPTS = 12;
 export const LABEL_MAX = 60;
 export const DESCRIPTION_MAX = 200;
@@ -26,17 +28,19 @@ export function canAddPrerequisite(concepts: { prerequisites: number[] }[], conc
   return concept !== prereq && !concepts[concept].prerequisites.includes(prereq) && !reaches(concepts, concept, prereq);
 }
 
-/** Grid layout: column = longest prerequisite chain leading to the concept, row = order within that column. Assumes no cycles. */
+const NODE = { width: 192, height: 96 };
+
+/** Left-to-right prerequisite layout via dagre; returns each concept's top-left React Flow position. */
 export function layoutConcepts(concepts: { prerequisites: number[] }[]) {
-  const depth: number[] = [];
-  const depthOf = (i: number): number =>
-    (depth[i] ??= Math.max(-1, ...concepts[i].prerequisites.map(depthOf)) + 1);
-  const rows = new Map<number, number>();
+  const g = new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: "LR", nodesep: 64, ranksep: 68 });
+  g.setDefaultEdgeLabel(() => ({}));
+  concepts.forEach((_, i) => g.setNode(String(i), { ...NODE }));
+  concepts.forEach((c, i) => c.prerequisites.forEach((p) => g.setEdge(String(p), String(i))));
+  dagre.layout(g);
   return concepts.map((_, i) => {
-    const column = depthOf(i);
-    const row = rows.get(column) ?? 0;
-    rows.set(column, row + 1);
-    return { x: column * 260, y: row * 160 };
+    const { x, y } = g.node(String(i));
+    return { x: Math.round(x - NODE.width / 2), y: Math.round(y - NODE.height / 2) };
   });
 }
 

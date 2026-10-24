@@ -4,20 +4,18 @@ import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
-import { INFER_RATE_LIMIT, sanitizeConceptSuggestions } from "../lib/aiSchemas";
+import { INFER_RATE_LIMIT, sanitizeConceptSuggestions, STALE_UPLOAD_MS, UPLOAD_RATE_LIMIT } from "../lib/aiSchemas";
 import { canAddPrerequisite, layoutConcepts, MAX_CONCEPTS, removeConcept } from "../lib/lessonGraph";
 
 const SECRET = "instructor-secret-0123456789abcdef0123456789abcdef";
 
 describe("lesson graph helpers", () => {
-  test("layout puts each concept in the column of its longest prerequisite chain", () => {
-    expect(layoutConcepts(RECURSION_LESSON)).toEqual([
-      { x: 0, y: 0 },
-      { x: 260, y: 0 },
-      { x: 520, y: 0 },
-      { x: 780, y: 0 },
-      { x: 520, y: 160 },
-    ]);
+  test("layout places every concept to the right of its prerequisites without overlaps", () => {
+    const positions = layoutConcepts(RECURSION_LESSON);
+    RECURSION_LESSON.forEach((c, i) => c.prerequisites.forEach((p) => expect(positions[i].x).toBeGreaterThan(positions[p].x)));
+    positions.forEach((a, i) =>
+      positions.slice(i + 1).forEach((b) => expect(Math.abs(a.x - b.x) >= 192 || Math.abs(a.y - b.y) >= 96).toBe(true)),
+    );
   });
 
   test("prerequisites that would close a cycle, self-links and duplicates are refused", () => {
@@ -70,11 +68,9 @@ describe("sessions.create with an instructor-edited lesson", () => {
     ];
     const { sessionId } = await t.mutation(api.sessions.create, { title: "Calc", instructorSecret: SECRET, concepts });
     const view = await t.query(api.sessions.getInstructorView, { sessionId, instructorSecret: SECRET });
-    expect(view?.concepts.map((c) => [c.label, c.x, c.y])).toEqual([
-      ["Limits", 0, 0],
-      ["Derivatives", 260, 0],
-      ["Chain rule", 520, 0],
-    ]);
+    expect(view?.concepts.map((c) => c.label)).toEqual(["Limits", "Derivatives", "Chain rule"]);
+    expect(view?.concepts.map((c) => ({ x: c.x, y: c.y }))).toEqual(layoutConcepts(concepts));
+    expect(view!.concepts[2].x).toBeGreaterThan(view!.concepts[1].x);
     expect(view?.activeConceptId).toBe(view?.concepts[0]._id);
     const ids = view!.concepts.map((c) => c._id);
     expect(view?.edges.map((e) => [ids.indexOf(e.fromId), ids.indexOf(e.toId)])).toEqual([
@@ -111,5 +107,29 @@ describe("lessons.startInferRun (global rate limit, no session yet)", () => {
     const run = await t.run((ctx) => ctx.db.get(runId));
     expect(run).toMatchObject({ operation: "inferConcepts", status: "error", error: "boom" });
     expect(run?.sessionId).toBeUndefined();
+  });
+});
+
+describe("lesson uploads (global cap, stale purge)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  test(`refuses upload URLs after ${UPLOAD_RATE_LIMIT.files} recent files`, async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      for (let i = 0; i < UPLOAD_RATE_LIMIT.files; i++) await ctx.storage.store(new Blob(["x"]));
+    });
+    await expect(t.mutation(api.lessons.generateUploadUrl, {})).rejects.toThrow(/Too many uploads/);
+  });
+
+  test("purges uploads older than STALE_UPLOAD_MS and keeps fresh ones", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const t = convexTest(schema, modules);
+    const old = await t.run((ctx) => ctx.storage.store(new Blob(["old"])));
+    vi.setSystemTime(Date.now() + STALE_UPLOAD_MS + 1);
+    const fresh = await t.run((ctx) => ctx.storage.store(new Blob(["fresh"])));
+    await t.mutation(internal.lessons.purgeStaleUploads, {});
+    const left = await t.run(async (ctx) => (await ctx.db.system.query("_storage").collect()).map((f) => f._id));
+    expect(left).toEqual([fresh]);
+    expect(left).not.toContain(old);
   });
 });

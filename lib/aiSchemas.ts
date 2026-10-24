@@ -105,6 +105,10 @@ export const LESSON_NOTES_MAX = 20_000;
 export const LESSON_FILE_TYPES = ["application/pdf", "text/plain", "text/markdown", "image/png", "image/jpeg"] as const;
 /** Global cap on concept-inference calls (they run before a session, so there is no instructor secret to check). */
 export const INFER_RATE_LIMIT = { runs: 20, windowMs: 10 * 60_000 };
+/** Global cap on lesson uploads (enough for every allowed inference run to send the maximum files). */
+export const UPLOAD_RATE_LIMIT = { files: INFER_RATE_LIMIT.runs * LESSON_MAX_FILES, windowMs: INFER_RATE_LIMIT.windowMs };
+/** Uploads older than this are leftovers (failed batch or never submitted) and get purged by cron. */
+export const STALE_UPLOAD_MS = 60 * 60_000;
 
 export const SAVE_CONCEPTS_TOOL = {
   name: "save_concepts",

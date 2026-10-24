@@ -86,7 +86,7 @@ lib/
 |---|---|---|
 | `sessions` | title, code, state, instructorSecretHash, activeConceptId, createdAt | by_code |
 | `participants` | sessionId, tokenHash, alias, helperConceptIds, isSimulated, createdAt | by_session, by_token_hash |
-| `concepts` | sessionId, label, description, order, x, y (fixed React Flow position; no layout library) | by_session |
+| `concepts` | sessionId, label, description, order, x, y (fixed React Flow position, computed once at creation with dagre) | by_session |
 | `conceptEdges` | sessionId, fromId, toId, relation | by_session |
 | `signals` | sessionId, conceptId, participantId, level, phase, updatedAt | by_concept_phase, by_participant_concept_phase |
 | `questions` | sessionId, conceptId, participantId, content, state (`pending` \| `clustered` \| `hidden`), createdAt | by_session_state, by_concept |
@@ -109,7 +109,8 @@ Implement these minimal functions (names can be adjusted consistently throughout
 | Function | Type | Behavior |
 |---|---|---|
 | `sessions.create` | mutation | Instructor creates session + join code with their reviewed concepts (`{ label, description, prerequisites: index[] }`, 1–12, acyclic) |
-| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material |
+| `lessons.generateUploadUrl` | mutation | Convex storage upload URL for lesson material (global cap: 100 uploads per 10 min) |
+| `lessons.purgeStaleUploads` | internal mutation (cron, 15 min) | Deletes uploads older than 1 h that never reached `claude.inferConcepts` |
 | `claude.inferConcepts` | action | Pre-session: suggest concepts + prerequisites from uploaded material (one Claude call, validated, files deleted after, global rate limit via `aiRuns`) |
 | `sessions.join` | mutation | Validates code; creates/reuses participant |
 | `sessions.getStudentView` | query | Active topic and safe session data |

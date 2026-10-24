@@ -1,11 +1,30 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
-import { INFER_RATE_LIMIT } from "../lib/aiSchemas";
+import { INFER_RATE_LIMIT, STALE_UPLOAD_MS, UPLOAD_RATE_LIMIT } from "../lib/aiSchemas";
 
 /** Upload URL for one lesson file; the browser POSTs the file there and passes the returned storageId to claude.inferConcepts. */
 export const generateUploadUrl = mutation({
   args: {},
-  handler: async (ctx) => await ctx.storage.generateUploadUrl(),
+  handler: async (ctx) => {
+    const recent = await ctx.db.system
+      .query("_storage")
+      .withIndex("by_creation_time", (q) => q.gt("_creationTime", Date.now() - UPLOAD_RATE_LIMIT.windowMs))
+      .take(UPLOAD_RATE_LIMIT.files);
+    if (recent.length >= UPLOAD_RATE_LIMIT.files) throw new ConvexError("Too many uploads right now. Wait a few minutes or add concepts by hand.");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Storage only ever holds in-flight lesson uploads, so anything older than STALE_UPLOAD_MS was never consumed by inferConcepts. */
+export const purgeStaleUploads = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const stale = await ctx.db.system
+      .query("_storage")
+      .withIndex("by_creation_time", (q) => q.lt("_creationTime", Date.now() - STALE_UPLOAD_MS))
+      .take(500);
+    await Promise.all(stale.map((f) => ctx.storage.delete(f._id)));
+  },
 });
 
 export const getFiles = internalQuery({
