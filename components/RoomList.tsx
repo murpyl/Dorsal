@@ -299,7 +299,7 @@ export function RoomStatus({
                   {r.clusterTitle && <p className="text-xs text-muted-foreground">For cluster “{r.clusterTitle}”</p>}
                 </div>
                 <div className="flex gap-2">
-                  {role === "ta" && (
+                  {role === "ta" && (r.isMember || r.memberCount < r.capacity) && (
                     <Button
                       size="sm"
                       onClick={() =>

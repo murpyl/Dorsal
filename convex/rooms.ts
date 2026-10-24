@@ -153,10 +153,13 @@ export const listBySession = query({
 export const listInstructor = query({
   args: { sessionId: v.id("sessions"), instructorSecret: v.string() },
   handler: async (ctx, { sessionId, instructorSecret }) => {
-    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
-    if (!session) return null;
+    const staff = await getStaffSession(ctx, sessionId, instructorSecret);
+    if (!staff) return null;
     const rooms = await openRoomsWithCounts(ctx, sessionId);
-    return rooms.map(({ room, concept, members, clusterTitle }) => publicRoom(room, concept, members, clusterTitle));
+    return rooms.map(({ room, concept, members, clusterTitle }) => ({
+      ...publicRoom(room, concept, members, clusterTitle),
+      isMember: !!staff.ta && members.some((m) => m.participantId === staff.ta._id),
+    }));
   },
 });
 

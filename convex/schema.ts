@@ -36,6 +36,8 @@ export default defineSchema({
     isSimulated: v.boolean(),
     /** A TA invited by the instructor (`tas.invite`); `alias` is their name and `tokenHash` hashes their TA link secret. Never counted as a student. */
     isTa: v.optional(v.boolean()),
+    /** Set by `tas.revoke`; the row is kept (with an empty `tokenHash`) so the TA's chat messages keep their name. */
+    revokedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_session", ["sessionId"])

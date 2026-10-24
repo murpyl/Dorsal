@@ -73,6 +73,8 @@ describe("TA role", () => {
     await expect(t.mutation(api.signals.upsert, { sessionId, token: TA1, conceptId: concepts[0]._id, level: "confused" })).rejects.toThrow(/TAs/);
     await expect(t.mutation(api.rooms.join, { roomId, token: TA1, role: "learner" })).rejects.toThrow(/TAs/);
 
+    expect((await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: TA1 }))![0]).toMatchObject({ memberCount: 3, isMember: true });
+    expect((await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: SECRET }))![0].isMember).toBe(false);
     await t.mutation(api.rooms.leave, { roomId, token: TA2 });
     await t.mutation(api.rooms.close, { roomId, token: TA1 });
     expect(await t.query(api.rooms.listInstructor, { sessionId, instructorSecret: TA1 })).toEqual([]);
@@ -82,7 +84,10 @@ describe("TA role", () => {
     const { t, sessionId, creds, ta1, roomId } = await setup();
     await t.mutation(api.rooms.joinAsTa, { roomId, instructorSecret: TA1 });
     await t.mutation(api.rooms.joinAsTa, { roomId, instructorSecret: TA2 });
+    await t.mutation(api.messages.send, { roomId, token: TA1, body: "Try the base case" });
     await t.mutation(api.tas.revoke, { ...creds, taId: ta1 });
+    expect((await t.query(api.messages.listByRoom, { roomId, token: TA2 }))!.map((m) => m.authorAlias)).toEqual(["Maya"]);
+    await expect(t.mutation(api.tas.revoke, { ...creds, taId: ta1 })).rejects.toThrow(/not found/);
     expect(await t.query(api.sessions.getInstructorView, { sessionId, instructorSecret: TA1 })).toBeNull();
     expect(await t.query(api.rooms.get, { roomId, token: TA1 })).toBeNull();
     await expect(t.mutation(api.messages.send, { roomId, token: TA1, body: "hi" })).rejects.toThrow();
