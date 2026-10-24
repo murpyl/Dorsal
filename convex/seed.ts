@@ -102,13 +102,14 @@ export const reset = internalMutation({
     }
     await ctx.db.patch(sessionId, { activeConceptId: conceptIds[2] });
 
-    // Simulated participants can never be impersonated: their "token" is far shorter than isValidSecret allows.
+    // Simulated participants can never be impersonated: findParticipant compares against a 64-char hex
+    // SHA-256 digest, and this sentinel is not one, so no token hashes to it.
     const participantIds: Id<"participants">[] = [];
     for (let i = 0; i < PARTICIPANTS; i++) {
       participantIds.push(
         await ctx.db.insert("participants", {
           sessionId,
-          tokenHash: await sha256(`simulated:${code}:${i}`),
+          tokenHash: `simulated:${i}`,
           alias: `Sim ${i + 1}`,
           helperConceptIds: [],
           isSimulated: true,

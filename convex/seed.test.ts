@@ -38,13 +38,16 @@ describe("seed.reset", () => {
     expect(signals.every((s) => s.sessionId === sessionId && s.phase === "pre")).toBe(true);
   });
 
-  test("simulated participants cannot be impersonated with a valid-length token", async () => {
+  test("simulated participants cannot be impersonated, even with a long code", async () => {
     const t = convexTest(schema, modules);
-    const { code } = await t.mutation(internal.seed.reset, {});
+    const { code } = await t.mutation(internal.seed.reset, { code: "DEMO01".padEnd(40, "0") });
     const before = await t.run((ctx) => ctx.db.query("participants").collect());
-    await t.mutation(api.sessions.join, { code, token: "simulated:DEMO01:0".padEnd(40, "x") });
+    expect(before.every((p) => p.isSimulated && !/^[0-9a-f]{64}$/.test(p.tokenHash))).toBe(true);
+    for (const token of [`simulated:${code}:0`, "simulated:0".padEnd(40, "x")]) {
+      await t.mutation(api.sessions.join, { code, token });
+    }
     const after = await t.run((ctx) => ctx.db.query("participants").collect());
-    expect(after).toHaveLength(before.length + 1);
-    expect(after.find((p) => !p.isSimulated)?.alias).toBe("Student 25");
+    expect(after).toHaveLength(before.length + 2);
+    expect(after.filter((p) => !p.isSimulated).map((p) => p.alias)).toEqual(["Student 25", "Student 26"]);
   });
 });
