@@ -90,9 +90,9 @@ export function PeerRoom() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-3 p-3 sm:p-4 md:h-dvh md:overflow-hidden">
-      <header className="enter shrink-0 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 p-4 sm:p-6 md:h-dvh md:overflow-hidden">
+      <header className="enter shrink-0 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Brand />
           <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={backHref} />}>
             <ArrowLeft data-icon="inline-start" aria-hidden />
@@ -117,14 +117,14 @@ export function PeerRoom() {
         <ConnectionStatus />
       </header>
 
-      <section className="grid min-h-0 flex-1 gap-3 md:grid-cols-[18rem_1fr]">
-        <div className="flex min-h-0 flex-col gap-3 md:overflow-y-auto">
+      <section className="grid min-h-0 flex-1 gap-5 md:grid-cols-[18rem_1fr]">
+        <div className="flex min-h-0 flex-col gap-5 md:overflow-y-auto">
         <Card size="sm" aria-labelledby="members" className="h-fit shrink-0">
           <CardHeader>
             <CardTitle id="members" render={<h2 />}>In this room</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <ul className="space-y-1.5">
+          <CardContent className="space-y-4 text-sm">
+            <ul className="space-y-2">
               {room.members.map((m, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-1.5">
                   <span className={m.isMe ? "font-semibold" : ""}>{m.alias}</span>
@@ -179,7 +179,7 @@ export function PeerRoom() {
               your session page. Only aggregate counts are shown to the instructor.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
             {room.myLevel && (
               <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
@@ -193,7 +193,7 @@ export function PeerRoom() {
         </div>
 
         <Card className="min-h-[24rem] gap-0 py-0 md:min-h-0">
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4" aria-live="polite">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-6" aria-live="polite">
             {messages === undefined ? (
               <div className="space-y-2">
                 <Skeleton className="h-10 w-2/3" />
@@ -221,7 +221,7 @@ export function PeerRoom() {
             )}
             <div ref={bottomRef} />
           </div>
-          <form onSubmit={onSend} className="flex gap-2 border-t bg-muted/40 p-3">
+          <form onSubmit={onSend} className="flex gap-3 border-t bg-muted/40 p-4">
             <Input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -244,7 +244,7 @@ export function PeerRoom() {
 
 function Gate({ text, href, cta }: { text: string; href: string; cta: string }) {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-6 p-10 text-center">
       <Brand />
       <p className="text-muted-foreground">{text}</p>
       <Button nativeButton={false} render={<Link href={href} />}>

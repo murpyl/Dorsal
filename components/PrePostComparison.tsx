@@ -96,7 +96,7 @@ export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: 
           students <em>say</em>, not verified learning gains.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {!rows ? (
           <div className="space-y-3">
             <Skeleton className="h-12" />
@@ -104,9 +104,9 @@ export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: 
             <Skeleton className="h-12" />
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul className="space-y-5">
             {rows.map((r) => (
-              <li key={r.conceptId} className="space-y-1.5">
+              <li key={r.conceptId} className="space-y-2">
                 <p className="text-sm font-medium">{r.label}</p>
                 <PhaseBar phase="pre" tally={r.pre} />
                 <PhaseBar phase="post" tally={r.post} />

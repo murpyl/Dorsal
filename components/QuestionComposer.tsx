@@ -71,7 +71,7 @@ export function QuestionComposer({
           </Select>
         </label>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}

@@ -84,8 +84,8 @@ export function ClusterQueue({
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
-    <section className="space-y-4" aria-label="Question clusters">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className="space-y-6" aria-label="Question clusters">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">Questions &amp; clusters</h2>
           <AiStatus run={data.latestRun} />
@@ -104,7 +104,7 @@ export function ClusterQueue({
       {data.suggested.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Suggested by Claude — review before publishing</h3>
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {data.suggested.map((c, i) => (
               <ClusterCard
                 key={c._id}
@@ -133,7 +133,7 @@ export function ClusterQueue({
         {data.published.length === 0 ? (
           <EmptyRow icon={<Inbox aria-hidden />} text="Nothing published yet. Students only see clusters listed here." />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {data.published.map((c, i) => (
               <ClusterCard
                 key={c._id}
@@ -174,7 +174,7 @@ export function ClusterQueue({
             Raw questions are only visible here. Tick pending questions to group them manually if AI suggestions are unavailable.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {grouping && selectedQuestions.length > 0 && (
             <ManualClusterForm
               concepts={concepts}
@@ -196,7 +196,7 @@ export function ClusterQueue({
               {questions.map((q) => {
                 const checked = selected.includes(q._id);
                 return (
-                  <li key={q._id} className={cn("flex items-start gap-3 p-3 text-sm", checked && "bg-muted/60")}>
+                  <li key={q._id} className={cn("flex items-start gap-3 p-4 text-sm", checked && "bg-muted/60")}>
                     <Checkbox
                       aria-label="Select question for manual grouping"
                       checked={checked}
@@ -332,7 +332,7 @@ function ClusterCard({
   return (
     <Card className="enter" style={{ "--i": i } as React.CSSProperties}>
       {editing ? (
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-4">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} aria-label="Cluster title" className="font-medium" />
           <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} aria-label="Cluster summary" />
           <ConceptPicker concepts={concepts} value={conceptIds} onChange={setConceptIds} />
@@ -374,7 +374,7 @@ function ClusterCard({
             </span>
             {cluster.questions.length} original question{cluster.questions.length === 1 ? "" : "s"}
           </summary>
-          <ul className="mt-2 space-y-1.5 border-l-2 pl-3 text-sm">
+          <ul className="mt-3 space-y-2 border-l-2 pl-4 text-sm">
             {cluster.questions.map((q) => (
               <li key={q._id} className="break-words">
                 {q.content}
@@ -414,7 +414,7 @@ function ManualClusterForm({
         e.preventDefault();
         onCreate({ title, summary, conceptIds });
       }}
-      className="enter space-y-2 rounded-lg border border-foreground/20 bg-muted/60 p-4 text-sm"
+      className="enter space-y-3 rounded-lg border border-foreground/20 bg-muted/60 p-5 text-sm"
     >
       <h4 className="font-medium">Manual cluster from {questions.length} selected question{questions.length === 1 ? "" : "s"}</h4>
       <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required placeholder="Title, e.g. Tracing recursive return values" aria-label="Cluster title" className="bg-background" />
@@ -450,7 +450,7 @@ export function ConceptClusters({
       ) : !clusters || clusters.length === 0 ? (
         <p className="text-muted-foreground">None published for this concept yet.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {clusters.map((c) => (
             <li key={c._id} className="space-y-1">
               <p className="font-medium">{c.title}</p>

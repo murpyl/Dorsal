@@ -168,10 +168,10 @@ export function RoomList({
           Small live chat rooms (max {rooms[0]?.capacity ?? 6} students) on one topic. Join only if you want to; you can leave any time.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {chosen && (
           <form
-            className="enter flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm"
+            className="enter flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm"
             onSubmit={(e) => {
               e.preventDefault();
               run(() => createAsHelper({ sessionId, token, conceptId: chosen._id }));
@@ -190,14 +190,14 @@ export function RoomList({
         {rooms.length === 0 ? (
           <EmptyRow icon={<DoorOpen aria-hidden />} text="No open help rooms yet." />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {rooms.map((r, i) => (
               <li
                 key={r._id}
-                className="enter flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+                className="enter flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-4 text-sm"
                 style={{ "--i": i } as React.CSSProperties}
               >
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   <p className="font-medium">{r.title}</p>
                   <p className="text-muted-foreground">
                     {r.conceptLabel} · {roomSummary(r)}
@@ -258,7 +258,7 @@ export function RoomStatus({
         <CardTitle id="room-status" render={<h2 />}>Help rooms (live)</CardTitle>
         <CardDescription>Open a room from a published cluster, or pick a topic here.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {chosen && (
           <form
             className="flex flex-wrap items-center gap-2 text-sm"
@@ -281,10 +281,10 @@ export function RoomStatus({
         ) : rooms.length === 0 ? (
           <EmptyRow icon={<DoorOpen aria-hidden />} text="No open rooms." />
         ) : (
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-3 text-sm">
             {rooms.map((r) => (
-              <li key={r._id} className="enter flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3">
-                <div className="space-y-0.5">
+              <li key={r._id} className="enter flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-4">
+                <div className="space-y-1">
                   <p className="font-medium">{r.title}</p>
                   <p className="text-muted-foreground">
                     {r.conceptLabel} · <strong className="text-foreground">{r.memberCount}</strong> / {r.capacity} students · {r.helperCount} helper

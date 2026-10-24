@@ -51,8 +51,8 @@ export function HelperOptIn({
           in a help room you choose to open or join, and you can untick at any time.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <ul className="grid gap-2 sm:grid-cols-2">
+      <CardContent className="space-y-4">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {concepts.map((c) => {
             const checked = helping.has(c._id);
             return (

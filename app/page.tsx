@@ -20,10 +20,10 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-10 px-4 py-12 sm:px-6">
-      <header className="enter space-y-4 text-center">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-12 px-6 py-16 sm:px-8">
+      <header className="enter space-y-6 text-center">
         <Brand className="justify-center" />
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">See where the class is stuck, live.</h1>
           <p className="mx-auto max-w-md text-pretty text-muted-foreground">
             Students report how well they follow each concept and ask questions anonymously. Instructors get a live map of
@@ -32,18 +32,18 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2">
         <Card className="enter" style={{ "--i": 1 } as React.CSSProperties}>
           <CardHeader>
-            <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+            <span className="mb-2 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
               <GraduationCap className="size-4.5" aria-hidden />
             </span>
             <CardTitle render={<h2 />}>Join as a student</CardTitle>
             <CardDescription>Enter the six-letter code shown on the lecture screen.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={onJoin} className="space-y-3">
-              <div className="space-y-1.5">
+            <form onSubmit={onJoin} className="space-y-4">
+              <div className="space-y-2">
                 <Label htmlFor="session-code">Session code</Label>
                 <Input
                   id="session-code"
@@ -67,7 +67,7 @@ export default function Home() {
 
         <Card className="enter" style={{ "--i": 2 } as React.CSSProperties}>
           <CardHeader>
-            <span className="mb-1 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
+            <span className="mb-2 grid size-9 place-items-center rounded-lg bg-muted text-foreground">
               <Presentation className="size-4.5" aria-hidden />
             </span>
             <CardTitle render={<h2 />}>Start a session</CardTitle>

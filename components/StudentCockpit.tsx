@@ -55,7 +55,7 @@ export function StudentCockpit() {
 
   if (error)
     return (
-      <main className="mx-auto w-full max-w-xl p-4">
+      <main className="mx-auto w-full max-w-xl p-6">
         <InlineError message={error} />
       </main>
     );
@@ -71,9 +71,9 @@ export function StudentCockpit() {
   const disabled = view.state !== "open";
 
   return (
-    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col gap-3 overflow-hidden p-3 sm:p-4">
-      <header className="enter shrink-0 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+    <main className="mx-auto flex h-dvh w-full max-w-xl flex-col gap-5 overflow-hidden p-4 sm:p-6">
+      <header className="enter shrink-0 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Brand />
           <Badge variant="outline" className="font-mono tracking-widest">
             {code}
@@ -96,7 +96,7 @@ export function StudentCockpit() {
       {current ? (
         <Card className="enter shrink-0 ring-2 ring-foreground/80" aria-live="polite" aria-label={`Prompt ${promptNumber} of ${view.concepts.length}`}>
           <CardHeader>
-            <div className="mb-1 flex flex-wrap items-center gap-2">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge>
                 <span className="relative flex size-1.5" aria-hidden>
                   <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground/70 motion-reduce:hidden" />
@@ -118,17 +118,17 @@ export function StudentCockpit() {
             </CardTitle>
             <CardDescription>{current.description}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {view.activePrompt && <p className="rounded-lg bg-muted px-3 py-2 text-base font-medium">{view.activePrompt}</p>}
+          <CardContent className="space-y-4">
+            {view.activePrompt && <p className="rounded-lg bg-muted px-4 py-3 text-base font-medium">{view.activePrompt}</p>}
             <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
           </CardContent>
         </Card>
       ) : (
-        <div className="enter rounded-xl border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+        <div className="enter rounded-xl border border-dashed bg-card px-6 py-10 text-center text-sm text-muted-foreground">
           Waiting for the instructor&apos;s first prompt.
         </div>
       )}
-      <Tabs defaultValue="ask" className="flex min-h-0 flex-1 flex-col gap-2">
+      <Tabs defaultValue="ask" className="flex min-h-0 flex-1 flex-col gap-3">
         <TabsList className="w-full shrink-0">
           <TabsTrigger value="ask">Ask</TabsTrigger>
           <TabsTrigger value="class">Class Q&amp;A</TabsTrigger>
@@ -145,7 +145,7 @@ export function StudentCockpit() {
             <PublishedClusters sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
           </ErrorBoundary>
         </TabsContent>
-        <TabsContent value="help" className="min-h-0 space-y-3 overflow-y-auto">
+        <TabsContent value="help" className="min-h-0 space-y-5 overflow-y-auto">
           <ErrorBoundary label="help rooms">
             <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
           </ErrorBoundary>
@@ -154,10 +154,10 @@ export function StudentCockpit() {
           </ErrorBoundary>
         </TabsContent>
         {covered.length > 0 && (
-          <TabsContent value="covered" className="min-h-0 space-y-5 overflow-y-auto rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+          <TabsContent value="covered" className="min-h-0 space-y-6 overflow-y-auto rounded-xl bg-card p-6 ring-1 ring-foreground/10">
             <p className="text-sm text-muted-foreground">You can still change your answer.</p>
             {covered.map((c) => (
-              <section key={c._id} className="space-y-2" aria-label={c.label}>
+              <section key={c._id} className="space-y-3" aria-label={c.label}>
                 <h3 className="font-medium">{c.label}</h3>
                 <p className="text-sm text-muted-foreground">{c.description}</p>
                 <ConfidenceSelector value={c.myLevel} disabled={disabled} onChange={(level) => sendSignal(c._id, level)} />

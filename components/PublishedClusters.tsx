@@ -51,7 +51,7 @@ export function PublishedClusters({
         <CardTitle id="published-clusters" render={<h2 />}>What the class is asking</CardTitle>
         <CardDescription>Groups of pseudonymous questions your instructor has reviewed and published.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {clusters === undefined || rooms === undefined || me === undefined ? (
           <div className="space-y-2">
             <Skeleton className="h-16" />
@@ -62,12 +62,12 @@ export function PublishedClusters({
         ) : clusters.length === 0 ? (
           <EmptyRow icon={<MessagesSquare aria-hidden />} text="Nothing published yet." />
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {clusters.map((c, i) => {
               const clusterRooms = rooms.filter((r) => r.clusterId === c._id);
               const helperConceptId = c.conceptIds.find((id) => me.helperConceptIds.includes(id));
               return (
-                <li key={c._id} className="enter space-y-2 rounded-lg border bg-background p-3" style={{ "--i": i } as React.CSSProperties}>
+                <li key={c._id} className="enter space-y-3 rounded-lg border bg-background p-4" style={{ "--i": i } as React.CSSProperties}>
                   <div className="space-y-1">
                     <h3 className="font-medium">{c.title}</h3>
                     {c.summary && <p className="text-sm text-muted-foreground">{c.summary}</p>}
@@ -86,9 +86,9 @@ export function PublishedClusters({
                     </span>
                   </div>
                   {clusterRooms.length > 0 && (
-                    <ul className="space-y-1.5" aria-label={`Help rooms for ${c.title}`}>
+                    <ul className="space-y-2" aria-label={`Help rooms for ${c.title}`}>
                       {clusterRooms.map((r) => (
-                        <li key={r._id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm">
+                        <li key={r._id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted px-4 py-2.5 text-sm">
                           <span>
                             <span className="font-medium">{r.title}</span>
                             <span className="text-muted-foreground"> · {roomSummary(r)}</span>
@@ -129,7 +129,7 @@ export function PublishedClusters({
 
 export function EmptyRow({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
+    <div className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
       {icon}
       {text}
     </div>
