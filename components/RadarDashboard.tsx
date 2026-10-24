@@ -6,6 +6,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
+import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
@@ -138,6 +139,8 @@ export function RadarDashboard() {
           </div>
         ))}
       </section>
+
+      <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
     </main>
   );
 }

@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
 import { HelperOptIn } from "@/components/HelperOptIn";
+import { RoomList } from "@/components/RoomList";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
@@ -61,6 +62,7 @@ export function StudentCockpit() {
         </section>
       ))}
       <HelperOptIn sessionId={view.sessionId} token={token} concepts={view.concepts} />
+      <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
     </main>
   );
 }
