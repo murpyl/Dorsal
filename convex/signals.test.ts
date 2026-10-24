@@ -194,6 +194,16 @@ describe("live prompt (phase 6: only covered concepts can be rated)", () => {
     expect((await instructorView())!.coveredConceptIds).toEqual([concepts[0]._id]);
   });
 
+  test("setActiveConcept keeps the previous current concept covered in a session created before activeHistory existed", async () => {
+    const { t, sessionId, instructorView } = await setup();
+    const concepts = (await instructorView())!.concepts;
+    await t.run((ctx) => ctx.db.patch(sessionId, { activeHistory: undefined }));
+    await t.mutation(api.sessions.setActiveConcept, { sessionId, instructorSecret: SECRET, conceptId: concepts[1]._id });
+    const session = (await t.run((ctx) => ctx.db.get(sessionId)))!;
+    expect(session.activeHistory!.map((h) => h.conceptId)).toEqual([concepts[0]._id, concepts[1]._id]);
+    expect((await instructorView())!.coveredConceptIds).toEqual([concepts[0]._id]);
+  });
+
   test("getStudentView exposes the current and covered concept ids with the student's own level and no counts", async () => {
     const { t, sessionId, code, instructorView } = await setup();
     await t.mutation(api.sessions.join, { code, token: TOKEN_A });

@@ -193,7 +193,9 @@ export const setActiveConcept = mutation({
     if (!session) throw new ConvexError("Instructor access required");
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
-    const history = session.activeHistory ?? [];
+    // Sessions created before activeHistory existed: their current concept was active, so it counts as covered.
+    const history =
+      session.activeHistory ?? (session.activeConceptId ? [{ conceptId: session.activeConceptId, at: session.createdAt }] : []);
     await ctx.db.patch(sessionId, {
       activeConceptId: conceptId,
       activeHistory: history.some((h) => h.conceptId === conceptId) ? history : [...history, { conceptId, at: Date.now() }],
