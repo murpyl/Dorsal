@@ -107,12 +107,18 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_room_time", ["roomId", "createdAt"]),
   aiRuns: defineTable({
-    sessionId: v.id("sessions"),
-    operation: v.literal("clusterQuestions"),
+    // Unset for inferConcepts runs, which happen before the session exists.
+    sessionId: v.optional(v.id("sessions")),
+    operation: v.union(v.literal("clusterQuestions"), v.literal("inferConcepts")),
     model: v.string(),
     status: v.union(v.literal("running"), v.literal("ok"), v.literal("error")),
     latencyMs: v.optional(v.number()),
     error: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_session", ["sessionId"]),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_operation_time", ["operation", "createdAt"]),
+
+  // One row per issued lesson upload URL (global upload cap); no file content or identity.
+  uploadGrants: defineTable({ createdAt: v.number() }).index("by_createdAt", ["createdAt"]),
 });
