@@ -41,8 +41,8 @@ export function PromptHistory({
           Prompts
         </CardTitle>
         <Select items={items} value={selected._id} onValueChange={(v) => v && onSelect(v as Id<"prompts">)}>
-          <SelectTrigger aria-label="Prompt to view" className="w-full bg-background">
-            <SelectValue />
+          <SelectTrigger aria-label="Prompt to view" className="w-full min-w-0 bg-background">
+            <SelectValue className="min-w-0 truncate" />
           </SelectTrigger>
           <SelectContent>
             {items.map((it) => (

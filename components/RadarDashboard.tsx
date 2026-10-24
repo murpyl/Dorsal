@@ -435,17 +435,17 @@ function PushPromptForm({
               onValueChange={(v) => v[0] && setKind(v[0] as PromptKind)}
               className="bg-background"
             >
-              <ToggleGroupItem value="rating">Rating</ToggleGroupItem>
-              <ToggleGroupItem value="open">Open-ended</ToggleGroupItem>
+              <ToggleGroupItem value="rating" className="aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90">Rating</ToggleGroupItem>
+              <ToggleGroupItem value="open" className="aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90">Open-ended</ToggleGroupItem>
             </ToggleGroup>
-            <label className="min-w-0 flex-1 text-sm">
+            <label className="min-w-48 flex-1 text-sm">
               <span className="sr-only">{kind === "open" ? "Question" : "Question (optional)"}</span>
               <Input
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 maxLength={MAX_PROMPT_LENGTH}
                 required={kind === "open"}
-                placeholder={kind === "open" ? "Question students answer in their own words" : "Optional question, e.g. Why does fib(1) not recurse?"}
+                placeholder={kind === "open" ? "Question for students to answer" : "Optional question"}
                 className="bg-background"
               />
             </label>

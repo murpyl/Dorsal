@@ -224,10 +224,7 @@ export const getInstructorView = query({
       activeConceptId: session.activeConceptId ?? null,
       coveredConceptIds: coveredConceptIds(session),
       activePrompt: prompt ? { _id: prompt._id, kind: prompt.kind, question: prompt.question } : undefined,
-      // Sessions from before prompts were stored: one `pre` signal per participant and concept, so the current concept's total.
-      answeredCount: prompt
-        ? await responseCount(ctx, prompt._id)
-        : (conceptCounts.find((c) => c._id === session.activeConceptId)?.total ?? 0),
+      answeredCount: prompt ? await responseCount(ctx, prompt._id) : 0,
       participantCount: participants.length,
       simulatedCount: participants.filter((p) => p.isSimulated).length,
       publishedClusterCount: published.length,
