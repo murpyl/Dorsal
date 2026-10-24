@@ -180,7 +180,7 @@ function PhaseBar({ phase, tally }: { phase: Phase; tally: Tally }) {
         {tally.total === 0 ? (
           <span className="ml-1 text-muted-foreground/60">none</span>
         ) : (
-          tally.total < LOW_SAMPLE && <span className="ml-1 text-amber-600">low</span>
+          tally.total < LOW_SAMPLE && <span className="ml-1 text-amber-300">low</span>
         )}
       </span>
     </div>

@@ -241,7 +241,7 @@ export function PeerRoom() {
             ))}
           </div>
           {checkedIn && (
-            <p className="enter text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>
+            <p className="enter text-sm text-emerald-300">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>
           )}
         </CardContent>
       </Card>
