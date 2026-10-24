@@ -29,9 +29,10 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
-  const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
+  // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
+  const hue = Math.round(10 + score * 160);
+  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.6 0.14 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
