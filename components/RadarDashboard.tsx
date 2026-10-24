@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
@@ -96,10 +97,7 @@ export function RadarDashboard() {
                 </button>
               )}
               {error && <p className="text-red-600">{error}</p>}
-              <div className="border-t border-zinc-200 pt-3">
-                <h3 className="font-medium">Question clusters</h3>
-                <p className="text-zinc-500">None published for this concept yet.</p>
-              </div>
+              <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
             </div>
           ) : (
             <p className="text-zinc-500">Click a concept to see its signal breakdown.</p>
@@ -138,6 +136,8 @@ export function RadarDashboard() {
           </div>
         ))}
       </section>
+
+      <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
     </main>
   );
 }
