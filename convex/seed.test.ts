@@ -46,6 +46,13 @@ describe("seed.reset", () => {
     const signals = await t.run((ctx) => ctx.db.query("signals").collect());
     expect(signals.every((s) => s.sessionId === sessionId && s.phase === "pre")).toBe(true);
 
+    // Every concept has been current, so every seeded signal is for a covered concept and students can revise any of them.
+    expect(sessions[0].activeHistory!.map((h) => h.conceptId).sort()).toEqual(view.concepts.map((c) => c._id).sort());
+    expect(view.activeConceptId).toBe(byLabel["Call stack & frames"]._id);
+    expect(view.coveredConceptIds).toHaveLength(4);
+    expect(view.coveredConceptIds).not.toContain(view.activeConceptId);
+    expect(view.answeredCount).toBe(24);
+
     const returnValues = view.concepts.find((c) => c.label === "Return values")!._id;
     const callStack = view.concepts.find((c) => c.label === "Call stack & frames")!._id;
     expect(clusters[0].conceptIds).toEqual([returnValues, callStack]);
@@ -68,6 +75,12 @@ describe("seed.reset", () => {
     expect(published).toHaveLength(1);
     expect(published[0]).toMatchObject({ title: "Tracing recursive return values", questionCount: 3, helperCount: 0 });
     expect(JSON.stringify(published)).not.toContain("factorial(4)");
+
+    const student = (await t.query(api.sessions.getStudentView, { code, token }))!;
+    expect(student.coveredConceptIds).toHaveLength(4);
+    const treeRecursion = student.concepts.find((c) => c.label === "Tree recursion")!._id;
+    await t.mutation(api.signals.upsert, { sessionId, token, conceptId: treeRecursion, level: "partial" });
+    expect((await t.query(api.sessions.getStudentView, { code, token }))!.concepts.find((c) => c._id === treeRecursion)!.myLevel).toBe("partial");
   });
 
   test("simulated participants cannot be impersonated, even with a long code", async () => {

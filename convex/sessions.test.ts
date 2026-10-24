@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
 
 const SECRET = "instructor-secret-0123456789abcdef0123456789abcdef";
@@ -9,7 +10,7 @@ const TOKEN_A = "student-token-a-0123456789abcdef0123456789abcdef";
 const TOKEN_B = "student-token-b-0123456789abcdef0123456789abcdef";
 
 async function createSession(t: ReturnType<typeof convexTest>) {
-  return await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET });
+  return await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET, concepts: RECURSION_LESSON });
 }
 
 describe("sessions.join (scenario 10: refresh reuses the local participant)", () => {
@@ -74,7 +75,7 @@ describe("credentials (scenario 2: no cross-participant or unauthenticated reads
   test("a token from another session cannot act in this one", async () => {
     const t = convexTest(schema, modules);
     const first = await createSession(t);
-    const second = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET });
+    const second = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET, concepts: RECURSION_LESSON });
     await t.mutation(api.sessions.join, { code: second.code, token: TOKEN_A });
     const [concept] = await t.run((ctx) =>
       ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", first.sessionId)).collect(),
