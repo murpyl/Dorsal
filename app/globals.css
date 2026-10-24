@@ -5,9 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-heading: var(--font-archivo-black), var(--font-space-grotesk), ui-sans-serif, sans-serif;
+  /* Brutalist: every shadow is a hard offset block in the foreground colour. */
+  --shadow-2xs: 1px 1px 0 0 var(--foreground);
+  --shadow-xs: 2px 2px 0 0 var(--foreground);
+  --shadow-sm: 2px 2px 0 0 var(--foreground);
+  --shadow-md: 4px 4px 0 0 var(--foreground);
+  --shadow-lg: 6px 6px 0 0 var(--foreground);
+  --shadow-xl: 8px 8px 0 0 var(--foreground);
+  --shadow-2xl: 12px 12px 0 0 var(--foreground);
+  --shadow-hard: var(--shadow-md);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +57,75 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Brutalist: stark black on white, zero radius, 2px rules, one electric-yellow accent. */
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0.92 0.2 103);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.38 0 0);
+  --accent: oklch(0.97 0.1 103);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.55 0.24 28);
+  --border: oklch(0 0 0);
+  --input: oklch(0 0 0);
+  --ring: oklch(0.8 0.17 95);
+  --chart-1: oklch(0 0 0);
+  --chart-2: oklch(0.92 0.2 103);
+  --chart-3: oklch(0.55 0.24 28);
+  --chart-4: oklch(0.7 0.19 50);
+  --chart-5: oklch(0.6 0.17 150);
+  --radius: 0rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.92 0.2 103);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.8 0.17 95);
 }
 
+/* Inverted brutalism: white on black, same yellow. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0 0 0);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.92 0.2 103);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(1 0 0);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.78 0 0);
+  --accent: oklch(0.3 0.06 103);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.7 0.2 25);
+  --border: oklch(1 0 0);
+  --input: oklch(1 0 0);
+  --ring: oklch(0.92 0.2 103);
+  --chart-1: oklch(1 0 0);
+  --chart-2: oklch(0.92 0.2 103);
+  --chart-3: oklch(0.7 0.2 25);
+  --chart-4: oklch(0.75 0.17 50);
+  --chart-5: oklch(0.7 0.17 150);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.92 0.2 103);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.2 0 0);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(1 0 0);
+  --sidebar-ring: oklch(0.92 0.2 103);
 }
 
 @layer base {
@@ -131,26 +142,53 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Archivo Black ships one weight; never let the browser fake a bolder one. */
+    font-synthesis: none;
   }
   body {
-    @apply bg-muted/40;
+    /* Graph-paper grid on white plus a thick black rule along the top edge. */
+    border-top: 8px solid var(--foreground);
+    background-color: var(--background);
+    background-image:
+      linear-gradient(to right, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  h1,
+  h2 {
+    text-transform: uppercase;
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
   }
 }
 
-/* Press feedback (design-engineering skill): subtle scale, transform only, snappy ease-out. */
-@layer components {
-  [data-slot="button"],
-  [data-slot="toggle-group-item"],
-  .pressable {
-    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
-    transition-duration: 160ms;
-    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
-  }
-  [data-slot="button"]:active:not(:disabled),
-  [data-slot="toggle-group-item"]:active:not(:disabled),
-  .pressable:active:not(:disabled) {
-    transform: scale(0.97);
-  }
+/* Press feedback: the block drops onto its shadow (translate + shadow collapse), snappy ease-out.
+   Unlayered so it beats the shadow-* utilities. */
+[data-slot="button"],
+[data-slot="toggle-group-item"],
+.pressable {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 120ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+[data-slot="button"]:active:not(:disabled),
+[data-slot="toggle-group-item"]:active:not(:disabled),
+.pressable:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+[data-slot="button"][class*="shadow-"]:active:not(:disabled),
+.pressable[class*="shadow-"]:active:not(:disabled) {
+  transform: translate(4px, 4px);
 }
 
 /* Enter animations: opacity + 4px translate only, under 250ms, staggered via --i. */
@@ -182,9 +220,28 @@
   }
 }
 
+/* Small uppercase label with wide tracking: the brutalist caption style. */
+@utility label-caps {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Diagonal hatching for skeletons and empty states. */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklch, var(--foreground) 12%, transparent) 0 2px,
+    transparent 2px 8px
+  );
+}
+
 /* React Flow chrome in our palette */
 .react-flow__edge-path {
-  stroke: var(--color-neutral-400);
+  stroke: var(--foreground);
+  stroke-width: 2;
 }
 .react-flow__edge-text {
   fill: var(--color-muted-foreground);
