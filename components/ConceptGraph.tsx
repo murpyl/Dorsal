@@ -27,12 +27,12 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-/** Rose → amber → teal on the understanding score; soft fill, saturated accent bar. */
+/** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
   if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
-  // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
-  const hue = Math.round(10 + score * 160);
-  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.6 0.14 ${hue})` };
+  // Signal red (hue 29) through Bauhaus yellow to green; flat, printed-ink saturation.
+  const hue = Math.round(29 + score * 120);
+  return { fill: `oklch(0.965 0.03 ${hue})`, accent: `oklch(0.58 0.2 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -74,7 +74,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-[11px] font-semibold text-neutral-950"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}
@@ -147,7 +147,7 @@ export function ConceptGraph({
   );
 
   return (
-    <figure className="flex flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10">
+    <figure className="flex flex-col overflow-hidden rounded-xl border border-border border-t-2 border-t-foreground bg-card text-sm">
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Self-reported understanding</span>
         <span className="flex items-center gap-1.5">
@@ -160,16 +160,11 @@ export function ConceptGraph({
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block size-3 rounded border"
-            style={{ background: scoreColors(null).fill, borderColor: scoreColors(null).accent }}
-            aria-hidden
-          />{" "}
-          no responses
+          <span className="inline-block size-3 rounded border border-border bg-muted" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block rounded-full bg-amber-500 px-1.5 text-[10px] font-semibold text-white" aria-hidden>
+          <span className="inline-block rounded-full bg-yellow-400 px-1.5 text-[10px] font-semibold text-neutral-950" aria-hidden>
             n clusters
           </span>
           published question clusters on this concept
