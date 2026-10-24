@@ -16,7 +16,6 @@ import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
 import { RoomList } from "@/components/RoomList";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
@@ -42,15 +41,16 @@ export function StudentCockpit() {
   // "New prompt" cue: shown for a few seconds after the prompt changes while the page is open.
   const previousPrompt = useRef<string | null | undefined>(undefined);
   const [cueFor, setCueFor] = useState<string | null>(null);
+  const loaded = view !== undefined;
   useEffect(() => {
-    if (!view) return;
+    if (!loaded) return;
     const changed = previousPrompt.current !== undefined && previousPrompt.current !== promptKey;
     previousPrompt.current = promptKey;
     if (!changed || !promptKey) return;
     setCueFor(promptKey);
     const timer = setTimeout(() => setCueFor(null), NEW_PROMPT_CUE_MS);
     return () => clearTimeout(timer);
-  }, [view, promptKey]);
+  }, [loaded, promptKey]);
 
   if (error)
     return (
@@ -92,41 +92,38 @@ export function StudentCockpit() {
       </header>
       <ConnectionStatus />
 
-      {current ? (
-        <Card className="enter ring-2 ring-foreground/80" aria-live="polite" aria-label={`Prompt ${promptNumber} of ${view.concepts.length}`}>
-          <CardHeader>
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <Badge>
-                <span className="relative flex size-1.5" aria-hidden>
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground/70 motion-reduce:hidden" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-primary-foreground" />
+      <section aria-label={`Prompt ${promptNumber} of ${view.concepts.length}`} aria-live="polite" className="py-2">
+        {current ? (
+          <div key={promptKey} className="enter space-y-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold tracking-wider text-primary uppercase">
+              <span className="flex items-center gap-2">
+                <span className="relative flex size-2" aria-hidden>
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 motion-reduce:hidden" />
+                  <span className="relative inline-flex size-2 rounded-full bg-primary" />
                 </span>
-                Current topic
-              </Badge>
+                Live now · Prompt {promptNumber} of {view.concepts.length}
+              </span>
               {cueFor === promptKey && (
                 <Badge variant="secondary" className="enter animate-pulse bg-amber-100 text-amber-900 motion-reduce:animate-none">
                   New prompt
                 </Badge>
               )}
             </div>
-            <CardDescription className="text-xs font-medium tracking-wide uppercase">
-              Prompt {promptNumber} of {view.concepts.length}
-            </CardDescription>
-            <CardTitle render={<h2 />} className="text-lg">
-              {current.label}
-            </CardTitle>
-            <CardDescription>{current.description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {view.activePrompt && <p className="rounded-lg bg-muted px-3 py-2 text-base font-medium">{view.activePrompt}</p>}
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-semibold text-balance sm:text-3xl">{current.label}</h2>
+              <p className="text-pretty text-muted-foreground">{current.description}</p>
+            </div>
+            {view.activePrompt && <p className="rounded-xl bg-muted px-4 py-3 text-base font-medium">{view.activePrompt}</p>}
             <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="enter rounded-xl border border-dashed bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-          Waiting for the instructor&apos;s first prompt.
-        </div>
-      )}
+            <p className="text-xs text-muted-foreground">You only see what is being covered right now; this changes as the instructor moves on.</p>
+          </div>
+        ) : (
+          <div className="enter space-y-1 py-10 text-center">
+            <p className="font-heading text-lg font-medium">Waiting for the instructor&apos;s first prompt…</p>
+            <p className="text-sm text-muted-foreground">This page updates live, nothing to refresh.</p>
+          </div>
+        )}
+      </section>
       {covered.length > 0 && (
         <details className="enter group/covered rounded-xl bg-card ring-1 ring-foreground/10" style={{ "--i": 1 } as React.CSSProperties}>
           <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
