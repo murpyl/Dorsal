@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { PHASE_LABEL, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { type Room, clusters, conceptById, me, roomMessages, rooms, session } from "../fixtures";
+import { type Room, clusters, conceptById, concepts, me, roomMessages, rooms, session } from "../fixtures";
 import { Avatar, MockBanner, relTime } from "../ui";
 
 const CHECK_INS: { level: Level; label: string; className: string }[] = [
@@ -33,11 +33,12 @@ const CHECK_INS: { level: Level; label: string; className: string }[] = [
 function resolveRoom(params: URLSearchParams): Room {
   const id = params.get("room");
   if (id === "new") {
-    const conceptId = params.get("concept") ?? me.helperConceptIds[0];
+    const requested = params.get("concept");
+    const concept = concepts.find((c) => c._id === requested) ?? conceptById(me.helperConceptIds[0]);
     return {
       _id: "new",
-      title: `${conceptById(conceptId).label} walk-through`,
-      conceptId,
+      title: `${concept.label} walk-through`,
+      conceptId: concept._id,
       clusterId: null,
       capacity: 6,
       members: [{ alias: me.alias, role: "helper", isMe: true }],
