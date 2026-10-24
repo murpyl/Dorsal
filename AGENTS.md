@@ -1,4 +1,4 @@
-Refer to ``docs\MVP_Outline.md`` for the full build outline.
+Refer to `docs/MVP_Outline.md` (product) and `docs/Build_Instructions.md` (implementation) for the full build outline.
 
 Plan first before you code. Use higher reasoning for planning than for coding. Instruct subagents to implement plans based on priorities.
 Your job is to UNDERSTAND the plan first before you write code.

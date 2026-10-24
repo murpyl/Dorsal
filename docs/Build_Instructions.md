@@ -4,7 +4,7 @@
 
 Build an end-to-end working hackathon MVP of **A (Confusion Radar) + B (PeerMesh) + F (KnowledgeGraph)**. Prioritize a reliably functioning real-time multi-device demo over production breadth. Use **Next.js App Router + TypeScript + Tailwind CSS + Convex**, **React Flow / `@xyflow/react`** for the concept map, and the official **Anthropic TypeScript SDK** for Claude-powered clustering, graph suggestions, and opt-in peer-help recommendations. Avoid custom websocket servers, another database, and unnecessary abstractions.
 
-See `BUILD_OVERVIEW.md` for product behavior, sponsor mapping, safety constraints, and demo narrative.
+See `docs/MVP_Outline.md` for product behavior, sponsor mapping, safety constraints, and demo narrative.
 
 ## 0. Development principles
 
@@ -19,12 +19,17 @@ See `BUILD_OVERVIEW.md` for product behavior, sponsor mapping, safety constraint
 
 Prerequisites: recent Node.js LTS, npm, Convex account, and an Anthropic API key for the AI path.
 
+Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` refuses to run while `AGENTS.md` is present, so move it aside for the scaffold:
+
 ```bash
-npx create-next-app@latest classpulse --typescript --tailwind --eslint --app
-cd classpulse
-npm install convex @xyflow/react lucide-react zod @anthropic-ai/sdk
-npx convex dev
+mv AGENTS.md /tmp/AGENTS.md
+npx create-next-app@latest . --typescript --tailwind --eslint --app --use-npm --yes
+mv /tmp/AGENTS.md AGENTS.md
+npm install convex @xyflow/react zod @anthropic-ai/sdk
+npx convex dev            # coding agents without a Convex login: CONVEX_AGENT_MODE=anonymous npx convex dev
 ```
+
+Add `lucide-react` only if icons are actually needed. Add `convex-test` + `vitest` only when writing the mutation-invariant tests in section 8.
 
 In a second terminal:
 
@@ -63,9 +68,9 @@ convex/
   clusters.ts
   rooms.ts
   messages.ts
-  interventions.ts
+  participants.ts
   claude.ts                     # Node.js Convex actions using Anthropic SDK
-  seed.ts                       # dev-only demo seed (never public in production)
+  seed.ts                       # internalMutation only; run with `npx convex run seed:reset`
 lib/
   metrics.ts
   aiSchemas.ts
@@ -75,18 +80,19 @@ lib/
 
 | Table | Fields | Essential indexes |
 |---|---|---|
-| `sessions` | title, code, state, instructorSecretHash, activeConceptId, createdAt | by_code |
-| `participants` | sessionId, tokenHash, alias, isHelper, createdAt | by_session, by_token_hash |
-| `concepts` | sessionId, label, description, order | by_session |
+| `sessions` | title, code, state, phase (`pre` \| `post`), instructorSecretHash, activeConceptId, createdAt | by_code |
+| `participants` | sessionId, tokenHash, alias, helperConceptIds, isSimulated, createdAt | by_session, by_token_hash |
+| `concepts` | sessionId, label, description, order, x, y (fixed React Flow position; no layout library) | by_session |
 | `conceptEdges` | sessionId, fromId, toId, relation | by_session |
-| `signals` | sessionId, conceptId, participantId, level, phase, updatedAt | by_concept, by_participant_concept_phase |
-| `questions` | sessionId, conceptId, participantId, content, state, createdAt | by_session_state, by_concept |
-| `clusters` | sessionId, title, summary, conceptIds, questionIds, status, createdAt | by_session_status |
+| `signals` | sessionId, conceptId, participantId, level, phase, updatedAt | by_concept_phase, by_participant_concept_phase |
+| `questions` | sessionId, conceptId, participantId, content, state (`pending` \| `clustered` \| `hidden`), createdAt | by_session_state, by_concept |
+| `clusters` | sessionId, title, summary, conceptIds, questionIds, status (`suggested` \| `published` \| `discarded`), source (`ai` \| `manual`), createdAt | by_session_status |
 | `rooms` | sessionId, conceptId, clusterId?, status, capacity | by_session, by_concept |
 | `roomMembers` | roomId, participantId, role, joinedAt | by_room, by_room_participant |
 | `messages` | roomId, authorId, body, createdAt | by_room_time |
-| `interventions` | sessionId, clusterId, type, status, createdAt, completedAt? | by_session |
-| `checkResponses` | sessionId, conceptId, participantId, promptId, correct?, phase | by_concept_phase |
+| `aiRuns` | sessionId, operation, model, status (`running` \| `ok` \| `error`), latencyMs?, error?, createdAt | by_session |
+
+Pre/post is a single session-level `phase` flipped by the instructor (`sessions.setPhase`); the help room is the intervention, so no `interventions` table. `checkResponses` is stretch. `aiRuns` drives an honest "AI running / failed" indicator and holds the operational log (no question text).
 
 Use real Convex IDs (`v.id`) for relationships. Store only a hash of access secrets, but note that a hash alone is insufficient unless every protected backend query/mutation verifies the supplied credential or authenticated identity. **For a hackathon, a single private instructor secret per session is acceptable only as a disclosed demo compromise**. For a real deployment, add a supported auth provider with instructor/course permissions. Avoid pretending client-side role flags are secure.
 
@@ -112,10 +118,18 @@ Implement these minimal functions (names can be adjusted consistently throughout
 | `rooms.join` | mutation | Atomically enforce room capacity + no duplicate membership |
 | `messages.send` | mutation | Member-only, capped length, throttled |
 | `messages.listByRoom` | query | Room-member-only content |
-| `interventions.complete` | mutation | Close loop and create new response phase |
+| `sessions.setPhase` | mutation | Instructor switches `pre` → `post`; new signals are written under the new phase |
+| `participants.setHelper` | mutation | Student opts in/out as helper for specific concepts |
+| `questions.hide` | mutation | Instructor hides an inappropriate question |
+| `clusters.requestSuggestions` | mutation | Instructor credential; inserts an `aiRuns` row and schedules `claude.clusterQuestions` |
+| `clusters.listInstructor` / `clusters.listPublished` | query | Suggested+published (protected) / published only (student-safe, includes opted-in helper count) |
+| `clusters.update` / `clusters.discard` / `clusters.createManual` | mutation | Instructor edits, discards, or manually groups questions (fallback) |
+| `rooms.listBySession` / `rooms.close` | query / mutation | Live room status; instructor closes a room |
 | `claude.clusterQuestions` | internal action | Send anonymized bounded question batch to Claude; validate and persist proposed clusters via internal mutation |
-| `claude.proposeConceptLinks` | internal action | Suggest links between approved misconceptions and instructor-owned concept nodes; never auto-publish |
-| `claude.suggestPeerHelp` | internal action | Suggest an opt-in help grouping using published clusters and declared helper topics, without inferring academic ability |
+
+Stretch functions (build only after Phase 5): `claude.proposeConceptLinks`, `claude.suggestPeerHelp`.
+
+**Credentials:** `sessions.create` returns a random instructor secret (stored client-side in `localStorage` keyed by session ID); every instructor query/mutation takes it as an argument and compares its SHA-256 against `instructorSecretHash`. Students do the same with their participant token. Use the Web Crypto `crypto.subtle.digest` API.
 
 **Security requirement:** Never return instructor-only data or room messages from an unprotected `query`. Validate the supplied session token on every student mutation; local storage tokens are convenience credentials, not proof of real identity. Treat production auth as a separate hard requirement.
 
@@ -145,9 +159,9 @@ Implement these minimal functions (names can be adjusted consistently throughout
 
 - Student enters an anonymous question attached to a concept.
 - Save raw question to protected table; instructor sees moderation queue.
-- Trigger background clustering on a short debounce, explicit instructor button, or after N questions. Prefer explicit button for the hackathon if scheduler complexity threatens reliability.
+- Trigger clustering with an explicit instructor `Suggest clusters` button: `clusters.requestSuggestions` schedules `internal.claude.clusterQuestions` via `ctx.scheduler.runAfter(0, ...)`. No debounce/auto-trigger in MVP.
 - Prompt Claude with only recent, bounded, approved-for-processing question text and valid concept IDs; strip names and avoid including user IDs or any private confidence record.
-- Ask Claude for structured JSON, extract text from its content blocks, parse it, validate with Zod, reject IDs not in source input, and store a **suggestion**, not published fact. Do not trust model-supplied confidence as calibrated probability.
+- Get structured output with Claude tool use: define one `save_clusters` tool whose `input_schema` matches the contract below and force it with `tool_choice: { type: "tool", name: "save_clusters" }`. Read the `tool_use` block's `input`, validate with Zod, reject IDs not in source input, and store a **suggestion**, not published fact. Do not trust model-supplied confidence as calibrated probability.
 - Instructor reviews, optionally edits, and publishes clusters.
 - Provide a manual fallback that groups a selected question set and creates the same cluster record.
 
@@ -169,21 +183,14 @@ Example expected model response:
 
 **Acceptance:** At least three paraphrased questions resolve to a reviewable cluster with traceable original questions; invalid model IDs cannot be saved.
 
-### Phase 3b — Claude-to-graph reasoning (F + Anthropic)
-
-- After an instructor approves a cluster, optionally call `claude.proposeConceptLinks` with the approved cluster, a bounded graph neighborhood, and valid node IDs.
-- Claude returns proposed concept IDs and a short explanation referencing the actual questions. Validate IDs/edge types and present proposals for instructor confirmation.
-- On acceptance, update graph edges or concept-to-cluster associations using Convex mutations; all connected clients should update.
-- If Claude has no reasonable mapping, display `Needs instructor mapping`. Never fabricate a prerequisite.
-
 ### Phase 4 — PeerMesh (B)
 
 - Student can opt into helper role for a concept; never automatically assert expertise.
-- Use `claude.suggestPeerHelp` only for cluster/topic-to-volunteer suggestions based on opt-in helper topic declarations and published clusters. Do not transmit student names or private confidence to Claude, and never automatically enroll or contact a student.
+- Published clusters show helpers who opted into any of the cluster's concepts (deterministic filter, no AI call). Never automatically enroll or contact a student.
 - Instructor or helper starts a room associated with the published cluster.
 - Build member list and real-time text messages. Check room membership on read/write.
 - Apply capacity and duplicate-membership rules transactionally.
-- Students submit a post-help signal and optional comprehension question response.
+- `I understand now` / `Still confused` in the room write a signal under the session's current phase (instructor switches to `post` first).
 - Build before/after comparison, with sample counts and a note that confidence is not proof of learning.
 
 **Acceptance:** Two browser profiles join one room and exchange messages; instructor sees the help room active and graph reflects new signals.
@@ -193,9 +200,22 @@ Example expected model response:
 - Responsive student mobile layout; full-screen instructor dashboard.
 - Loading, error, empty, and disconnected states.
 - Accessible contrast and keyboard navigation for graph details; text alternative to graph colors.
-- Resettable **simulated** dataset with deterministic question samples; seeded responses are labeled as simulated.
+- Resettable **simulated** dataset (`npx convex run seed:reset`, an `internalMutation` not callable from clients) with deterministic question samples; seeded participants have `isSimulated: true` and are labeled in the UI.
 - A two-minute demo script with a fallback instructor-approved cluster if model access fails.
 - README explaining exactly where Convex is central and where AI runs.
+
+### Phase 6 — Stretch (only after Phases 1–5 demo cleanly)
+
+**6a — Claude-to-graph reasoning (`claude.proposeConceptLinks`):**
+
+- After an instructor approves a cluster, optionally call `claude.proposeConceptLinks` with the approved cluster, a bounded graph neighborhood, and valid node IDs.
+- Claude returns proposed concept IDs and a short explanation referencing the actual questions. Validate IDs/edge types and present proposals for instructor confirmation.
+- On acceptance, update graph edges or concept-to-cluster associations using Convex mutations; all connected clients should update.
+- If Claude has no reasonable mapping, display `Needs instructor mapping`. Never fabricate a prerequisite.
+
+**6b — `claude.suggestPeerHelp`:** rank opted-in helpers for a published cluster using only declared helper topics and published clusters. Do not send names or private confidence to Claude; never auto-enroll or contact a student.
+
+**6c — Microsoft instructor agent, comprehension checks (`checkResponses`), session summary export:** see the Microsoft checklist in section 7.
 
 ## 6. Suggested UI details
 
@@ -261,7 +281,7 @@ Example expected model response:
 
 Manual test scenarios:
 
-1. 2 users vote `confused` for the same concept → numerator 2 / denominator 2; one user changes to `partial` → numerator confused 1 / total 2.
+1. 2 users vote `confused` for the same concept → instructor sees confused 2 / total 2; one user changes to `partial` → confused 1 / total 2. Student view shows `N < 5` for that concept.
 2. A student cannot fetch another participant's private raw signal or unpublished question.
 3. Anonymous question appears only in the instructor moderation queue until published via cluster.
 4. Invalid or duplicate question IDs in model output are rejected.
@@ -287,7 +307,7 @@ Where possible, use Convex's testing helpers or a simple integration test suite 
 
 - Hosted web app and working Convex deployment.
 - GitHub repository with README, setup, env var names (not secrets), architecture and limitations.
-- Reliable reset/seed demo controls accessible only to operator.
+- Reliable reset/seed via `npx convex run seed:reset` (internal function; not reachable from the browser).
 - Optional short video showing two devices updating live.
 - Submission tailored to **Convex + Anthropic + Meta**; optionally Microsoft only after its agent acceptance checklist is satisfied.
 

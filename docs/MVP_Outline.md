@@ -18,9 +18,9 @@
 
 | Role | Can do | Should not do |
 |---|---|---|
-| Student | Join a session, submit confidence/question, see class aggregate, volunteer to help, enter rooms, complete checks | View the identity of anonymous question authors, inspect other students' private confidence |
-| Instructor | Create/manage sessions and concept maps, see aggregates and clusters, initiate interventions, review explanations | Reveal anonymous authors or see individual confidence by default |
-| Demo operator | Seed simulated students and reset demo | Access production student data |
+| Student | Join a session, submit confidence/question, see class aggregate, volunteer to help, enter rooms, submit a follow-up signal | View the identity of anonymous question authors, inspect other students' private confidence |
+| Instructor | Create/manage sessions and concept maps, see aggregates and clusters, open help rooms, start the follow-up phase | Reveal anonymous authors or see individual confidence by default |
+| Demo operator | Seed/reset simulated data via the Convex CLI (`npx convex run seed:reset`); no UI | Access production student data |
 
 For the hackathon, use **anonymous per-session participation tokens** (stored client-side) plus a separate instructor secret for creating/managing sessions. Do not use this as a production access-control design: deploy proper authentication and authorization before real classroom adoption. Keep student identifiers out of public queries.
 
@@ -32,32 +32,32 @@ For the hackathon, use **anonymous per-session participation tokens** (stored cl
 - Submit a 3-level signal: `confused`, `partial`, `can_explain` (replace previous signal for that concept).
 - Ask a free-text question; show clear anonymous posting disclosure.
 - Read published question clusters and request help.
-- Opt into being a peer helper, join a help room, post an explanation, and complete a 1-question post-help check.
+- Opt into being a peer helper for chosen concepts, join a help room, chat, then submit a follow-up signal.
 
 ### 2. Instructor view — `/instructor/[sessionId]`
 - Create a session and an initial graph (e.g., recursion → base cases → recursive calls → call stack → return values).
 - View live concept nodes by percentage of signals per confidence level, response counts, and low-sample warnings.
-- Review AI-suggested misconception clusters, merge/split or rename them, then publish.
-- Create an intervention, publish a peer help room, and inspect pre/post confidence trends and optional comprehension checks.
-- Close the session and export a concise follow-up summary.
+- Review AI-suggested misconception clusters, edit title/summary or discard them, then publish.
+- Open a peer help room from a published cluster, start the follow-up (`post`) phase, and compare pre/post signal distributions.
+- Close the session.
 
 ### 3. Peer help rooms — `/room/[roomId]`
-- Topic, description, live participant count, queue, chat/shared explanation, and `I understand now` / `Still confused` feedback.
+- Topic, description, live member list, chat, and `I understand now` / `Still confused` buttons (which write a `post`-phase signal).
 - Helper role is opt-in and *self-declared*, not an AI certification of expertise.
-- Set a room size cap, require joining, and give instructors moderation tools.
+- Room size cap and member-only access; instructor can close a room.
 
 ### 4. Concept graph
 - Nodes are instructor-seeded concepts, not a graph invented entirely by an LLM.
 - Directed edges represent `prerequisite_for`, `related_to`, or `frequently_confused_with`.
 - Node size or border = sample count; fill = aggregate understanding; unresolved issue count = marker.
-- Clicking a node opens signal distribution, grouped questions, help rooms, and changes after interventions.
+- Clicking a node opens signal distribution, grouped questions, help rooms, and pre/post change.
 - Updates stream from Convex via reactive queries without polling.
 
 ## Scoping: hackathon MVP versus later
 
-**Must ship:** session join; 3-state signal; anonymous question submission; live instructor counts; AI clustering (or explicit deterministic fallback); concept graph with at least 5 nodes; opt-in helpers and peer rooms; pre/post response comparison; role permissions; one coherent demo flow.
+**Must ship:** session join; 3-state signal; anonymous question submission; live instructor counts; Claude clustering (one AI call, with manual fallback) whose output also maps clusters to concept nodes; concept graph with 5 seeded nodes; opt-in helpers and capacity-limited peer rooms with chat; pre/post signal comparison; role permissions; one coherent demo flow.
 
-**Stretch:** shared rich text explanation; graph auto-suggestions requiring instructor approval; student quiz validation; historical graph across lectures; accessible voice input; Notability sketch/diagram import when supported by a legitimate workflow.
+**Stretch (only after the full demo flow works end-to-end):** `claude.proposeConceptLinks` (new graph edges); `claude.suggestPeerHelp`; Microsoft-style instructor intervention agent; cluster merge/split; 1-question comprehension checks; end-of-session summary export; scheduled room expiry; shared rich text explanation; graph auto-suggestions requiring instructor approval; student quiz validation; historical graph across lectures; accessible voice input; Notability sketch/diagram import when supported by a legitimate workflow.
 
 **Do not build for MVP:** full LMS, grading engine, live video, real-time lecture transcription, unreviewed AI assessment of individual students, predictive student profiling, broad campus user directory, complex calendar integration.
 
@@ -75,9 +75,9 @@ For the hackathon, use **anonymous per-session participation tokens** (stored cl
 
 - **Reactive `useQuery` subscriptions:** Instructor radar, graph node aggregates, open clusters, and room member lists update across devices automatically.
 - **Transactional mutations:** One signal per participant/concept is updated atomically; joining and closing rooms enforces capacity/permissions; cluster moderation is consistent.
-- **Actions:** Server-side calls to the **Anthropic Claude API** cluster student questions, suggest concept links, and propose opt-in peer-help groupings; keep the API key in Convex environment variables, never browser code.
-- **Scheduled functions:** Debounce/trigger clustering, close expired rooms, and produce end-of-session summaries.
-- **Database:** Sessions, concepts, graph edges, signals, questions, clusters, rooms, room memberships, interventions, and event history.
+- **Actions:** Server-side calls to the **Anthropic Claude API** cluster student questions and map each cluster to existing concept nodes (concept-link and peer-help suggestions are stretch); keep the API key in Convex environment variables, never browser code.
+- **Scheduled functions:** The instructor's `Suggest clusters` button is a mutation that calls `ctx.scheduler.runAfter(0, internal.claude.clusterQuestions, ...)`, so the AI work runs in the background and results stream in reactively. Room expiry and summaries are stretch.
+- **Database:** Sessions, concepts, graph edges, signals, questions, clusters, rooms, room memberships, messages, and an AI run log.
 
 AI calls are asynchronous and non-authoritative. UI remains usable if the model is slow or unavailable.
 
@@ -86,8 +86,8 @@ AI calls are asynchronous and non-authoritative. UI remains usable if the model 
 Use **Claude via the official Anthropic API from Convex actions**. Convex remains the system of record and reactive backend; Claude supplies language-based interpretation that deterministic polling cannot.
 
 - **A — Confusion Radar (MVP):** Given bounded anonymized questions and the instructor's concept list, Claude proposes misconception groups, succinct explanations, and traceable question-to-cluster references. Instructor approves publication.
-- **B — PeerMesh (MVP):** Claude suggests which open misconception clusters could benefit from a volunteer helper who explicitly opted into those topics. Matching uses *declared willingness and topic selection*, not inferred individual intelligence or academic ranking. Participation requires consent.
-- **F — KnowledgeGraph (MVP):** Claude proposes links from misconception clusters to existing concept nodes and explains why; the instructor approves changes. Never silently rewrite the authoritative prerequisite graph.
+- **B — PeerMesh (MVP, no extra AI call):** Helpers opt in per concept; a published cluster lists the helpers who opted into its concepts (deterministic filter, not inference) and the instructor opens a room. Humans control all contact. Claude-ranked helper suggestions (`claude.suggestPeerHelp`) are stretch.
+- **F — KnowledgeGraph (MVP):** The clustering call already returns validated `conceptIds` per cluster, so approved clusters light up their concept nodes with no second AI call. Proposing *new* edges (`claude.proposeConceptLinks`, instructor-approved, never silently rewriting the prerequisite graph) is stretch.
 - **Transparent fallback:** If Claude times out or returns invalid JSON, preserve submitted questions, allow manual clustering/room creation, and label AI suggestions as unavailable rather than simulating a live API call.
 - **Evidence of meaningful use:** Show input question paraphrases, Claude's validated structured output, review/approval, peer room created from the issue, and a reactive graph update. Store model name, operation type, status, and latency in a non-sensitive operational log.
 
@@ -102,7 +102,7 @@ Input: bounded batch of unanswered question IDs, text, current instructor-seeded
 - Show *aggregate* signals only to instructors; do not expose raw student signals in public queries.
 - Rate-limit posting; enforce reasonable text limits; add deletion/flagging and instructor moderation.
 - Use pseudonymous participant tokens for MVP, and disclose that this is not the same as complete anonymity from operators.
-- Suppress visual aggregate breakdowns for small groups to reduce re-identification risk (choose and document a minimum threshold, e.g. 5 signals).
+- In **student-facing** views, suppress per-level breakdowns for concepts with fewer than 5 signals (show `N < 5`). Instructors see exact counts with a low-sample warning (they need them to run the class, and test scenario 1 depends on it).
 - Avoid storing sensitive personal/educational records or claiming FERPA compliance without review.
 - AI does not assess individual students' ability or recommend punitive interventions.
 - Send Claude only question text and relevant concept IDs, without participant names, email addresses, room chat history, or account identifiers; clearly disclose external AI processing, avoid sensitive disclosures, and provide a way not to submit free-text questions.
