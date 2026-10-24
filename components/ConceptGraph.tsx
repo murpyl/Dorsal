@@ -147,20 +147,20 @@ export function ConceptGraph({
   );
 
   return (
-    <figure className="flex flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10">
+    <figure className="flex flex-col overflow-hidden rounded-xl border border-border border-t-2 border-t-foreground bg-card text-sm">
       <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b px-4 py-2.5 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Self-reported understanding</span>
         <span className="flex items-center gap-1.5">
           confused
           <span
             className="inline-block h-1.5 w-16 rounded-full"
-            style={{ background: "linear-gradient(to right, hsl(0 72% 48%), hsl(65 72% 48%), hsl(130 72% 48%))" }}
+            style={{ background: `linear-gradient(to right, ${scoreColors(0).accent}, ${scoreColors(0.5).accent}, ${scoreColors(1).accent})` }}
             aria-hidden
           />
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded border border-neutral-300 bg-neutral-100" aria-hidden /> no responses
+          <span className="inline-block size-3 rounded border border-border bg-muted" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
