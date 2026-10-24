@@ -1,22 +1,10 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
 import { MAX_PROMPT_LENGTH } from "../lib/prompt";
+import { canAddPrerequisite, DESCRIPTION_MAX, LABEL_MAX, layoutConcepts, MAX_CONCEPTS, type LessonConcept } from "../lib/lessonGraph";
 
-export const SEED_CONCEPTS = [
-  { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
-  { label: "Recursive call", description: "Calling the function on a smaller version of the problem.", x: 260, y: 0 },
-  { label: "Call stack & frames", description: "Each call gets its own frame; frames stack up until a base case.", x: 520, y: 0 },
-  { label: "Return values", description: "How results flow back up the stack and combine.", x: 780, y: 0 },
-  { label: "Tree recursion", description: "A function that makes more than one recursive call.", x: 520, y: 160 },
-];
-export const SEED_EDGES: [number, number][] = [
-  [0, 1],
-  [1, 2],
-  [2, 3],
-  [1, 4],
-];
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 /** Previously-current concept ids in the order they first became current, excluding the current one. */
@@ -29,12 +17,53 @@ export function hasBeenActive(session: Doc<"sessions">, conceptId: Id<"concepts"
   return session.activeConceptId === conceptId || (session.activeHistory ?? []).some((h) => h.conceptId === conceptId);
 }
 
+const lessonConcept = v.object({ label: v.string(), description: v.string(), prerequisites: v.array(v.number()) });
+
+function validateLesson(concepts: LessonConcept[]) {
+  if (concepts.length === 0 || concepts.length > MAX_CONCEPTS) throw new ConvexError(`A lesson needs 1–${MAX_CONCEPTS} concepts`);
+  const lesson: LessonConcept[] = [];
+  const labels = new Set<string>();
+  for (const c of concepts) {
+    const label = c.label.trim();
+    const description = c.description.trim();
+    if (!label || label.length > LABEL_MAX) throw new ConvexError(`Concept names must be 1–${LABEL_MAX} characters`);
+    if (description.length > DESCRIPTION_MAX) throw new ConvexError(`Concept descriptions must be at most ${DESCRIPTION_MAX} characters`);
+    if (labels.has(label.toLowerCase())) throw new ConvexError(`Duplicate concept "${label}"`);
+    labels.add(label.toLowerCase());
+    lesson.push({ label, description, prerequisites: [] });
+  }
+  concepts.forEach((c, i) => {
+    for (const p of c.prerequisites) {
+      if (!Number.isInteger(p) || p < 0 || p >= concepts.length || !canAddPrerequisite(lesson, i, p))
+        throw new ConvexError("Prerequisites must point to other concepts without duplicates or cycles");
+      lesson[i].prerequisites.push(p);
+    }
+  });
+  return lesson;
+}
+
+/** Inserts the lesson's concepts (in order, laid out by prerequisite depth) and prerequisite edges; returns the concept IDs. */
+export async function insertLesson(ctx: MutationCtx, sessionId: Id<"sessions">, lesson: LessonConcept[]) {
+  const positions = layoutConcepts(lesson);
+  const conceptIds: Id<"concepts">[] = [];
+  for (const [order, c] of lesson.entries()) {
+    conceptIds.push(await ctx.db.insert("concepts", { sessionId, order, label: c.label, description: c.description, ...positions[order] }));
+  }
+  for (const [to, c] of lesson.entries()) {
+    for (const from of c.prerequisites) {
+      await ctx.db.insert("conceptEdges", { sessionId, fromId: conceptIds[from], toId: conceptIds[to], relation: "prerequisite_for" });
+    }
+  }
+  return conceptIds;
+}
+
 export const create = mutation({
-  args: { title: v.string(), instructorSecret: v.string() },
-  handler: async (ctx, { title, instructorSecret }) => {
+  args: { title: v.string(), instructorSecret: v.string(), concepts: v.array(lessonConcept) },
+  handler: async (ctx, { title, instructorSecret, concepts }) => {
     const trimmed = title.trim();
     if (!trimmed || trimmed.length > 100) throw new ConvexError("Title must be 1–100 characters");
     if (!isValidSecret(instructorSecret)) throw new ConvexError("Invalid instructor secret");
+    const lesson = validateLesson(concepts);
 
     let code: string;
     do {
@@ -48,18 +77,7 @@ export const create = mutation({
       instructorSecretHash: await sha256(instructorSecret),
       createdAt: Date.now(),
     });
-    const conceptIds: Id<"concepts">[] = [];
-    for (const [order, concept] of SEED_CONCEPTS.entries()) {
-      conceptIds.push(await ctx.db.insert("concepts", { sessionId, order, ...concept }));
-    }
-    for (const [from, to] of SEED_EDGES) {
-      await ctx.db.insert("conceptEdges", {
-        sessionId,
-        fromId: conceptIds[from],
-        toId: conceptIds[to],
-        relation: "prerequisite_for",
-      });
-    }
+    const conceptIds = await insertLesson(ctx, sessionId, lesson);
     await ctx.db.patch(sessionId, { activeConceptId: conceptIds[0], activeHistory: [{ conceptId: conceptIds[0], at: Date.now() }] });
     return { sessionId, code };
   },

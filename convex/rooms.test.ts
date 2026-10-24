@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { RECURSION_LESSON } from "./seed";
 import { modules } from "./test.setup";
 
 const SECRET = "instructor-secret-0123456789abcdef0123456789abcdef";
@@ -10,7 +11,7 @@ const [HELPER, LEARNER, LATE, OUTSIDER] = TOKENS;
 
 async function setup(capacity = 2) {
   const t = convexTest(schema, modules);
-  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET });
+  const { sessionId, code } = await t.mutation(api.sessions.create, { title: "Recursion", instructorSecret: SECRET, concepts: RECURSION_LESSON });
   for (const token of TOKENS) await t.mutation(api.sessions.join, { code, token });
   const concepts = await t.run((ctx) =>
     ctx.db.query("concepts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect(),
@@ -81,7 +82,7 @@ describe("room messages (scenario 6: members only)", () => {
       expect(await t.query(api.messages.listByRoom, { roomId, token })).toBeNull();
       await expect(t.mutation(api.messages.send, { roomId, token, body: "hi" })).rejects.toThrow(/members/);
     }
-    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET });
+    const other = await t.mutation(api.sessions.create, { title: "Other", instructorSecret: SECRET, concepts: RECURSION_LESSON });
     await t.mutation(api.sessions.join, { code: other.code, token: OUTSIDER });
     expect(await t.query(api.messages.listByRoom, { roomId, token: OUTSIDER })).toBeNull();
 
