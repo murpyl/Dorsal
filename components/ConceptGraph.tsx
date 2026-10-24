@@ -30,8 +30,8 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
   if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
-  const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  const hue = Math.round(25 + score * 120);
+  return { fill: `oklch(0.955 0.03 ${hue})`, accent: `oklch(0.5 0.12 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {

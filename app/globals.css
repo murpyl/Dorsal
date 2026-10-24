@@ -4,11 +4,70 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* Paper & Ink: print palette. The semantic hues (red / amber / emerald) keep their
+     meaning for the three understanding levels but are re-inked to brick, ochre and moss
+     so they sit on cream paper. Neutrals are warm greys (graph chrome, edges). */
+  --color-red-50: #f9ece9;
+  --color-red-100: #f1d9d5;
+  --color-red-200: #e4b8b2;
+  --color-red-300: #cf8a84;
+  --color-red-400: #b85a58;
+  --color-red-500: #9c2f2f;
+  --color-red-600: #8c2727;
+  --color-red-700: #74201f;
+  --color-red-800: #5c1a19;
+  --color-red-900: #471514;
+  --color-red-950: #2e0d0c;
+  --color-amber-50: #f8f0dc;
+  --color-amber-100: #f3e7cf;
+  --color-amber-200: #e9d3a5;
+  --color-amber-300: #dcbb72;
+  --color-amber-400: #d4a74c;
+  --color-amber-500: #a06a14;
+  --color-amber-600: #8a5a12;
+  --color-amber-700: #74490e;
+  --color-amber-800: #5a3a0c;
+  --color-amber-900: #452c09;
+  --color-amber-950: #2c1c05;
+  --color-emerald-50: #eaf0e6;
+  --color-emerald-100: #d9e4d3;
+  --color-emerald-200: #b8ccb0;
+  --color-emerald-300: #8fae8a;
+  --color-emerald-400: #628c66;
+  --color-emerald-500: #44724b;
+  --color-emerald-600: #3e6b45;
+  --color-emerald-700: #38613e;
+  --color-emerald-800: #2e4f32;
+  --color-emerald-900: #27422c;
+  --color-emerald-950: #182a1c;
+  --color-neutral-50: #f6f1e7;
+  --color-neutral-100: #efeadf;
+  --color-neutral-200: #e0d9cb;
+  --color-neutral-300: #cbc2b1;
+  --color-neutral-400: #a39a8b;
+  --color-neutral-500: #7d7467;
+  --color-neutral-600: #625b52;
+  --color-neutral-700: #4a443d;
+  --color-neutral-800: #332e29;
+  --color-neutral-900: #1d1a16;
+  --color-neutral-950: #120f0c;
+  /* No drop shadows anywhere: surfaces are separated by hairlines and paper tone. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
+}
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-heading: var(--font-fraunces), Georgia, serif;
+--color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -48,92 +107,82 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Paper & Ink — light only. Cream stock, warm near-black ink, one oxblood accent. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.959 0.014 85);
+  --foreground: oklch(0.22 0.009 75);
+  --card: oklch(0.985 0.008 92);
+  --card-foreground: oklch(0.22 0.009 75);
+  --popover: oklch(0.985 0.008 92);
+  --popover-foreground: oklch(0.22 0.009 75);
+  --primary: oklch(0.22 0.009 75);
+  --primary-foreground: oklch(0.975 0.01 90);
+  --secondary: oklch(0.921 0.02 85);
+  --secondary-foreground: oklch(0.22 0.009 75);
+  --muted: oklch(0.921 0.02 85);
+  --muted-foreground: oklch(0.475 0.017 74);
+  --accent: oklch(0.391 0.125 18);
+  --accent-foreground: oklch(0.975 0.01 90);
+  --destructive: oklch(0.432 0.136 25);
+  --border: oklch(0.857 0.024 82);
+  --input: oklch(0.799 0.026 81);
+  --ring: oklch(0.391 0.125 18);
+  --chart-1: oklch(0.22 0.009 75);
+  --chart-2: oklch(0.391 0.125 18);
+  --chart-3: oklch(0.475 0.017 74);
+  --chart-4: oklch(0.7 0.02 80);
+  --chart-5: oklch(0.857 0.024 82);
+  --radius: 0.35rem;
+  --sidebar: oklch(0.985 0.008 92);
+  --sidebar-foreground: oklch(0.22 0.009 75);
+  --sidebar-primary: oklch(0.22 0.009 75);
+  --sidebar-primary-foreground: oklch(0.975 0.01 90);
+  --sidebar-accent: oklch(0.921 0.02 85);
+  --sidebar-accent-foreground: oklch(0.22 0.009 75);
+  --sidebar-border: oklch(0.857 0.024 82);
+  --sidebar-ring: oklch(0.391 0.125 18);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
-  }
-}
-@layer base {
-  html {
+    font-size: 17px;
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
   }
   body {
-    @apply bg-muted/40;
+    @apply bg-background text-foreground;
+    /* Masthead rule + a whisper of paper grain (alpha ≤ 0.05, never affects contrast). */
+    border-top: 3px solid var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    font-feature-settings: "kern", "liga", "calt";
+  }
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    letter-spacing: -0.01em;
+    font-variation-settings: "SOFT" 40, "WONK" 0;
+    text-wrap: balance;
+  }
+  h1 {
+    font-variation-settings: "opsz" 144, "SOFT" 60, "WONK" 1;
+  }
+  h1 em, h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  ::selection {
+    background: oklch(0.391 0.125 18 / 0.18);
+  }
+  /* Hairlines, not shadows: the dashed low-sample border on graph nodes is kept. */
+  [data-slot="select-content"],
+  [data-slot="alert-dialog-popup"] {
+    @apply border border-border;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
