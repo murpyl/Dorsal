@@ -1,8 +1,30 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx } from "./_generated/server";
 import { getInstructorSession, requireParticipant } from "./credentials";
 import { level } from "./schema";
+import { hasBeenActive } from "./sessions";
 
+async function writeSignal(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">,
+  participantId: Id<"participants">,
+  conceptId: Id<"concepts">,
+  level: Doc<"signals">["level"],
+  phase: Doc<"signals">["phase"],
+) {
+  const existing = await ctx.db
+    .query("signals")
+    .withIndex("by_participant_concept_phase", (q) => q.eq("participantId", participantId).eq("conceptId", conceptId).eq("phase", phase))
+    .unique();
+  if (existing) await ctx.db.patch(existing._id, { level, updatedAt: Date.now() });
+  else await ctx.db.insert("signals", { sessionId, conceptId, participantId, level, phase, updatedAt: Date.now() });
+}
+
+/**
+ * The student's rating on the session page; always recorded as `pre` (before peer help).
+ * Only the current concept or one the instructor has already made current can be rated here.
+ */
 export const upsert = mutation({
   args: { sessionId: v.id("sessions"), token: v.string(), conceptId: v.id("concepts"), level },
   handler: async (ctx, { sessionId, token, conceptId, level }) => {
@@ -11,25 +33,26 @@ export const upsert = mutation({
     const participant = await requireParticipant(ctx, sessionId, token);
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
+    if (!hasBeenActive(session, conceptId)) throw new ConvexError("That concept hasn't been covered yet");
+    await writeSignal(ctx, sessionId, participant._id, conceptId, level, "pre");
+  },
+});
 
-    const existing = await ctx.db
-      .query("signals")
-      .withIndex("by_participant_concept_phase", (q) =>
-        q.eq("participantId", participant._id).eq("conceptId", conceptId).eq("phase", session.phase),
-      )
+/** A room member's updated rating for the room's concept; the only way a `post` (after peer help) signal is written. */
+export const roomCheckIn = mutation({
+  args: { roomId: v.id("rooms"), token: v.string(), level },
+  handler: async (ctx, { roomId, token, level }) => {
+    const room = await ctx.db.get(roomId);
+    if (!room || room.status !== "open") throw new ConvexError("Room not found or closed");
+    const session = await ctx.db.get(room.sessionId);
+    if (!session || session.state !== "open") throw new ConvexError("Session not found or closed");
+    const participant = await requireParticipant(ctx, room.sessionId, token);
+    const member = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_participant", (q) => q.eq("roomId", roomId).eq("participantId", participant._id))
       .unique();
-    if (existing) {
-      await ctx.db.patch(existing._id, { level, updatedAt: Date.now() });
-    } else {
-      await ctx.db.insert("signals", {
-        sessionId,
-        conceptId,
-        participantId: participant._id,
-        level,
-        phase: session.phase,
-        updatedAt: Date.now(),
-      });
-    }
+    if (!member) throw new ConvexError("Only room members can rate here");
+    await writeSignal(ctx, room.sessionId, participant._id, room.conceptId, level, "post");
   },
 });
 

@@ -168,11 +168,15 @@ export const get = query({
     if (!participant) return null;
     const mine = await findMembership(ctx, roomId, participant._id);
     if (!mine) return null;
-    const [session, concept, memberRows, cluster] = await Promise.all([
+    const [session, concept, memberRows, cluster, myRating] = await Promise.all([
       ctx.db.get(room.sessionId),
       ctx.db.get(room.conceptId),
       listMembers(ctx, roomId),
       room.clusterId ? ctx.db.get(room.clusterId) : null,
+      ctx.db
+        .query("signals")
+        .withIndex("by_participant_concept_phase", (q) => q.eq("participantId", participant._id).eq("conceptId", room.conceptId).eq("phase", "post"))
+        .unique(),
     ]);
     if (!session) return null;
     memberRows.sort((a, b) => a.joinedAt - b.joinedAt);
@@ -194,7 +198,7 @@ export const get = query({
       conceptDescription: concept?.description ?? "",
       sessionId: room.sessionId,
       sessionState: session.state,
-      phase: session.phase,
+      myLevel: myRating?.level ?? null,
       myRole: mine.role,
       members,
     };

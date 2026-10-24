@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canAddPrerequisite, DESCRIPTION_MAX, LABEL_MAX, MAX_CONCEPTS, type LessonConcept } from "./lessonGraph";
 
 const TITLE_MAX = 120;
 /** A `running` aiRuns row older than this is treated as dead (server allows a retry, UI re-enables the button). */
@@ -94,4 +95,83 @@ export function sanitizeClusterSuggestions(raw: unknown, input: ClusterInput) {
     });
   }
   return { clusters, droppedIds };
+}
+
+export const LESSON_MAX_FILES = 5;
+export const LESSON_MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const LESSON_MAX_TOTAL_BYTES = 20 * 1024 * 1024;
+export const LESSON_NOTES_MAX = 20_000;
+/** Upload types Claude reads directly: PDFs as documents, text as plain-text documents, images as images. */
+export const LESSON_FILE_TYPES = ["application/pdf", "text/plain", "text/markdown", "image/png", "image/jpeg"] as const;
+/** Global cap on concept-inference calls (they run before a session, so there is no instructor secret to check). */
+export const INFER_RATE_LIMIT = { runs: 20, windowMs: 10 * 60_000 };
+/** Global cap on lesson uploads (enough for every allowed inference run to send the maximum files). */
+export const UPLOAD_RATE_LIMIT = { files: INFER_RATE_LIMIT.runs * LESSON_MAX_FILES, windowMs: INFER_RATE_LIMIT.windowMs };
+/** Uploads older than this are leftovers (failed batch or never submitted) and get purged by cron. */
+export const STALE_UPLOAD_MS = 60 * 60_000;
+
+export const SAVE_CONCEPTS_TOOL = {
+  name: "save_concepts",
+  description:
+    "Save the key concepts of this lesson in teaching order. Each prerequisite must be the exact label of another concept in the list.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      concepts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string", description: `Short noun phrase naming the concept (max ${LABEL_MAX} chars)` },
+            description: { type: "string", description: `One plain sentence a student would recognise (max ${DESCRIPTION_MAX} chars)` },
+            prerequisites: {
+              type: "array",
+              items: { type: "string" },
+              description: "Labels of other concepts in this list that must be understood first (direct prerequisites only)",
+            },
+          },
+          required: ["label", "description", "prerequisites"],
+        },
+      },
+    },
+    required: ["concepts"],
+  },
+};
+
+const conceptSuggestionSchema = z.object({
+  label: z.string(),
+  description: z.string(),
+  prerequisites: z.array(z.string()),
+});
+export const conceptSuggestionsSchema = z.object({ concepts: z.array(conceptSuggestionSchema) });
+
+/**
+ * Validates a `save_concepts` tool input: trims and caps labels/descriptions, drops empty and duplicate
+ * (case-insensitive) labels, keeps at most MAX_CONCEPTS, and maps prerequisite labels to indices, dropping
+ * unknown, self, duplicate and cycle-creating links. Throws if the shape itself is wrong.
+ */
+export function sanitizeConceptSuggestions(raw: unknown) {
+  const parsed = conceptSuggestionsSchema.safeParse(raw);
+  if (!parsed.success) throw new Error("Model output did not match the save_concepts schema");
+
+  const kept: { label: string; description: string; prereqLabels: string[] }[] = [];
+  const indexByLabel = new Map<string, number>();
+  for (const c of parsed.data.concepts) {
+    const label = c.label.trim().slice(0, LABEL_MAX).trim();
+    const key = label.toLowerCase();
+    if (!label || indexByLabel.has(key) || kept.length >= MAX_CONCEPTS) continue;
+    indexByLabel.set(key, kept.length);
+    kept.push({ label, description: c.description.trim().slice(0, DESCRIPTION_MAX).trim(), prereqLabels: c.prerequisites });
+  }
+
+  const concepts: LessonConcept[] = kept.map(({ label, description }) => ({ label, description, prerequisites: [] }));
+  let droppedLinks = 0;
+  kept.forEach((c, i) => {
+    for (const prereqLabel of c.prereqLabels) {
+      const p = indexByLabel.get(prereqLabel.trim().slice(0, LABEL_MAX).trim().toLowerCase());
+      if (p === undefined || !canAddPrerequisite(concepts, i, p)) droppedLinks++;
+      else concepts[i].prerequisites.push(p);
+    }
+  });
+  return { concepts, droppedLinks };
 }
