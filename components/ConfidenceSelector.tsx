@@ -24,8 +24,8 @@ export function ConfidenceSelector({
             disabled={disabled}
             onClick={() => onChange(l.value)}
             className={cn(
-              "pressable flex min-h-14 flex-col items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm leading-tight font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 sm:text-[15px]",
-              selected ? l.selected : "border-border bg-background text-foreground hover:bg-muted",
+              "pressable flex min-h-14 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-2 text-sm leading-tight font-bold outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 sm:text-[15px]",
+              selected ? `${l.selected} shadow-sm` : "border-border bg-card text-foreground hover:bg-muted",
             )}
           >
             <span className={cn("size-2 rounded-full", selected ? "bg-current opacity-80" : l.dot)} aria-hidden />

@@ -140,7 +140,7 @@ export default function NewSession() {
     <main className="mx-auto w-full max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">New session</h1>
-        <Link href="/" className="text-sm text-indigo-700 underline">
+        <Link href="/" className="text-sm font-semibold text-primary underline underline-offset-4">
           Back
         </Link>
       </div>
@@ -200,12 +200,12 @@ export default function NewSession() {
             type="button"
             onClick={onSuggest}
             disabled={inferring || !hasMaterial || !!filesError}
-            className="rounded-lg bg-indigo-600 px-3 py-2 font-medium text-white disabled:opacity-50"
+            className="rounded-full border-2 border-primary-shadow bg-primary px-4 py-2 font-bold text-primary-foreground shadow-[0_3px_0_0_var(--primary-shadow)] disabled:opacity-50"
           >
             {inferring ? "Reading material…" : concepts.length > 0 ? "Suggest concepts again" : "Suggest concepts"}
           </button>
           {concepts.length === 0 && (
-            <button type="button" onClick={addConcept} className="text-sm text-indigo-700 underline">
+            <button type="button" onClick={addConcept} className="text-sm font-semibold text-primary underline underline-offset-4">
               or add concepts by hand
             </button>
           )}
