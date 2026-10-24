@@ -27,12 +27,12 @@ export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-/** Rose → amber → teal on the understanding score; soft fill, saturated accent bar. */
+/** Brick red → California gold → green on the understanding score (oklch hue 28 → 80 → 158); soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--muted)", accent: "var(--border)" };
-  // rose (confused) → amber → teal (can explain), in oklch so the ramp stays on-theme.
-  const hue = Math.round(10 + score * 160);
-  return { fill: `oklch(0.95 0.035 ${hue})`, accent: `oklch(0.6 0.14 ${hue})` };
+  if (score === null) return { fill: "var(--color-muted)", accent: "var(--color-border)" };
+  const hue = Math.round(28 + score * 130);
+  const lightness = score < 0.5 ? 0.56 + (score / 0.5) * 0.2 : 0.76 - ((score - 0.5) / 0.5) * 0.2;
+  return { fill: `oklch(0.955 0.035 ${hue})`, accent: `oklch(${lightness.toFixed(2)} 0.16 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -63,10 +63,10 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
         }
       }}
       className={cn(
-        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         low ? "border-dashed border-neutral-300" : "border-neutral-200",
         active && "ring-4 ring-foreground/15 border-foreground",
-        selected && "border-foreground",
+        selected && "border-foreground shadow-md",
       )}
       style={{ background: fill }}
       data-testid="concept-node"
@@ -74,7 +74,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       <Handle type="target" position={Position.Left} className="opacity-0" />
       {openClusters > 0 && (
         <span
-          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white"
+          className="absolute -top-2.5 -right-2.5 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
           title={`${openClusters} published question cluster${openClusters === 1 ? "" : "s"} touch this concept`}
         >
           {openClusters} cluster{openClusters === 1 ? "" : "s"}
@@ -160,12 +160,7 @@ export function ConceptGraph({
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="inline-block size-3 rounded border"
-            style={{ background: scoreColors(null).fill, borderColor: scoreColors(null).accent }}
-            aria-hidden
-          />{" "}
-          no responses
+          <span className="inline-block size-3 rounded border border-border bg-muted" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">

@@ -1,11 +1,11 @@
 export const LEVELS = [
-  { value: "confused", label: "Confused", color: "bg-rose-500", selected: "bg-rose-600 text-white border-rose-600", dot: "bg-rose-500" },
-  { value: "partial", label: "Partly get it", color: "bg-amber-400", selected: "bg-amber-400 text-amber-950 border-amber-400", dot: "bg-amber-400" },
-  { value: "can_explain", label: "Can explain it", color: "bg-teal-500", selected: "bg-teal-700 text-white border-teal-700", dot: "bg-teal-500" },
+  { value: "confused", label: "Confused", color: "bg-level-confused", selected: "bg-level-confused text-white border-level-confused", dot: "bg-level-confused" },
+  { value: "partial", label: "Partly get it", color: "bg-level-partial", selected: "bg-level-partial text-accent-foreground border-level-partial", dot: "bg-level-partial" },
+  { value: "can_explain", label: "Can explain it", color: "bg-level-explain", selected: "bg-level-explain text-white border-level-explain", dot: "bg-level-explain" },
 ] as const;
 
 export type Phase = "pre" | "post";
-/** `pre` = rating on the session page; `post` = rating updated inside a peer help room. Only the comparison panel shows these. */
-export const PHASE_LABEL: Record<Phase, string> = { pre: "Before peer help", post: "After peer help" };
+/** One wording for the signal phase everywhere (header, controls, comparison, room check-in). */
+export const PHASE_LABEL: Record<Phase, string> = { pre: "Before help (pre)", post: "After help (post)" };
 
 export type Level = (typeof LEVELS)[number]["value"];
