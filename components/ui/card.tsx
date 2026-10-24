@@ -44,7 +44,7 @@ function CardTitle({
     props: mergeProps<"div">(
       {
         className: cn(
-          "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+          "font-heading text-lg leading-snug font-semibold group-data-[size=sm]/card:text-base",
           className
         ),
       },
