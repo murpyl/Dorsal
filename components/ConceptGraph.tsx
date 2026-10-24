@@ -29,9 +29,9 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
+  if (score === null) return { fill: "var(--card)", accent: "var(--muted-foreground)" };
   const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  return { fill: `oklch(0.42 0.05 ${hue + 10})`, accent: `oklch(0.8 0.13 ${hue + 10})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -63,7 +63,7 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
       }}
       className={cn(
         "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        low ? "border-dashed border-neutral-300" : "border-neutral-200",
+        low ? "border-dashed border-border" : "border-border",
         active && "ring-4 ring-foreground/15 border-foreground",
         selected && "border-foreground shadow-md",
       )}
@@ -135,7 +135,7 @@ export function ConceptGraph({
         id: e._id,
         source: e.fromId,
         target: e.toId,
-        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-neutral-400)" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--muted-foreground)" },
         label: "prerequisite",
         labelStyle: { fontSize: 10, fill: "var(--color-muted-foreground)" },
         labelBgStyle: { fill: "var(--color-background)" },
@@ -159,7 +159,7 @@ export function ConceptGraph({
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded border border-neutral-300 bg-neutral-100" aria-hidden /> no responses
+          <span className="inline-block size-3 rounded border border-border bg-card" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
@@ -186,7 +186,7 @@ export function ConceptGraph({
           fitView
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--color-neutral-300)" />
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--border)" />
         </ReactFlow>
       </div>
     </figure>

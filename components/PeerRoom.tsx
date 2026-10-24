@@ -215,7 +215,7 @@ export function PeerRoom() {
         <CardContent className="space-y-3">
           <ConfidenceSelector value={room.myLevel} disabled={!open} onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))} />
           {room.myLevel && (
-            <p className="enter flex items-center gap-1.5 text-sm text-emerald-700">
+            <p className="enter flex items-center gap-1.5 text-sm text-emerald-300">
               <CheckCircle2 className="size-4" aria-hidden />
               Rating saved. You can change it any time.
             </p>
