@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as claude from "../claude.js";
+import type * as clusters from "../clusters.js";
 import type * as credentials from "../credentials.js";
+import type * as questions from "../questions.js";
 import type * as sessions from "../sessions.js";
 import type * as signals from "../signals.js";
 
@@ -19,7 +22,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  claude: typeof claude;
+  clusters: typeof clusters;
   credentials: typeof credentials;
+  questions: typeof questions;
   sessions: typeof sessions;
   signals: typeof signals;
 }>;
