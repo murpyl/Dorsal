@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { errorMessage } from "@/lib/errors";
 import type { Level } from "@/lib/levels";
 
@@ -94,6 +95,7 @@ export function PeerRoom() {
           </p>
         </div>
         <p className="text-sm text-zinc-600">{room.conceptDescription}</p>
+        <ConnectionStatus />
       </header>
 
       <section className="grid gap-4 md:grid-cols-[14rem_1fr]">
@@ -139,13 +141,18 @@ export function PeerRoom() {
 
         <div className="flex flex-col rounded-xl border border-zinc-200 bg-white">
           <div className="flex-1 space-y-2 overflow-y-auto p-4" style={{ maxHeight: "24rem", minHeight: "16rem" }} aria-live="polite">
-            {!messages || messages.length === 0 ? (
+            {messages === undefined ? (
+              <p className="text-sm text-zinc-500">Loading messages…</p>
+            ) : messages === null || messages.length === 0 ? (
               <p className="text-sm text-zinc-500">No messages yet. Say hi and describe where you got stuck.</p>
             ) : (
               messages.map((m) => (
                 <div key={m._id} className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${m.isMine ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-900"}`}>
-                    <p className={`text-xs ${m.isMine ? "text-indigo-200" : "text-zinc-500"}`}>{m.isMine ? "You" : m.authorAlias}</p>
+                    <p className={`text-xs ${m.isMine ? "text-indigo-200" : "text-zinc-500"}`}>
+                      {m.isMine ? "You" : m.authorAlias}
+                      {m.authorIsSimulated && <span className="ml-1 rounded bg-amber-100 px-1 text-amber-800">simulated</span>}
+                    </p>
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
                   </div>
                 </div>

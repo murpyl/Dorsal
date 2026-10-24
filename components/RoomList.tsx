@@ -100,7 +100,8 @@ export function RoomList({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!rooms || !me) return null;
+  if (rooms === undefined || me === undefined) return <p className="text-sm text-zinc-500">Loading help rooms…</p>;
+  if (rooms === null || me === null) return <p className="text-sm text-zinc-500">Couldn’t load help rooms for this session.</p>;
   const helperConcepts = concepts.filter((c) => me.helperConceptIds.includes(c._id));
   const chosen = helperConcepts.find((c) => c._id === conceptId) ?? helperConcepts[0] ?? null;
 
@@ -241,8 +242,12 @@ export function RoomStatus({
           <button className="rounded-lg bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-700">Open help room</button>
         </form>
       )}
-      {!rooms || rooms.length === 0 ? (
-        <p className="text-sm text-zinc-500">No open rooms.</p>
+      {rooms === undefined ? (
+        <p className="text-sm text-zinc-500">Loading rooms…</p>
+      ) : rooms === null ? (
+        <p className="text-sm text-zinc-500">Couldn’t load rooms (no instructor access).</p>
+      ) : rooms.length === 0 ? (
+        <p className="text-sm text-zinc-500">No open rooms. Open one from a published cluster above or pick a topic here.</p>
       ) : (
         <ul className="space-y-2 text-sm">
           {rooms.map((r) => (

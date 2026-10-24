@@ -10,20 +10,50 @@ type Counts = { confused: number; partial: number; can_explain: number };
 export type GraphConcept = { _id: string; label: string; x: number; y: number; counts: Counts; total: number; openClusters: number };
 export type GraphEdge = { _id: string; fromId: string; toId: string };
 
-type ConceptNodeData = { label: string; total: number; score: number | null; active: boolean; selected: boolean; openClusters: number };
+type ConceptNodeData = {
+  label: string;
+  total: number;
+  score: number | null;
+  active: boolean;
+  selected: boolean;
+  openClusters: number;
+  counts: Counts;
+  onSelect: (id: string) => void;
+};
 type ConceptNode = Node<ConceptNodeData, "concept">;
 
 export function understandingScore(c: { counts: Counts; total: number }) {
   return c.total === 0 ? null : (c.counts.partial * 0.5 + c.counts.can_explain) / c.total;
 }
 
-function ConceptNodeView({ data }: NodeProps<ConceptNode>) {
-  const { label, total, score, active, selected, openClusters } = data;
+function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
+  const { label, total, score, active, selected, openClusters, counts, onSelect } = data;
   const fill = score === null ? "#e4e4e7" : `hsl(${Math.round(score * 130)} 75% 60%)`;
   const low = total < LOW_SAMPLE;
+  const description = [
+    `${label}.`,
+    total === 0
+      ? "No responses yet."
+      : `N = ${total}: ${counts.confused} confused, ${counts.partial} partly get it, ${counts.can_explain} can explain.`,
+    low && total > 0 ? "Low sample." : "",
+    openClusters > 0 ? `${openClusters} published cluster${openClusters === 1 ? "" : "s"}.` : "",
+    active ? "Current topic." : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div
-      className={`relative w-48 rounded-xl px-3 py-2 text-center text-zinc-900 shadow-sm ${low ? "border-2 border-dashed border-zinc-500" : "border-2 border-zinc-700"} ${active ? "ring-4 ring-indigo-400" : ""} ${selected ? "outline-2 outline-offset-2 outline-zinc-900" : ""}`}
+      role="button"
+      tabIndex={0}
+      aria-label={description}
+      aria-pressed={selected}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(id);
+        }
+      }}
+      className={`relative w-48 rounded-xl px-3 py-2 text-center text-zinc-900 shadow-sm focus:outline-2 focus:outline-offset-2 focus:outline-indigo-700 ${low ? "border-2 border-dashed border-zinc-500" : "border-2 border-zinc-700"} ${active ? "ring-4 ring-indigo-400" : ""} ${selected ? "outline-2 outline-offset-2 outline-zinc-900" : ""}`}
       style={{ background: fill }}
       data-testid="concept-node"
     >
@@ -75,9 +105,11 @@ export function ConceptGraph({
           active: c._id === activeConceptId,
           selected: c._id === selectedId,
           openClusters: c.openClusters,
+          counts: c.counts,
+          onSelect,
         },
       })),
-    [concepts, activeConceptId, selectedId],
+    [concepts, activeConceptId, selectedId, onSelect],
   );
   const flowEdges = useMemo<Edge[]>(
     () =>
@@ -116,8 +148,11 @@ export function ConceptGraph({
           published question clusters on this concept
         </span>
         <span>Student confidence, not measured mastery</span>
+        <a href="#per-concept" className="text-indigo-700 underline">
+          Text version: per-concept distribution
+        </a>
       </figcaption>
-      <div className="h-80">
+      <div className="h-80 lg:h-[26rem]">
       <ReactFlow
         nodes={nodes}
         edges={flowEdges}
@@ -125,6 +160,7 @@ export function ConceptGraph({
         onNodeClick={(_, node) => onSelect(node.id)}
         nodesDraggable={false}
         nodesConnectable={false}
+        nodesFocusable={false}
         elementsSelectable={false}
         fitView
         proOptions={{ hideAttribution: true }}

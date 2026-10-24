@@ -7,6 +7,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { ClusterQueue, ConceptClusters } from "@/components/ClusterQueue";
 import { ConceptGraph, LOW_SAMPLE } from "@/components/ConceptGraph";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PrePostComparison, SessionControls } from "@/components/PrePostComparison";
 import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
@@ -42,7 +44,7 @@ export function RadarDashboard() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl space-y-6 p-6">
+    <main className="w-full space-y-6 px-4 py-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-zinc-500">Instructor · phase {view.phase}</p>
@@ -54,6 +56,7 @@ export function RadarDashboard() {
           <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} phase={view.phase} state={view.state} />
         </div>
       </header>
+      <ConnectionStatus />
 
       <section className="grid grid-cols-2 gap-4 md:grid-cols-4" aria-label="Session metrics">
         <Metric
@@ -66,7 +69,7 @@ export function RadarDashboard() {
         <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1fr_18rem]">
+      <section className="grid gap-4 lg:grid-cols-[1fr_20rem]" aria-label="Concept graph and details">
         <ConceptGraph
           concepts={view.concepts}
           edges={view.edges}
@@ -108,19 +111,34 @@ export function RadarDashboard() {
               <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
             </div>
           ) : (
-            <p className="text-zinc-500">Click a concept to see its signal breakdown.</p>
+            <p className="text-zinc-500">Click a concept (or Tab to it and press Enter) to see its signal breakdown.</p>
           )}
         </aside>
       </section>
 
-      <section className="space-y-3">
+      <ErrorBoundary label="the cluster queue">
+      <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+      </ErrorBoundary>
+
+      <section className="space-y-3" id="per-concept" aria-labelledby="per-concept-heading">
+        <h2 id="per-concept-heading" className="text-lg font-semibold">
+          Per-concept distribution <span className="text-sm font-normal text-zinc-500">(text alternative to the graph colours)</span>
+        </h2>
         {view.concepts.map((c) => (
           <div
             key={c._id}
             className={`rounded-xl border bg-white p-4 ${c._id === view.activeConceptId ? "border-indigo-400" : "border-zinc-200"}`}
           >
-            <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="font-medium">{c.label}</h2>
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="font-medium">
+                {c.label}
+                {c._id === view.activeConceptId && <span className="ml-2 text-xs font-semibold uppercase text-indigo-600">current topic</span>}
+                {c.openClusters > 0 && (
+                  <span className="ml-2 text-xs font-normal text-amber-700">
+                    {c.openClusters} open cluster{c.openClusters === 1 ? "" : "s"}
+                  </span>
+                )}
+              </h3>
               <p className="text-sm text-zinc-600">
                 N = {c.total}
                 {c.total < LOW_SAMPLE && (
@@ -134,7 +152,7 @@ export function RadarDashboard() {
                   <div key={l.value} className={l.color} style={{ width: `${(c.counts[l.value] / c.total) * 100}%` }} />
                 ))}
             </div>
-            <p className="mt-2 flex gap-4 text-sm">
+            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
               {LEVELS.map((l) => (
                 <span key={l.value}>
                   {l.label}: <strong>{c.counts[l.value]}</strong> / {c.total}
@@ -145,11 +163,14 @@ export function RadarDashboard() {
         ))}
       </section>
 
-      <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
-        <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Pre/post comparison and help rooms">
+        <ErrorBoundary label="the pre/post comparison">
+          <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+        </ErrorBoundary>
+        <ErrorBoundary label="help rooms">
+          <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+        </ErrorBoundary>
       </section>
     </main>
   );

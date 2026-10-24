@@ -56,7 +56,7 @@ export function ClusterQueue({
   }, []);
 
   if (data === undefined || questions === undefined) return <p className="text-sm text-zinc-500">Loading questions…</p>;
-  if (data === null || questions === null) return null;
+  if (data === null || questions === null) return <p className="text-sm text-zinc-500">Couldn’t load questions (no instructor access).</p>;
 
   const pending = questions.filter((q) => q.state === "pending");
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;

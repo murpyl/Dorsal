@@ -22,7 +22,8 @@ export function HelperOptIn({
   });
   const [error, setError] = useState<string | null>(null);
 
-  if (!me) return null;
+  if (me === undefined) return <p className="text-sm text-zinc-500">Loading helper settings…</p>;
+  if (me === null) return <p className="text-sm text-zinc-500">Couldn’t load helper settings for this session.</p>;
   const helping = new Set(me.helperConceptIds);
 
   async function toggle(conceptId: Id<"concepts">, checked: boolean) {
