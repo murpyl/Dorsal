@@ -88,9 +88,9 @@ export function TimelineItem({
   );
 }
 
-export function NewDivider({ label }: { label: string }) {
+export function NewDivider({ label, ref }: { label: string; ref?: React.Ref<HTMLLIElement> }) {
   return (
-    <li className="relative my-1 flex items-center gap-3 pl-[2.75rem]" role="separator" aria-label={label}>
+    <li ref={ref} className="relative my-1 flex scroll-mt-72 items-center gap-3 pl-[2.75rem]" role="separator" aria-label={label}>
       <span className="h-px flex-1 bg-primary/40" />
       <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">{label}</span>
       <span className="h-px flex-1 bg-primary/40" />

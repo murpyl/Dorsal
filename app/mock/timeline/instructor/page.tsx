@@ -41,6 +41,21 @@ import {
 } from "../fixtures";
 import { ConceptChips, roomCount, roomFull, roomHelpers } from "../parts";
 
+const SUGGESTION_COPY: Record<string, { title: string; summary: string }> = {
+  base: {
+    title: "What the base case returns",
+    summary: "Questions treat the base case as a stop signal and miss that its return value seeds every multiplication above it.",
+  },
+  stack: {
+    title: "Frames after the base case",
+    summary: "What happens to waiting frames once the base case returns, and why the stack grows with input size.",
+  },
+  recursive: {
+    title: "Recursive case vs a loop",
+    summary: "How calling the function again differs from repeating a loop body.",
+  },
+};
+
 export default function InstructorTimelinePage() {
   const [activeId, setActiveId] = useState(initialActive);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -55,38 +70,54 @@ export default function InstructorTimelinePage() {
   const [running, setRunning] = useState(false);
   const [newPending, setNewPending] = useState(2);
   const [roomTopic, setRoomTopic] = useState(concepts[0]._id);
+  const [lastRun, setLastRun] = useState<{
+    grouped: number;
+    left: number;
+  } | null>(null);
 
   const pending = questions.filter((q) => q.state === "pending");
   const suggested = clusters.filter((c) => c.status === "suggested");
   const published = clusters.filter((c) => c.status === "published");
   const responses = concepts.reduce((s, c) => s + c.total, 0);
   const confused = concepts.reduce((s, c) => s + c.counts.confused, 0);
-  const graphConcepts = concepts.map((c) => ({ ...c, openClusters: published.filter((p) => p.conceptIds.includes(c._id)).length }));
+  const graphConcepts = concepts.map((c) => ({
+    ...c,
+    openClusters: published.filter((p) => p.conceptIds.includes(c._id)).length,
+  }));
 
+  const hide = (id: string) => {
+    setQuestions((qs) => qs.map((q) => (q._id === id ? { ...q, state: "hidden" as const } : q)));
+    setPicked((p) => p.filter((x) => x !== id));
+  };
   const markClustered = (ids: string[]) => setQuestions((qs) => qs.map((q) => (ids.includes(q._id) ? { ...q, state: "clustered" as const } : q)));
 
   function suggest() {
     setRunning(true);
     setNewPending(0);
     window.setTimeout(() => {
-      const base = pending.filter((q) => q.conceptId === "base").map((q) => q._id);
-      if (base.length > 0) {
-        markClustered(base);
-        setClusters((cs) => [
-          ...cs,
-          {
-            _id: `c${Date.now()}`,
-            title: "What the base case returns",
-            summary: "Questions treat the base case as a stop signal and miss that its return value seeds every multiplication above it.",
-            conceptIds: ["base", "recursive"],
-            questionIds: base,
-            status: "suggested",
-            source: "ai",
-            confidence: 0.71,
-            helperCount: 0,
-          },
-        ]);
-      }
+      const byConcept = new Map<string, string[]>();
+      for (const q of pending) byConcept.set(q.conceptId, [...(byConcept.get(q.conceptId) ?? []), q._id]);
+      const groups = [...byConcept.entries()].filter(([, ids]) => ids.length >= 2);
+      const grouped = groups.flatMap(([, ids]) => ids);
+      markClustered(grouped);
+      setClusters((cs) => [
+        ...cs,
+        ...groups.map(([conceptId, ids], k) => ({
+          _id: `c${Date.now()}-${k}`,
+          title: SUGGESTION_COPY[conceptId]?.title ?? `Questions about ${conceptLabel(conceptId)}`,
+          summary: SUGGESTION_COPY[conceptId]?.summary ?? `${ids.length} questions circle the same misunderstanding about ${conceptLabel(conceptId)}.`,
+          conceptIds: [conceptId],
+          questionIds: ids,
+          status: "suggested" as const,
+          source: "ai" as const,
+          confidence: 0.66 + 0.05 * k,
+          helperCount: 0,
+        })),
+      ]);
+      setLastRun({
+        grouped: grouped.length,
+        left: pending.length - grouped.length,
+      });
       setRunning(false);
     }, 1400);
   }
@@ -94,17 +125,37 @@ export default function InstructorTimelinePage() {
     markClustered(picked);
     setClusters((cs) => [
       ...cs,
-      { _id: `m${Date.now()}`, ...fields, questionIds: picked, status: "suggested", source: "manual", confidence: null, helperCount: 0 },
+      {
+        _id: `m${Date.now()}`,
+        ...fields,
+        questionIds: picked,
+        status: "suggested",
+        source: "manual",
+        confidence: null,
+        helperCount: 0,
+      },
     ]);
     setPicked([]);
     setGrouping(false);
   }
   const publish = (id: string) =>
-    setClusters((cs) => cs.map((c) => (c._id === id ? { ...c, status: "published", publishedAt: session.now, helperCount: c.helperCount || 1 } : c)));
+    setClusters((cs) =>
+      cs.map((c) =>
+        c._id === id
+          ? {
+              ...c,
+              status: "published",
+              publishedAt: session.now,
+              helperCount: c.helperCount || 1,
+            }
+          : c,
+      ),
+    );
   const discard = (id: string) => {
     const c = clusters.find((x) => x._id === id);
     setClusters((cs) => cs.filter((x) => x._id !== id));
     if (c) setQuestions((qs) => qs.map((q) => (c.questionIds.includes(q._id) ? { ...q, state: "pending" } : q)));
+    setRooms((rs) => rs.map((r) => (r.clusterId === id ? { ...r, clusterId: null } : r)));
   };
   const patch = (id: string, fields: Partial<Cluster>) => setClusters((cs) => cs.map((c) => (c._id === id ? { ...c, ...fields } : c)));
   const openRoom = (conceptId: string, clusterId: string | null) =>
@@ -273,7 +324,9 @@ export default function InstructorTimelinePage() {
           <p className="text-xs text-muted-foreground">
             {running
               ? "Claude is grouping pending questions…"
-              : `Last AI run ${aiRun.at} · ${aiRun.model} · ${aiRun.latencyMs} ms · suggestions only, nothing is published automatically`}
+              : lastRun
+                ? `Just now · ${aiRun.model} · grouped ${lastRun.grouped} question${lastRun.grouped === 1 ? "" : "s"}, left ${lastRun.left} ungrouped (no second question on the same point yet) · suggestions only`
+                : `Last AI run ${aiRun.at} · ${aiRun.model} · ${aiRun.latencyMs} ms · suggestions only, nothing is published automatically`}
           </p>
         </div>
         <div className={cn("grid gap-4", presenting ? "lg:grid-cols-2" : "lg:grid-cols-2 xl:grid-cols-4")}>
@@ -304,7 +357,11 @@ export default function InstructorTimelinePage() {
                 pending.map((q, i) => {
                   const on = picked.includes(q._id);
                   return (
-                    <li key={q._id} className={cn("enter rounded-lg border bg-card p-3 text-sm", on && "border-foreground")} style={{ "--i": i } as React.CSSProperties}>
+                    <li
+                      key={q._id}
+                      className={cn("enter rounded-lg border bg-card p-3 text-sm", on && "border-foreground")}
+                      style={{ "--i": i } as React.CSSProperties}
+                    >
                       <div className="flex items-start gap-2.5">
                         <Checkbox
                           aria-label="Select for manual grouping"
@@ -320,7 +377,7 @@ export default function InstructorTimelinePage() {
                           <span className="tabular-nums">{q.createdAt}</span>
                           <span>{q.alias}</span>
                         </span>
-                        <Button size="xs" variant="ghost">
+                        <Button size="xs" variant="ghost" onClick={() => hide(q._id)}>
                           Hide
                         </Button>
                       </div>
@@ -377,10 +434,12 @@ export default function InstructorTimelinePage() {
                   i={i}
                   cluster={c}
                   onPatch={(f) => patch(c._id, f)}
+                  showQuestions={!presenting}
                   footer={
                     rooms.some((r) => r.clusterId === c._id) ? (
                       <p className="text-xs text-muted-foreground">
-                        {rooms.filter((r) => r.clusterId === c._id).length} room{rooms.filter((r) => r.clusterId === c._id).length === 1 ? "" : "s"} open →
+                        {rooms.filter((r) => r.clusterId === c._id).length} room
+                        {rooms.filter((r) => r.clusterId === c._id).length === 1 ? "" : "s"} open →
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">No room yet.</p>
@@ -445,8 +504,8 @@ export default function InstructorTimelinePage() {
             )}
             {phase === "pre" && rooms.length > 0 && !presenting && (
               <li className="rounded-lg border border-dashed px-3 py-2.5 text-xs text-muted-foreground">
-                Rooms are running. Switch signals to <span className="font-medium text-foreground">{PHASE_LABEL.post}</span> (top right) so room
-                check-ins land in the comparison below.
+                Rooms are running. Switch signals to <span className="font-medium text-foreground">{PHASE_LABEL.post}</span> (top right) so room check-ins land
+                in the comparison below.
               </li>
             )}
           </Column>
@@ -461,8 +520,8 @@ export default function InstructorTimelinePage() {
                 Before vs after peer help
               </h2>
               <p className="text-sm text-muted-foreground">
-                Self-reported understanding per phase; each bar carries its own N. No after-help signals yet — they appear once you switch the phase
-                and students check in from a room. A shift here is what students <em>say</em>, not measured learning.
+                Self-reported understanding per phase; each bar carries its own N. No after-help signals yet — they appear once you switch the phase and
+                students check in from a room. A shift here is what students <em>say</em>, not measured learning.
               </p>
             </div>
             <Legend />
@@ -552,12 +611,14 @@ function ClusterCard({
   onPatch,
   actions,
   footer,
+  showQuestions = true,
 }: {
   i: number;
   cluster: Cluster;
   onPatch: (fields: Partial<Cluster>) => void;
   actions: React.ReactNode;
   footer?: React.ReactNode;
+  showQuestions?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(cluster.title);
@@ -599,21 +660,28 @@ function ClusterCard({
         <ConceptChips ids={cluster.conceptIds} />
         <span>{cluster.source === "ai" ? "Claude" : "grouped manually"}</span>
         {cluster.confidence !== null && <span>{Math.round(cluster.confidence * 100)}% model confidence (not calibrated)</span>}
-        {cluster.status === "published" && <span>{cluster.helperCount} helper{cluster.helperCount === 1 ? "" : "s"} opted in</span>}
-      </p>
-      <details className="group/d mt-2" open={cluster.status === "suggested"}>
-        <summary className="cursor-pointer list-none text-xs text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
-          <span className="mr-1 inline-block transition-transform duration-150 group-open/d:rotate-90" aria-hidden>
-            ›
+        {cluster.status === "published" && (
+          <span>
+            {cluster.helperCount} helper{cluster.helperCount === 1 ? "" : "s"} opted in
           </span>
-          {cluster.questionIds.length} original question{cluster.questionIds.length === 1 ? "" : "s"}
-        </summary>
-        <ul className="mt-1.5 space-y-1 border-l-2 pl-2.5 text-xs text-muted-foreground">
-          {cluster.questionIds.map((id) => (
-            <li key={id}>{questionById[id]?.content}</li>
-          ))}
-        </ul>
-      </details>
+        )}
+      </p>
+      {showQuestions && (
+        <details className="group/d mt-2" open={cluster.status === "suggested"}>
+          <summary className="cursor-pointer list-none text-xs text-muted-foreground select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <span className="mr-1 inline-block transition-transform duration-150 group-open/d:rotate-90" aria-hidden>
+              ›
+            </span>
+            {cluster.questionIds.length} original question
+            {cluster.questionIds.length === 1 ? "" : "s"}
+          </summary>
+          <ul className="mt-1.5 space-y-1 border-l-2 pl-2.5 text-xs text-muted-foreground">
+            {cluster.questionIds.map((id) => (
+              <li key={id}>{questionById[id]?.content}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       {footer && <div className="mt-2">{footer}</div>}
       <div className="mt-3 flex flex-wrap items-center gap-2">{actions}</div>
     </li>
@@ -628,7 +696,8 @@ function RoomCard({ i, room, onClose, readOnly }: { i: number; room: Room; onClo
         <div className="min-w-0">
           <h4 className="font-medium">{room.title}</h4>
           <p className="text-xs text-muted-foreground">
-            opened {room.openedAt} · {roomHelpers(room)} helper{roomHelpers(room) === 1 ? "" : "s"}
+            opened {room.openedAt} · {roomHelpers(room)} helper
+            {roomHelpers(room) === 1 ? "" : "s"}
             {room.clusterId && <> · for a published group</>}
           </p>
         </div>
@@ -639,7 +708,10 @@ function RoomCard({ i, room, onClose, readOnly }: { i: number; room: Room; onClo
       </div>
       <div className="mt-2 flex h-1.5 gap-0.5" aria-hidden>
         {Array.from({ length: room.capacity }).map((_, k) => (
-          <span key={k} className={cn("flex-1 rounded-full", k < room.members.length ? (room.members[k].role === "helper" ? "bg-teal-500" : "bg-primary") : "bg-muted")} />
+          <span
+            key={k}
+            className={cn("flex-1 rounded-full", k < room.members.length ? (room.members[k].role === "helper" ? "bg-teal-500" : "bg-primary") : "bg-muted")}
+          />
         ))}
       </div>
       <p className="mt-1.5 text-xs text-muted-foreground">
@@ -676,12 +748,30 @@ function ManualGroupForm({
         className="enter space-y-2 rounded-lg border border-foreground/20 bg-card p-3 text-sm"
         onSubmit={(e) => {
           e.preventDefault();
-          onCreate({ title: title.trim(), summary: summary.trim(), conceptIds });
+          onCreate({
+            title: title.trim(),
+            summary: summary.trim(),
+            conceptIds,
+          });
         }}
       >
         <h4 className="font-medium">Manual cluster from {count} selected</h4>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={120} placeholder="Title, e.g. Tracing return values" aria-label="Cluster title" />
-        <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} maxLength={500} rows={2} placeholder="One-line summary (optional)" aria-label="Cluster summary" />
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          maxLength={120}
+          placeholder="Title, e.g. Tracing return values"
+          aria-label="Cluster title"
+        />
+        <Textarea
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          maxLength={500}
+          rows={2}
+          placeholder="One-line summary (optional)"
+          aria-label="Cluster summary"
+        />
         <fieldset className="flex flex-wrap gap-1.5">
           <legend className="sr-only">Concepts</legend>
           {concepts.map((c) => {
@@ -731,9 +821,14 @@ function JoinCode({ code, large }: { code: string; large: boolean }) {
         variant="outline"
         size="icon-sm"
         aria-label={copied ? "Link copied" : "Copy join link"}
-        onClick={() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(`${window.location.origin}/join/${code}`);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+          } catch {
+            setCopied(false);
+          }
         }}
       >
         {copied ? <Check className="text-teal-700" aria-hidden /> : <Copy aria-hidden />}

@@ -25,7 +25,7 @@ export type Question = {
   content: string;
   alias: string;
   createdAt: string;
-  state: "pending" | "clustered";
+  state: "pending" | "clustered" | "hidden";
 };
 
 export type Cluster = {
@@ -41,7 +41,11 @@ export type Cluster = {
   publishedAt?: string;
 };
 
-export type Member = { alias: string; role: "helper" | "learner"; isMe?: boolean };
+export type Member = {
+  alias: string;
+  role: "helper" | "learner";
+  isMe?: boolean;
+};
 
 export type Room = {
   _id: string;
@@ -53,12 +57,24 @@ export type Room = {
   openedAt: string;
 };
 
-export type Message = { _id: string; alias: string; body: string; at: string; isMine?: boolean };
+export type Message = {
+  _id: string;
+  alias: string;
+  body: string;
+  at: string;
+  isMine?: boolean;
+};
 
 export type StudentEvent =
   | { kind: "joined"; at: string }
   | { kind: "topic"; at: string; conceptId: string }
-  | { kind: "asked"; at: string; conceptId: string; content: string; clusterId: string | null }
+  | {
+      kind: "asked";
+      at: string;
+      conceptId: string;
+      content: string;
+      clusterId: string | null;
+    }
   | { kind: "cluster"; at: string; clusterId: string }
   | { kind: "room"; at: string; roomId: string };
 
@@ -74,7 +90,12 @@ export const session = {
 
 export const me = {
   alias: "gentle-yak",
-  answers: { base: "can_explain", recursive: "can_explain", stack: "partial", tree: "confused" } as Partial<Record<string, Level>>,
+  answers: {
+    base: "can_explain",
+    recursive: "can_explain",
+    stack: "partial",
+    tree: "confused",
+  } as Partial<Record<string, Level>>,
   helperConceptIds: ["recursive"],
 };
 
@@ -173,20 +194,118 @@ export const conceptById = Object.fromEntries(concepts.map((c) => [c._id, c])) a
 export const conceptLabel = (id: string) => conceptById[id]?.label ?? "Unknown concept";
 
 export const questions: Question[] = [
-  { _id: "q1", conceptId: "base", alias: "sleepy-fox", createdAt: "10:31", state: "pending", content: "If the base case returns 0, how does the final answer not end up being 0?" },
-  { _id: "q2", conceptId: "recursive", alias: "amber-moth", createdAt: "10:35", state: "pending", content: "How is the recursive case different from a loop that runs the same code again?" },
-  { _id: "q3", conceptId: "stack", alias: "misty-crane", createdAt: "10:38", state: "pending", content: "What happens to the frames after the base case returns? Do they get deleted one by one?" },
-  { _id: "q4", conceptId: "base", alias: "bold-lemur", createdAt: "10:40", state: "pending", content: "Is it bad if a recursive function has two base cases?" },
-  { _id: "q5", conceptId: "stack", alias: "quiet-otter", createdAt: "10:50", state: "pending", content: "Why does the stack get so deep for fib(30) when a loop is fine?" },
-  { _id: "q6", conceptId: "stack", alias: "sunny-newt", createdAt: "10:33", state: "clustered", content: "How does the return value get back to the first call if each call only returns to the one before it?" },
-  { _id: "q7", conceptId: "stack", alias: "brave-heron", createdAt: "10:34", state: "clustered", content: "When fact(1) returns, where does that 1 actually go?" },
-  { _id: "q8", conceptId: "tree", alias: "pale-finch", createdAt: "10:49", state: "clustered", content: "Why does count_partitions call itself twice? Do both calls run at the same time?" },
-  { _id: "q9", conceptId: "tree", alias: "wry-badger", createdAt: "10:50", state: "clustered", content: "In the tree diagram, which branch runs first, left or right?" },
-  { _id: "q10", conceptId: "base", alias: "sleepy-fox", createdAt: "10:12", state: "clustered", content: "Why do we need a base case at all? Can't the function just stop when n is 0?" },
-  { _id: "q11", conceptId: "base", alias: "amber-moth", createdAt: "10:14", state: "clustered", content: "Does the base case have to be the first line of the function?" },
-  { _id: "q12", conceptId: "base", alias: "misty-crane", createdAt: "10:15", state: "clustered", content: "Why do we check n == 0 before doing anything else?" },
-  { _id: "q13", conceptId: "stack", alias: "gentle-yak", createdAt: "10:36", state: "clustered", content: "Is the call stack a real thing in memory or just a drawing we use in lecture?" },
-  { _id: "q14", conceptId: "stack", alias: "bold-lemur", createdAt: "10:37", state: "clustered", content: "Why do we draw frames on top of each other?" },
+  {
+    _id: "q1",
+    conceptId: "base",
+    alias: "sleepy-fox",
+    createdAt: "10:31",
+    state: "pending",
+    content: "If the base case returns 0, how does the final answer not end up being 0?",
+  },
+  {
+    _id: "q2",
+    conceptId: "recursive",
+    alias: "amber-moth",
+    createdAt: "10:35",
+    state: "pending",
+    content: "How is the recursive case different from a loop that runs the same code again?",
+  },
+  {
+    _id: "q3",
+    conceptId: "stack",
+    alias: "misty-crane",
+    createdAt: "10:38",
+    state: "pending",
+    content: "What happens to the frames after the base case returns? Do they get deleted one by one?",
+  },
+  {
+    _id: "q4",
+    conceptId: "base",
+    alias: "bold-lemur",
+    createdAt: "10:40",
+    state: "pending",
+    content: "Is it bad if a recursive function has two base cases?",
+  },
+  {
+    _id: "q5",
+    conceptId: "stack",
+    alias: "quiet-otter",
+    createdAt: "10:50",
+    state: "pending",
+    content: "Why does the stack get so deep for fib(30) when a loop is fine?",
+  },
+  {
+    _id: "q6",
+    conceptId: "stack",
+    alias: "sunny-newt",
+    createdAt: "10:33",
+    state: "clustered",
+    content: "How does the return value get back to the first call if each call only returns to the one before it?",
+  },
+  {
+    _id: "q7",
+    conceptId: "stack",
+    alias: "brave-heron",
+    createdAt: "10:34",
+    state: "clustered",
+    content: "When fact(1) returns, where does that 1 actually go?",
+  },
+  {
+    _id: "q8",
+    conceptId: "tree",
+    alias: "pale-finch",
+    createdAt: "10:49",
+    state: "clustered",
+    content: "Why does count_partitions call itself twice? Do both calls run at the same time?",
+  },
+  {
+    _id: "q9",
+    conceptId: "tree",
+    alias: "wry-badger",
+    createdAt: "10:50",
+    state: "clustered",
+    content: "In the tree diagram, which branch runs first, left or right?",
+  },
+  {
+    _id: "q10",
+    conceptId: "base",
+    alias: "sleepy-fox",
+    createdAt: "10:12",
+    state: "clustered",
+    content: "Why do we need a base case at all? Can't the function just stop when n is 0?",
+  },
+  {
+    _id: "q11",
+    conceptId: "base",
+    alias: "amber-moth",
+    createdAt: "10:14",
+    state: "clustered",
+    content: "Does the base case have to be the first line of the function?",
+  },
+  {
+    _id: "q12",
+    conceptId: "base",
+    alias: "misty-crane",
+    createdAt: "10:15",
+    state: "clustered",
+    content: "Why do we check n == 0 before doing anything else?",
+  },
+  {
+    _id: "q13",
+    conceptId: "stack",
+    alias: "gentle-yak",
+    createdAt: "10:36",
+    state: "clustered",
+    content: "Is the call stack a real thing in memory or just a drawing we use in lecture?",
+  },
+  {
+    _id: "q14",
+    conceptId: "stack",
+    alias: "bold-lemur",
+    createdAt: "10:37",
+    state: "clustered",
+    content: "Why do we draw frames on top of each other?",
+  },
 ];
 
 export const questionById = Object.fromEntries(questions.map((q) => [q._id, q])) as Record<string, Question>;
@@ -276,12 +395,43 @@ export const rooms: Room[] = [
 export const roomById = Object.fromEntries(rooms.map((r) => [r._id, r])) as Record<string, Room>;
 
 export const messages: Message[] = [
-  { _id: "m1", alias: "quiet-otter", at: "10:44", body: "hey! where did you get stuck with the base case?" },
-  { _id: "m2", alias: "sleepy-fox", at: "10:44", body: "I get that n == 0 stops it, but I don't get why fact(0) returning 1 doesn't make the whole answer 1" },
-  { _id: "m3", alias: "quiet-otter", at: "10:45", body: "ok so fact(0) returns 1 to fact(1), which multiplies: 1 * 1. then fact(2) gets that and does 2 * 1, and so on back up" },
-  { _id: "m4", alias: "brave-heron", at: "10:46", body: "try writing the frames as a column: fact(3) waits for fact(2), fact(2) waits for fact(1)… the base case just starts the unwinding" },
-  { _id: "m5", alias: "gentle-yak", at: "10:47", isMine: true, body: "oh so the base case value is the *first* thing that gets multiplied, not the last" },
-  { _id: "m6", alias: "quiet-otter", at: "10:47", body: "exactly. want to trace fact(4) together? you write the frames, I'll check" },
+  {
+    _id: "m1",
+    alias: "quiet-otter",
+    at: "10:44",
+    body: "hey! where did you get stuck with the base case?",
+  },
+  {
+    _id: "m2",
+    alias: "sleepy-fox",
+    at: "10:44",
+    body: "I get that n == 0 stops it, but I don't get why fact(0) returning 1 doesn't make the whole answer 1",
+  },
+  {
+    _id: "m3",
+    alias: "quiet-otter",
+    at: "10:45",
+    body: "ok so fact(0) returns 1 to fact(1), which multiplies: 1 * 1. then fact(2) gets that and does 2 * 1, and so on back up",
+  },
+  {
+    _id: "m4",
+    alias: "brave-heron",
+    at: "10:46",
+    body: "try writing the frames as a column: fact(3) waits for fact(2), fact(2) waits for fact(1)… the base case just starts the unwinding",
+  },
+  {
+    _id: "m5",
+    alias: "gentle-yak",
+    at: "10:47",
+    isMine: true,
+    body: "oh so the base case value is the *first* thing that gets multiplied, not the last",
+  },
+  {
+    _id: "m6",
+    alias: "quiet-otter",
+    at: "10:47",
+    body: "exactly. want to trace fact(4) together? you write the frames, I'll check",
+  },
 ];
 
 /** What the student has seen so far, oldest first; the pinned "now" card above the feed holds the current topic. */
@@ -290,7 +440,13 @@ export const studentEvents: StudentEvent[] = [
   { kind: "topic", at: "10:08", conceptId: "base" },
   { kind: "topic", at: "10:19", conceptId: "recursive" },
   { kind: "topic", at: "10:31", conceptId: "stack" },
-  { kind: "asked", at: "10:36", conceptId: "stack", content: questionById.q13.content, clusterId: "c4" },
+  {
+    kind: "asked",
+    at: "10:36",
+    conceptId: "stack",
+    content: questionById.q13.content,
+    clusterId: "c4",
+  },
   { kind: "cluster", at: "10:41", clusterId: "c3" },
   { kind: "room", at: "10:43", roomId: "r1" },
   { kind: "cluster", at: "10:46", clusterId: "c4" },
@@ -301,4 +457,9 @@ export const studentEvents: StudentEvent[] = [
 /** Events at or after this time are "new since you last looked" on the student screen. */
 export const studentSeenUntil = "10:45";
 
-export const aiRun = { status: "ok" as const, model: "claude-sonnet-4-5", latencyMs: 2140, at: "10:51" };
+export const aiRun = {
+  status: "ok" as const,
+  model: "claude-sonnet-4-5",
+  latencyMs: 2140,
+  at: "10:51",
+};

@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { LEVELS, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import { clusterById, conceptById, me, messages as initialMessages, questionById, rooms, type Message } from "../fixtures";
+import { clusterById, conceptById, me, messages as initialMessages, rooms, type Message } from "../fixtures";
 import { LevelChip, MockNav, roomCount, roomFull, roomHelpers } from "../parts";
 
 const room = rooms[0];
@@ -47,7 +47,16 @@ export default function RoomTimelinePage() {
     e.preventDefault();
     const body = draft.trim();
     if (!body) return;
-    setMsgs((m) => [...m, { _id: `m${Date.now()}`, alias: me.alias, body, at: "10:52", isMine: true }]);
+    setMsgs((m) => [
+      ...m,
+      {
+        _id: `m${Date.now()}`,
+        alias: me.alias,
+        body,
+        at: "10:52",
+        isMine: true,
+      },
+    ]);
     setDraft("");
   }
 
@@ -77,7 +86,8 @@ export default function RoomTimelinePage() {
           <div className="min-w-0">
             <h1 className="truncate font-heading text-lg font-medium leading-tight">{room.title}</h1>
             <p className="truncate text-xs text-muted-foreground">
-              {roomCount(room)} in room · {roomHelpers(room)} helpers · opened {room.openedAt} · you are <span className="font-medium text-foreground">{me.alias}</span>
+              {roomCount(room)} in room · {roomHelpers(room)} helpers · opened {room.openedAt} · you are{" "}
+              <span className="font-medium text-foreground">{me.alias}</span>
             </p>
           </div>
         </div>
@@ -104,16 +114,6 @@ export default function RoomTimelinePage() {
                 </span>
               )}
             </div>
-            {cluster && (
-              <details className="mt-2 text-xs">
-                <summary className="cursor-pointer text-muted-foreground select-none hover:text-foreground">What classmates asked</summary>
-                <ul className="mt-1.5 space-y-1 border-l-2 pl-2.5 text-muted-foreground">
-                  {cluster.questionIds.map((id) => (
-                    <li key={id}>{questionById[id].content}</li>
-                  ))}
-                </ul>
-              </details>
-            )}
           </section>
 
           <CheckinCard
@@ -165,14 +165,14 @@ export default function RoomTimelinePage() {
               Aliases are per session. Nobody here can see who you are; the instructor sees aliases, not names.
             </p>
           </section>
-
         </aside>
 
         {/* Chat column: the room's own timeline. The check-in prompt lands here as an event after a few minutes, the same way it does in the lecture feed. */}
         <section className="flex min-h-0 flex-col rounded-2xl border bg-card" aria-label="Room chat">
           <ol className="flex-1 space-y-3 overflow-y-auto p-4 [scrollbar-width:thin]" aria-live="polite" aria-relevant="additions">
             <li className="text-center text-xs text-muted-foreground">
-              Room opened {room.openedAt} by the instructor for &ldquo;{cluster?.title ?? concept.label}&rdquo;
+              Room opened {room.openedAt} by the instructor for &ldquo;
+              {cluster?.title ?? concept.label}&rdquo;
             </li>
             {msgs.map((m, i) => {
               const role = roleOf(m.alias);

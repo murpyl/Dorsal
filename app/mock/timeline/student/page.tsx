@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowRight, CheckCircle2, DoorOpen, HandHelping, LogIn, MessagesSquare, Pin, Send, Undo2 } from "lucide-react";
 import { Brand } from "@/components/Brand";
 import { ConfidenceSelector } from "@/components/ConfidenceSelector";
@@ -12,18 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Textarea } from "@/components/ui/textarea";
 import { LEVELS, type Level } from "@/lib/levels";
 import { cn } from "@/lib/utils";
-import {
-  activeConceptId,
-  clusterById,
-  conceptById,
-  conceptLabel,
-  concepts,
-  me,
-  roomById,
-  session,
-  studentEvents,
-  studentSeenUntil,
-} from "../fixtures";
+import { activeConceptId, clusterById, conceptById, conceptLabel, concepts, me, roomById, session, studentEvents, studentSeenUntil } from "../fixtures";
 import { ConceptChips, LevelChip, NewDivider, TimelineItem, clusterMeta, roomCount, roomFull, roomHelpers } from "../parts";
 
 const MAX_LENGTH = 500;
@@ -34,6 +24,7 @@ export default function StudentTimelinePage() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [joined, setJoined] = useState<string[]>(["r1"]);
   const [unread, setUnread] = useState(2);
+  const newRef = useRef<HTMLLIElement>(null);
   const [draft, setDraft] = useState("");
   const [askAbout, setAskAbout] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
@@ -44,11 +35,13 @@ export default function StudentTimelinePage() {
   const revisiting = shownId !== activeConceptId;
   const composerConceptId = askAbout ?? activeConceptId;
   const trimmed = draft.trim();
-  const topicItems = concepts.map((c) => ({ value: c._id, label: c._id === activeConceptId ? `${c.label} (current topic)` : c.label }));
+  const topicItems = concepts.map((c) => ({
+    value: c._id,
+    label: c._id === activeConceptId ? `${c.label} (current topic)` : c.label,
+  }));
 
   const setLevel = (conceptId: string, level: Level) => setAnswers((a) => ({ ...a, [conceptId]: level }));
-  const toggleHelp = (conceptId: string, on: boolean) =>
-    setHelping((h) => (on ? [...new Set([...h, conceptId])] : h.filter((id) => id !== conceptId)));
+  const toggleHelp = (conceptId: string, on: boolean) => setHelping((h) => (on ? [...new Set([...h, conceptId])] : h.filter((id) => id !== conceptId)));
 
   function send(e: React.FormEvent) {
     e.preventDefault();
@@ -74,10 +67,7 @@ export default function StudentTimelinePage() {
 
         <section
           aria-label={revisiting ? `Revisiting ${shown.label}` : `Current topic: ${shown.label}`}
-          className={cn(
-            "mx-3 rounded-xl border-2 bg-card px-4 pt-3 pb-4 transition-colors",
-            revisiting ? "border-border" : "border-primary",
-          )}
+          className={cn("mx-3 rounded-xl border-2 bg-card px-4 pt-3 pb-4 transition-colors", revisiting ? "border-border" : "border-primary")}
         >
           <div className="flex items-center justify-between gap-2 text-[11px] font-semibold tracking-wide uppercase">
             {revisiting ? (
@@ -115,11 +105,7 @@ export default function StudentTimelinePage() {
                 helping.includes(shownId) ? "border-teal-300 bg-teal-50 text-teal-950" : "border-border bg-background",
               )}
             >
-              <Checkbox
-                className="mt-0.5"
-                checked={helping.includes(shownId)}
-                onCheckedChange={(v) => toggleHelp(shownId, v === true)}
-              />
+              <Checkbox className="mt-0.5" checked={helping.includes(shownId)} onCheckedChange={(v) => toggleHelp(shownId, v === true)} />
               <span>
                 <span className="font-medium">I could help classmates with {shown.label}</span>
                 <span className="block text-xs leading-relaxed text-muted-foreground">
@@ -172,7 +158,7 @@ export default function StudentTimelinePage() {
         {studentEvents.map((ev, i) => {
           const isNew = ev.at > studentSeenUntil;
           const prevNew = i > 0 && studentEvents[i - 1].at > studentSeenUntil;
-          const divider = isNew && !prevNew ? <NewDivider key="new" label={`New since ${studentSeenUntil}`} /> : null;
+          const divider = isNew && !prevNew ? <NewDivider key="new" ref={newRef} label={`New since ${studentSeenUntil}`} /> : null;
           const style = { "--i": Math.min(i, 8) } as React.CSSProperties;
           const key = `${ev.kind}-${ev.at}-${i}`;
           if (ev.kind === "joined")
@@ -270,7 +256,7 @@ export default function StudentTimelinePage() {
                   </p>
                 </div>
                 {member ? (
-                  <Button size="sm" className="shrink-0">
+                  <Button size="sm" className="shrink-0" nativeButton={false} render={<Link href="/mock/timeline/room" />}>
                     Open
                     <ArrowRight data-icon="inline-end" aria-hidden />
                   </Button>
@@ -302,7 +288,18 @@ export default function StudentTimelinePage() {
 
       {unread > 0 && (
         <div className="pointer-events-none sticky bottom-28 z-10 flex justify-center">
-          <Button size="sm" className="pointer-events-auto" onClick={() => setUnread(0)} aria-live="polite">
+          <Button
+            size="sm"
+            className="pointer-events-auto"
+            onClick={() => {
+              newRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+              setUnread(0);
+            }}
+            aria-live="polite"
+          >
             <ArrowDown data-icon="inline-start" aria-hidden />
             {unread} new since you last looked
           </Button>
@@ -346,9 +343,12 @@ export default function StudentTimelinePage() {
         <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
           {composing ? (
             <>
-              <span className="tabular-nums">{draft.length}/{MAX_LENGTH}</span> · Optional. Classmates never see who asked; your instructor sees it under{" "}
-              <span className="font-medium text-foreground">{me.alias}</span>, not your name, and operators could still link it to your device
-              (pseudonymous, not fully anonymous). Text is sent to Claude (Anthropic) to group similar questions — no names or personal details.
+              <span className="tabular-nums">
+                {draft.length}/{MAX_LENGTH}
+              </span>{" "}
+              · Optional. Classmates never see who asked; your instructor sees it under <span className="font-medium text-foreground">{me.alias}</span>, not
+              your name, and operators could still link it to your device (pseudonymous, not fully anonymous). Text is sent to Claude (Anthropic) to group
+              similar questions — no names or personal details.
             </>
           ) : (
             <>Anonymous to classmates · pseudonymous to your instructor · grouped by Claude. Tap to see the full note.</>
@@ -383,8 +383,8 @@ function YourAnswersSheet({
         <SheetHeader>
           <SheetTitle>All six concepts</SheetTitle>
           <SheetDescription>
-            Text alternative to the progress strip. Change any answer here; tick the ones you could help classmates with. Only your own answers are
-            shown — the class totals stay with your instructor.
+            Text alternative to the progress strip. Change any answer here; tick the ones you could help classmates with. Only your own answers are shown — the
+            class totals stay with your instructor.
           </SheetDescription>
         </SheetHeader>
         <ul className="space-y-4 px-4">

@@ -10,14 +10,16 @@ const screens = [
     title: "Student",
     width: "390px · phone, one hand",
     icon: Smartphone,
-    blurb: "A chat-like lecture feed: the current topic is pinned on top, everything that happened earlier scrolls below it, and the composer always asks about the pinned topic.",
+    blurb:
+      "A chat-like lecture feed: the current topic is pinned on top, everything that happened earlier scrolls below it, and the composer always asks about the pinned topic.",
   },
   {
     href: "/mock/timeline/instructor",
     title: "Instructor",
     width: "1440px · laptop or projector",
     icon: Monitor,
-    blurb: "A slim graph overview, then the question lifecycle as four columns: Pending → Suggested → Published → Rooms. Buttons move cards to the right; nothing is dragged.",
+    blurb:
+      "A slim graph overview, then the question lifecycle as four columns: Pending → Suggested → Published → Rooms. Buttons move cards to the right; nothing is dragged.",
   },
   {
     href: "/mock/timeline/room",
@@ -38,8 +40,8 @@ export default function TimelineIndex() {
           <Badge variant="secondary">mockup · fixture data · nothing is saved</Badge>
         </div>
         <p className="max-w-2xl text-muted-foreground">
-          A lecture is linear in time, so the student screen reads like a conversation with the lecture, the instructor screen is the question
-          pipeline laid out left to right, and the peer room is a smaller timeline of its own. Everything is clickable with local state; see{" "}
+          A lecture is linear in time, so the student screen reads like a conversation with the lecture, the instructor screen is the question pipeline laid out
+          left to right, and the peer room is a smaller timeline of its own. Everything is clickable with local state; see{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-sm">docs/plans/layout-timeline.md</code> for the rationale.
         </p>
       </header>
@@ -63,8 +65,8 @@ export default function TimelineIndex() {
         ))}
       </ul>
       <p className="text-sm text-muted-foreground">
-        Fixture: CS 61A Lecture 8 (Recursion), 36 students, 6 concepts, 10 questions, 2 suggested and 2 published clusters, 2 rooms. Student
-        screens never show aggregate counts; the instructor screen does.
+        Fixture: CS 61A Lecture 8 (Recursion), 36 students, 6 concepts, 10 questions, 2 suggested and 2 published clusters, 2 rooms. Student screens never show
+        aggregate counts; the instructor screen does.
       </p>
     </main>
   );
