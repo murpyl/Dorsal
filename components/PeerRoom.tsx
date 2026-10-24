@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 export function PeerRoom() {
   const roomId = useParams<{ roomId: string }>().roomId as Id<"rooms">;
   const code = (useSearchParams().get("code") ?? "").toUpperCase();
-  const token = useStoredCredential(code ? studentTokenKey(code) : "classpulse:none", false);
+  const token = useStoredCredential(code ? studentTokenKey(code) : "dorsal:none", false);
 
   const room = useQuery(api.rooms.get, token ? { roomId, token } : "skip");
   const messages = useQuery(api.messages.listByRoom, token ? { roomId, token } : "skip");

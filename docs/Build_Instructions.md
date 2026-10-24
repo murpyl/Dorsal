@@ -1,4 +1,4 @@
-# ClassPulse — Implementation Instructions
+# Dorsal — Implementation Instructions
 
 ## Goal
 
@@ -19,12 +19,12 @@ See `docs/MVP_Outline.md` for product behavior, sponsor mapping, safety constrai
 
 Prerequisites: recent Node.js LTS, npm, Convex account, and an Anthropic API key for the AI path.
 
-Scaffold the app in the **repo root** (not a `classpulse/` subfolder). `create-next-app .` fails here twice over: the repo directory name has capitals (invalid npm package name) and `AGENTS.md` already exists. So scaffold into a temp dir, merge its generated `AGENTS.md` (Next.js agent rules, which `next dev` re-adds if missing) with ours, and copy the rest in:
+Scaffold the app in the **repo root** (not a `dorsal/` subfolder). `create-next-app .` fails here twice over: the repo directory name has capitals (invalid npm package name) and `AGENTS.md` already exists. So scaffold into a temp dir, merge its generated `AGENTS.md` (Next.js agent rules, which `next dev` re-adds if missing) with ours, and copy the rest in:
 
 ```bash
-npx create-next-app@latest /tmp/classpulse --typescript --tailwind --eslint --app --use-npm --yes --skip-install
-cat AGENTS.md /tmp/classpulse/AGENTS.md > AGENTS.merged && mv AGENTS.merged AGENTS.md && rm /tmp/classpulse/AGENTS.md
-cp -rn /tmp/classpulse/. .
+npx create-next-app@latest /tmp/dorsal --typescript --tailwind --eslint --app --use-npm --yes --skip-install
+cat AGENTS.md /tmp/dorsal/AGENTS.md > AGENTS.merged && mv AGENTS.merged AGENTS.md && rm /tmp/dorsal/AGENTS.md
+cp -rn /tmp/dorsal/. .
 npm install
 npm install convex @xyflow/react zod @anthropic-ai/sdk
 npx convex dev            # needs `npx convex login` or a dev CONVEX_DEPLOY_KEY

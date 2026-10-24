@@ -2,8 +2,8 @@ import { useSyncExternalStore } from "react";
 
 const subscribe = () => () => {};
 
-export const studentTokenKey = (code: string) => `classpulse:student:${code}`;
-export const instructorSecretKey = (sessionId: string) => `classpulse:instructor:${sessionId}`;
+export const studentTokenKey = (code: string) => `dorsal:student:${code}`;
+export const instructorSecretKey = (sessionId: string) => `dorsal:instructor:${sessionId}`;
 
 export function newSecret() {
   return crypto.randomUUID() + crypto.randomUUID();

@@ -179,7 +179,7 @@ export const reset = internalMutation({
       `Seeded ${code}: ${PARTICIPANTS} simulated participants, ${signalCount} pre signals, ${SEED_QUESTIONS.length - clusteredQuestionIds.length} pending questions, 1 published cluster (${clusteredQuestionIds.length} questions)`,
     );
     console.log(`Instructor URL: http://localhost:3000/instructor/${sessionId}`);
-    console.log(`In that tab run: localStorage.setItem("classpulse:instructor:${sessionId}", "${instructorSecret}")`);
+    console.log(`In that tab run: localStorage.setItem("dorsal:instructor:${sessionId}", "${instructorSecret}")`);
     return { sessionId, code, instructorSecret };
   },
 });

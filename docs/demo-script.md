@@ -1,11 +1,11 @@
-# ClassPulse — two-minute demo script
+# Dorsal — two-minute demo script
 
 Timings follow `docs/Build_Instructions.md` §9. Three browser profiles (or devices): **Instructor** on the big screen, **Student A** (the confused student) and **Student B** (the helper). Button labels below are the ones in the merged UI.
 
 ## Pre-demo checklist (10 minutes before)
 
 1. **Re-push the backend.** The dev deployment is shared by several branches, so whatever was pushed last is live. From the checkout you are demoing: `npx convex dev --once` (then leave `npx convex dev` and `npm run dev` running). Check `npx convex env list` shows `ANTHROPIC_API_KEY` and `CLAUDE_MODEL`.
-2. **Reset the demo data:** `npx convex run seed:reset`. Copy the printed `localStorage.setItem("classpulse:instructor:<sessionId>", "<secret>")` line and the `/instructor/<sessionId>` URL.
+2. **Reset the demo data:** `npx convex run seed:reset`. Copy the printed `localStorage.setItem("dorsal:instructor:<sessionId>", "<secret>")` line and the `/instructor/<sessionId>` URL.
 3. **Decide the Claude path now, before anyone joins.** Instructor profile: open the printed URL, paste the `localStorage.setItem(...)` line into the dev-tools console, reload, press **Suggest clusters (7 pending)** once. If it comes back `error` or takes > 20 s, plan to use the fallback in 00:35 below. Then reset again — `npx convex run seed:reset` — so the throwaway run is gone. The reset deletes every participant, helper opt-in and run of the old session, which is why steps 4–5 come *after* it.
 4. **Instructor profile:** paste the *new* `localStorage.setItem(...)` line from step 3's reset, reload. Expect the **Push prompt** form under the header (concept select showing *Call stack & frames (current)*, empty question box) and the five metric cards **Participants 24** (*incl. 24 simulated*), **Participation 24 / 24** (*100% answered the current prompt · incl. 24 simulated* — the current prompt is *Call stack & frames*), **Responses 106**, **Confused responses 42**, **Open clusters 1**; on the graph *Call stack & frames* and *Return values* red/amber, each with an amber **1 cluster** badge (the seeded cluster touches both), *Base case* green, N on every node; below the graph the cluster queue with **Suggest clusters (7 pending)** and **Published (1)**: *Tracing recursive return values* (seeded, `source: manual`) with its **Open help room** button; no previous AI run shown.
 5. **Student A and Student B profiles:** open `/join/DEMO01` in each so they are joined (aliases "Student 25" and "Student 26"). Each student page shows one **Current topic** card, **Prompt 3 of 5** (*Call stack & frames*), a collapsed **Already covered (4)** list below it (the seed marks every concept as already made current, so earlier answers can be revised there), then the question box, then *Published question clusters* and the helper opt-in. In Student B, tick **I can help with Return values** and press **Volunteer as a peer helper**. Don't clear storage or reset afterwards; a room link always carries `?code=DEMO01` so each profile keeps using its own token.
@@ -29,7 +29,7 @@ Timings follow `docs/Build_Instructions.md` §9. Three browser profiles (or devi
 ## If something breaks
 
 - Dashboard says *No instructor access*: the secret isn't in this browser — redo the `localStorage.setItem` line from the seed output and reload.
-- Student page stuck on *Joining* / room says you are not a member: the session was reset after the student joined; remove `classpulse:student:DEMO01` from `localStorage` (or use a private window) and reload. Room links without `?code=DEMO01` cannot find the token — use the links the app generates.
+- Student page stuck on *Joining* / room says you are not a member: the session was reset after the student joined; remove `dorsal:student:DEMO01` from `localStorage` (or use a private window) and reload. Room links without `?code=DEMO01` cannot find the token — use the links the app generates.
 - Amber *Disconnected — reconnecting…* banner at the top of a page: the browser lost the Convex WebSocket; it shows the last data received and clears by itself once reconnected.
 - **Suggest clusters** button is disabled: a run is still `running`; wait for it to finish or error (the queue shows the latest run's status).
 - Functions missing / "Could not find function": another branch pushed to the shared deployment — run `npx convex dev --once` from this checkout again.

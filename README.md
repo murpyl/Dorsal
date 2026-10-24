@@ -1,4 +1,4 @@
-# ClassPulse
+# Dorsal
 
 Live classroom **confusion radar** (A) + **peer help** (B) + **concept knowledge graph** (F), built for a single lecture at a time (first target: a Berkeley CS 61A recursion lecture). Students join with a six-letter code, report how well they understand each concept and ask anonymous questions. The instructor sees live counts, a colour-coded concept graph, Claude-clustered misconceptions to review, and opens capacity-limited peer rooms.
 
@@ -74,7 +74,7 @@ Convex is the system of record **and** the realtime layer **and** the AI orchest
 
 ### Credentials (disclosed hackathon compromise)
 
-There are no accounts. `sessions.create` is called with a random 72-character secret the browser generates and keeps in `localStorage` under `classpulse:instructor:<sessionId>`; only its SHA-256 is stored. Students do the same with a per-code token under `classpulse:student:<code>`; `sessions.join` hashes it and reuses the existing participant on refresh. Every protected query/mutation takes the credential as an argument and checks it in `convex/credentials.ts` (`getInstructorSession`, `requireParticipant`, `findParticipant`) — a wrong credential returns `null` or throws; nothing is trusted from client-side flags.
+There are no accounts. `sessions.create` is called with a random 72-character secret the browser generates and keeps in `localStorage` under `dorsal:instructor:<sessionId>`; only its SHA-256 is stored. Students do the same with a per-code token under `dorsal:student:<code>`; `sessions.join` hashes it and reuses the existing participant on refresh. Every protected query/mutation takes the credential as an argument and checks it in `convex/credentials.ts` (`getInstructorSession`, `requireParticipant`, `findParticipant`) — a wrong credential returns `null` or throws; nothing is trusted from client-side flags.
 
 ### Where Claude runs
 

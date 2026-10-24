@@ -1,8 +1,8 @@
-# ClassPulse — Build Overview
+# Dorsal — Build Overview
 
 ## Product thesis
 
-**ClassPulse is a real-time collective learning system for classrooms.** It combines:
+**Dorsal is a real-time collective learning system for classrooms.** It combines:
 
 - **A — Confusion Radar:** Students anonymously or pseudonymously submit confidence signals and questions. Instructors see aggregate uncertainty and AI-grouped misconceptions as they emerge.
 - **B — PeerMesh:** Students opt in to help one another in temporary topic-specific rooms, with lightweight shared explanations and post-help checks.
