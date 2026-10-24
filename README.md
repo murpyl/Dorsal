@@ -42,11 +42,11 @@ Convex is the system of record **and** the realtime layer **and** the AI orchest
 
 | Table | What a row is | Key indexes |
 |---|---|---|
-| `sessions` | One lecture: `title`, `code`, `state` (`open`/`closed`), `phase` (`pre`/`post`), `instructorSecretHash`, `activeConceptId` | `by_code` |
+| `sessions` | One lecture: `title`, `code`, `state` (`open`/`closed`), `instructorSecretHash`, `activeConceptId` | `by_code` |
 | `participants` | A pseudonymous student in a session: `tokenHash`, `alias` ("Student 3"), `helperConceptIds`, `isSimulated` | `by_session`, `by_token_hash` |
 | `concepts` | Instructor-seeded graph node with a fixed `x`/`y` position (no layout library) | `by_session` |
 | `conceptEdges` | Directed `prerequisite_for` / `related_to` / `frequently_confused_with` edge | `by_session` |
-| `signals` | One participant's current level (`confused`/`partial`/`can_explain`) for one concept in one phase | `by_concept_phase`, `by_participant_concept_phase` |
+| `signals` | One participant's current level (`confused`/`partial`/`can_explain`) for one concept in one phase: `pre` = session-page rating, `post` = rating updated inside a help room | `by_concept_phase`, `by_participant_concept_phase` |
 | `questions` | Raw anonymous question (`pending`/`clustered`/`hidden`) — instructor-only until published via a cluster | `by_session_state`, `by_concept`, `by_participant` |
 | `clusters` | A misconception group: `title`, `summary`, `conceptIds`, `questionIds`, `status` (`suggested`/`published`/`discarded`), `source` (`ai`/`manual`) | `by_session_status` |
 | `rooms`, `roomMembers`, `messages` | Peer help room per concept/cluster, its members (`helper`/`learner`) and chat | `by_session`, `by_room_participant`, `by_room_time` |
@@ -65,10 +65,10 @@ Convex is the system of record **and** the realtime layer **and** the AI orchest
 | Clusters on a graph node | instructor graph detail panel | `clusters.listForConcept` (published clusters touching that concept) | instructor secret |
 | Helper opt-in (*Volunteer as a peer helper*) | student cockpit → `HelperOptIn` | `participants.me` (query), `participants.setHelper` (mutation) | participant token |
 | Room list (*Open room*, *Join*, *Join as helper*, *Open a help room as a helper*) | student cockpit → `RoomList`; instructor → `RoomList` (instructor mode) | `rooms.listBySession` (student: member counts, `isMember`, `myRole`) / `rooms.listInstructor`; mutations `rooms.createForCluster` (instructor), `rooms.createAsHelper` (opted-in helper), `rooms.join`, `rooms.leave`, `rooms.close` | per role |
-| Peer room + chat (*I understand now* / *Still confused*) | `/room/[roomId]?code=<CODE>` → `PeerRoom` | `rooms.get` (members with aliases/roles, `null` for non-members), `messages.listByRoom` (`null` for non-members), `messages.send` (members only, 10 per 10 s), `signals.upsert` for the in-room check-in | participant token (the `?code=` query string tells the page which `localStorage` token to use) |
-| Pre/post comparison (*Pre (before help)* / *Post (after help)*) | instructor dashboard → `PrePostComparison` | `signals.prePostByConcept` (per concept: `pre` and `post` `{ counts, total }`); `sessions.setPhase` switches which phase new signals land in; `sessions.close` ends the session | instructor secret |
+| Peer room + chat + *Update your rating* | `/room/[roomId]?code=<CODE>` → `PeerRoom` | `rooms.get` (members with aliases/roles, `null` for non-members), `messages.listByRoom` (`null` for non-members), `messages.send` (members only, 10 per 10 s), `signals.roomCheckIn` (members of an open room only; the only writer of `post` signals) for the in-room rating | participant token (the `?code=` query string tells the page which `localStorage` token to use) |
+| Before vs after peer help (*Before* / *After*) | instructor dashboard → `PrePostComparison` | `signals.prePostByConcept` (per concept: `pre` and `post` `{ counts, total }`); `sessions.close` ends the session | instructor secret |
 
-`getStudentView` returns only the caller's own level per concept (no counts, no other participants). `getInstructorView` returns exact per-level counts and the denominator `N` for every concept; the UI flags `N < 5` as a low sample and `N = 0` as "no responses" (grey, never green). Signals are stored per phase, so `pre` counts are untouched when the instructor switches to `post`; a student's "I understand now" in a room is just `signals.upsert` for the room's concept in the session's current phase.
+`getStudentView` returns only the caller's own level per concept (no counts, no other participants). `getInstructorView` returns exact per-level counts and the denominator `N` for every concept; the UI flags `N < 5` as a low sample and `N = 0` as "no responses" (grey, never green). There is no session-level phase: the session page always writes `pre` (`signals.upsert`), and the only `post` input is a room member updating their rating in the room (`signals.roomCheckIn`, for the room's concept). The graph, metrics and concept details use `pre` only; `post` appears only in the before/after peer-help panel.
 
 ### Credentials (disclosed hackathon compromise)
 
@@ -131,7 +131,7 @@ npm run test:watch
 
 | File | Scenarios |
 |---|---|
-| `sessions.test.ts`, `signals.test.ts` | (1) two confused → 2/2, change to partial → 1/2 with no double counting while the student view hides the breakdown; (2) wrong tokens/secrets get `null`/error and students never see another participant's signal; (8) zero responses → `total 0`, no NaN; (10) re-joining with the same token reuses the participant; (9) `pre` and `post` stay separate after `sessions.setPhase`, and a room check-in lands in the current phase |
+| `sessions.test.ts`, `signals.test.ts` | (1) two confused → 2/2, change to partial → 1/2 with no double counting while the student view hides the breakdown; (2) wrong tokens/secrets get `null`/error and students never see another participant's signal; (8) zero responses → `total 0`, no NaN; (10) re-joining with the same token reuses the participant; (9) session-page ratings stay `pre`, only room members can write `post` via `signals.roomCheckIn`, and `post` never changes the graph counts |
 | `questions.test.ts` | (3) a submitted question appears only in `questions.listInstructor` (without participant IDs); `clusters.listPublished` and `sessions.getStudentView` never contain pending question text; after `clusters.publish` students see the cluster with `questionCount` but no participant data; hidden questions are excluded; the 5-per-60 s rate limit (fake `Date`) |
 | `clusters.test.ts` | (4) `sanitizeClusterSuggestions` drops invented/duplicate question IDs and invalid concept IDs, rejects malformed shapes; `clusters.saveSuggestions` never stores IDs outside the session's pending questions; (7) `requestSuggestions` refuses with no pending questions, records an `aiRuns` row and refuses a concurrent run; after `markRunError`, `createManual` publishes a cluster students can see and a retry is allowed |
 | `rooms.test.ts` | (5) capacity and duplicate membership enforced in `rooms.join`, helper role needs opt-in, closed rooms reject joins; (6) non-members get `null` from `rooms.get`/`messages.listByRoom` and cannot send, members can send/read with aliases only; the 10-per-10 s message rate limit |

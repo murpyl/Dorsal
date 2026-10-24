@@ -86,7 +86,7 @@ describe("room messages (scenario 6: members only)", () => {
     expect(await t.query(api.messages.listByRoom, { roomId, token: OUTSIDER })).toBeNull();
 
     const room = (await t.query(api.rooms.get, { roomId, token: LEARNER }))!;
-    expect(room).toMatchObject({ myRole: "learner", status: "open", phase: "pre", conceptLabel: "Return values" });
+    expect(room).toMatchObject({ myRole: "learner", status: "open", myLevel: null, conceptLabel: "Return values" });
     expect(room.members.map((m) => [m.alias, m.role, m.isMe])).toEqual([["Student 1", "helper", false], ["Student 2", "learner", true]]);
     for (const m of room.members) expect(m).not.toHaveProperty("participantId");
 

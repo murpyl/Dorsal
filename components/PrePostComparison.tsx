@@ -14,46 +14,24 @@ type Tally = { counts: Record<(typeof LEVELS)[number]["value"], number>; total: 
 export function SessionControls({
   sessionId,
   instructorSecret,
-  phase,
   state,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
-  phase: Phase;
   state: "open" | "closed";
 }) {
-  const setPhase = useMutation(api.sessions.setPhase);
   const closeSession = useMutation(api.sessions.close);
   const [error, setError] = useState<string | null>(null);
-
-  async function guard(action: () => Promise<unknown>) {
-    setError(null);
-    try {
-      await action();
-    } catch (err) {
-      setError(errorMessage(err));
-    }
-  }
 
   if (state === "closed") return <p className="text-sm font-medium text-amber-700">Session closed · no new signals accepted</p>;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-      <div role="group" aria-label="Signal phase" className="inline-flex overflow-hidden rounded-lg border border-zinc-300">
-        {(["pre", "post"] as const).map((p) => (
-          <button
-            key={p}
-            aria-pressed={phase === p}
-            onClick={() => guard(() => setPhase({ sessionId, instructorSecret, phase: p }))}
-            className={`px-3 py-1.5 font-medium ${phase === p ? "bg-indigo-600 text-white" : "bg-white text-zinc-700 hover:bg-zinc-50"}`}
-          >
-            {PHASE_LABEL[p]}
-          </button>
-        ))}
-      </div>
       <button
         onClick={() => {
-          if (confirm("Close this session? Students can no longer send signals or chat.")) guard(() => closeSession({ sessionId, instructorSecret }));
+          if (!confirm("Close this session? Students can no longer send signals or chat.")) return;
+          setError(null);
+          closeSession({ sessionId, instructorSecret }).catch((err) => setError(errorMessage(err)));
         }}
         className={btnDanger}
       >
@@ -74,8 +52,9 @@ export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: 
           Before vs after peer help
         </h2>
         <p className="text-sm text-zinc-600">
-          Self-reported understanding per phase. Each bar shows its own N; the two phases are separate response sets. A shift here
-          measures what students <em>say</em>, not verified learning gains.
+          Self-reported understanding. <em>Before</em> is each student&apos;s rating on the session page; <em>after</em> is the rating
+          they update inside a peer help room. Each bar shows its own N; the two are separate response sets. A shift here measures what
+          students <em>say</em>, not verified learning gains.
         </p>
       </div>
       {!rows ? (
@@ -106,7 +85,7 @@ function PhaseBar({ phase, tally }: { phase: Phase; tally: Tally }) {
   const summary = LEVELS.map((l) => `${l.label} ${tally.counts[l.value]}`).join(", ");
   return (
     <div className="grid grid-cols-[3rem_1fr_7rem] items-center gap-2 text-xs">
-      <span className="font-mono uppercase text-zinc-500">{phase}</span>
+      <span className="text-zinc-500">{phase === "pre" ? "Before" : "After"}</span>
       <div className="flex h-3 overflow-hidden rounded-full bg-zinc-100" role="img" aria-label={`${PHASE_LABEL[phase]}: ${summary}, N = ${tally.total}`}>
         {tally.total > 0 &&
           LEVELS.map((l) => (

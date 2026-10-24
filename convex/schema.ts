@@ -18,7 +18,8 @@ export default defineSchema({
     title: v.string(),
     code: v.string(),
     state: v.union(v.literal("open"), v.literal("closed")),
-    phase,
+    // Unused. Optional only so deployments whose existing sessions still carry it pass schema validation.
+    phase: v.optional(phase),
     instructorSecretHash: v.string(),
     activeConceptId: v.optional(v.id("concepts")),
     createdAt: v.number(),

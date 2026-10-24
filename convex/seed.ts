@@ -98,7 +98,6 @@ export const reset = internalMutation({
       title: DEMO_TITLE,
       code,
       state: "open",
-      phase: "pre",
       instructorSecretHash: await sha256(instructorSecret),
       createdAt: now,
     });

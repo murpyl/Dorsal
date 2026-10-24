@@ -19,7 +19,7 @@
 | Role | Can do | Should not do |
 |---|---|---|
 | Student | Join a session, submit confidence/question, see class aggregate, volunteer to help, enter rooms, submit a follow-up signal | View the identity of anonymous question authors, inspect other students' private confidence |
-| Instructor | Create/manage sessions and concept maps, see aggregates and clusters, open help rooms, start the follow-up phase | Reveal anonymous authors or see individual confidence by default |
+| Instructor | Create/manage sessions and concept maps, see aggregates and clusters, open help rooms | Reveal anonymous authors or see individual confidence by default |
 | Demo operator | Seed/reset simulated data via the Convex CLI (`npx convex run seed:reset`); no UI | Access production student data |
 
 For the hackathon, use **anonymous per-session participation tokens** (stored client-side) plus a separate instructor secret for creating/managing sessions. Do not use this as a production access-control design: deploy proper authentication and authorization before real classroom adoption. Keep student identifiers out of public queries.
@@ -38,11 +38,11 @@ For the hackathon, use **anonymous per-session participation tokens** (stored cl
 - Create a session and an initial graph (e.g., recursion → base cases → recursive calls → call stack → return values).
 - View live concept nodes by percentage of signals per confidence level, response counts, and low-sample warnings.
 - Review AI-suggested misconception clusters, edit title/summary or discard them, then publish.
-- Open a peer help room from a published cluster, start the follow-up (`post`) phase, and compare pre/post signal distributions.
+- Open a peer help room from a published cluster and compare before/after peer help signal distributions (the only place before/after appears).
 - Close the session.
 
 ### 3. Peer help rooms — `/room/[roomId]`
-- Topic, description, live member list, chat, and `I understand now` / `Still confused` buttons (which write a `post`-phase signal).
+- Topic, description, live member list, chat, and an *Update your rating* selector (the only source of `post` signals).
 - Helper role is opt-in and *self-declared*, not an AI certification of expertise.
 - Room size cap and member-only access; instructor can close a room.
 

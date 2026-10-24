@@ -9,12 +9,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { studentTokenKey, useStoredCredential } from "@/lib/credentials";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { errorMessage } from "@/lib/errors";
-import { PHASE_LABEL, type Level } from "@/lib/levels";
-
-const CHECK_INS: { level: Level; label: string; className: string }[] = [
-  { level: "can_explain", label: "I understand now", className: "bg-emerald-600 hover:bg-emerald-700" },
-  { level: "confused", label: "Still confused", className: "bg-red-500 hover:bg-red-600" },
-];
+import { ConfidenceSelector } from "@/components/ConfidenceSelector";
 
 export function PeerRoom() {
   const roomId = useParams<{ roomId: string }>().roomId as Id<"rooms">;
@@ -26,12 +21,11 @@ export function PeerRoom() {
   const send = useMutation(api.messages.send);
   const leave = useMutation(api.rooms.leave);
   const close = useMutation(api.rooms.close);
-  const upsert = useMutation(api.signals.upsert);
+  const checkIn = useMutation(api.signals.roomCheckIn);
   const router = useRouter();
 
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [checkIn, setCheckIn] = useState<{ level: Level; phase: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +53,6 @@ export function PeerRoom() {
     );
 
   const open = room.status === "open" && room.sessionState === "open";
-  const checkedIn = checkIn?.phase === room.phase ? checkIn.level : null;
 
   async function guard(action: () => Promise<unknown>) {
     setError(null);
@@ -179,31 +172,18 @@ export function PeerRoom() {
 
       <section className="space-y-2 rounded-xl border border-zinc-200 bg-white p-4" aria-labelledby="check-in">
         <h2 id="check-in" className="font-medium">
-          How is <span className="text-indigo-700">{room.conceptLabel}</span> going now?
+          Update your rating for <span className="text-indigo-700">{room.conceptLabel}</span>
         </h2>
         <p className="text-sm text-zinc-600">
-          This updates your self-reported understanding for the <span className="font-medium">{PHASE_LABEL[room.phase]}</span> phase. Only
-          aggregate counts are shown to the instructor.
+          How well do you understand it after getting help here? This is recorded as your after-help rating, separate from the one on your
+          session page. Only aggregate counts are shown to the instructor.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {CHECK_INS.map((c) => (
-            <button
-              key={c.level}
-              disabled={room.sessionState !== "open"}
-              aria-pressed={checkedIn === c.level}
-              onClick={() =>
-                guard(async () => {
-                  await upsert({ sessionId: room.sessionId, token: token!, conceptId: room.conceptId, level: c.level });
-                  setCheckIn({ level: c.level, phase: room.phase });
-                })
-              }
-              className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${c.className} ${checkedIn === c.level ? "ring-2 ring-offset-2 ring-zinc-800" : ""}`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        {checkedIn && <p className="text-sm text-emerald-700">Recorded under “{PHASE_LABEL[room.phase]}”. You can change it any time.</p>}
+        <ConfidenceSelector
+          value={room.myLevel}
+          disabled={!open}
+          onChange={(level) => guard(() => checkIn({ roomId, token: token!, level }))}
+        />
+        {room.myLevel && <p className="text-sm text-emerald-700">Rating saved. You can change it any time.</p>}
       </section>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </main>
