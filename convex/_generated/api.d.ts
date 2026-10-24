@@ -15,6 +15,7 @@ import type * as crons from "../crons.js";
 import type * as lessons from "../lessons.js";
 import type * as messages from "../messages.js";
 import type * as participants from "../participants.js";
+import type * as prompts from "../prompts.js";
 import type * as questions from "../questions.js";
 import type * as rooms from "../rooms.js";
 import type * as seed from "../seed.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   lessons: typeof lessons;
   messages: typeof messages;
   participants: typeof participants;
+  prompts: typeof prompts;
   questions: typeof questions;
   rooms: typeof rooms;
   seed: typeof seed;

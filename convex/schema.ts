@@ -7,6 +7,7 @@ export const level = v.union(
   v.literal("can_explain"),
 );
 export const phase = v.union(v.literal("pre"), v.literal("post"));
+export const promptKind = v.union(v.literal("rating"), v.literal("open"));
 export const relation = v.union(
   v.literal("prerequisite_for"),
   v.literal("related_to"),
@@ -24,7 +25,9 @@ export default defineSchema({
     activeConceptId: v.optional(v.id("concepts")),
     /** Every concept that has been made current in this session, in the order it first became current. */
     activeHistory: v.optional(v.array(v.object({ conceptId: v.id("concepts"), at: v.number() }))),
-    /** Optional one-line question the instructor/TA pushed with the current concept. */
+    /** The prompt students see now; every push is its own `prompts` row. */
+    activePromptId: v.optional(v.id("prompts")),
+    // Unused. Optional only so deployments whose existing sessions still carry it pass schema validation.
     activePrompt: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_code", ["code"]),
@@ -56,6 +59,25 @@ export default defineSchema({
     toId: v.id("concepts"),
     relation,
   }).index("by_session", ["sessionId"]),
+  /** One row per push from the Push prompt form (or Make current topic); kept so staff can review every prompt's responses. */
+  prompts: defineTable({
+    sessionId: v.id("sessions"),
+    conceptId: v.id("concepts"),
+    kind: promptKind,
+    question: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_session", ["sessionId"]),
+  /** A student's answer to one prompt: `level` for rating prompts, `text` for open-ended ones. */
+  promptResponses: defineTable({
+    sessionId: v.id("sessions"),
+    promptId: v.id("prompts"),
+    participantId: v.id("participants"),
+    level: v.optional(level),
+    text: v.optional(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_prompt", ["promptId"])
+    .index("by_prompt_participant", ["promptId", "participantId"]),
   signals: defineTable({
     sessionId: v.id("sessions"),
     conceptId: v.id("concepts"),

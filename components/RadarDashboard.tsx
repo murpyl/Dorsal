@@ -13,6 +13,7 @@ import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { InlineError } from "@/components/InlineError";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { PromptHistory } from "@/components/PromptHistory";
 import { DistributionBar, PrePostComparison, SessionControls } from "@/components/PrePostComparison";
 import { RoomStatus } from "@/components/RoomList";
 import { Badge } from "@/components/ui/badge";
@@ -22,14 +23,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, newSecret, taSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
-import { MAX_PROMPT_LENGTH } from "@/lib/prompt";
+import { MAX_PROMPT_LENGTH, type PromptKind } from "@/lib/prompt";
 import { TA_NAME_MAX } from "@/lib/staff";
 import { cn } from "@/lib/utils";
 
-type DashTab = "concept" | "questions" | "rooms" | "results" | "staff";
+type DashTab = "concept" | "prompts" | "questions" | "rooms" | "results" | "staff";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -45,6 +47,7 @@ export function RadarDashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<DashTab>("concept");
+  const [viewedPromptId, setViewedPromptId] = useState<Id<"prompts"> | null>(null);
 
   if (secret === null || view === null)
     return (
@@ -71,10 +74,10 @@ export function RadarDashboard() {
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
   const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
 
-  async function makeCurrent(conceptId: Id<"concepts">, question?: string) {
+  async function makeCurrent(conceptId: Id<"concepts">, question?: string, kind?: PromptKind) {
     setError(null);
     try {
-      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId, question });
+      await setActiveConcept({ sessionId: sessionId as Id<"sessions">, instructorSecret: secret!, conceptId, question, kind });
       return true;
     } catch (err) {
       setError(errorMessage(err));
@@ -104,6 +107,10 @@ export function RadarDashboard() {
         activeConceptId={view.activeConceptId}
         activePrompt={view.activePrompt}
         onPush={makeCurrent}
+        onViewResponses={() => {
+          setViewedPromptId(null);
+          setTab("prompts");
+        }}
         error={error}
       />
         <section className="grid grid-cols-5 gap-3" aria-label="Session metrics">
@@ -133,6 +140,7 @@ export function RadarDashboard() {
         <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
           <TabsList className="w-full shrink-0">
             <TabsTrigger value="concept">Concept</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
             <TabsTrigger value="results">Before/after</TabsTrigger>
@@ -187,6 +195,16 @@ export function RadarDashboard() {
               </CardContent>
             )}
           </Card>
+          </TabsContent>
+          <TabsContent value="prompts" className="min-h-0 overflow-y-auto">
+            <ErrorBoundary label="prompt history">
+              <PromptHistory
+                sessionId={sessionId as Id<"sessions">}
+                instructorSecret={secret!}
+                selectedId={viewedPromptId}
+                onSelect={setViewedPromptId}
+              />
+            </ErrorBoundary>
           </TabsContent>
           <TabsContent value="questions" className="min-h-0 overflow-y-auto px-1">
           <ErrorBoundary label="the cluster queue">
@@ -354,31 +372,35 @@ function Stat({ label, value, detail, tone }: { label: string; value: number | s
   );
 }
 
-/** Instructor/TA pushes the next prompt: pick a concept and optionally type a one-line question students see under it. */
+/** Instructor/TA pushes the next prompt: pick a concept, rating or open-ended, and a one-line question (optional for rating). */
 function PushPromptForm({
   concepts,
   activeConceptId,
   activePrompt,
   onPush,
+  onViewResponses,
   error,
 }: {
   concepts: { _id: Id<"concepts">; label: string }[];
   activeConceptId: Id<"concepts"> | null;
-  activePrompt: string | undefined;
-  onPush: (conceptId: Id<"concepts">, question?: string) => Promise<boolean>;
+  activePrompt: { kind: PromptKind; question?: string } | undefined;
+  onPush: (conceptId: Id<"concepts">, question: string | undefined, kind: PromptKind) => Promise<boolean>;
+  onViewResponses: () => void;
   error: string | null;
 }) {
   const [conceptId, setConceptId] = useState<string>("");
+  const [kind, setKind] = useState<PromptKind>("rating");
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const target = conceptId || activeConceptId || concepts[0]?._id || "";
   const items = concepts.map((c) => ({ value: c._id, label: c._id === activeConceptId ? `${c.label} (current)` : c.label }));
+  const needsQuestion = kind === "open" && !question.trim();
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!target) return;
+    if (!target || needsQuestion) return;
     setBusy(true);
-    const ok = await onPush(target as Id<"concepts">, question.trim() || undefined);
+    const ok = await onPush(target as Id<"concepts">, question.trim() || undefined, kind);
     setBusy(false);
     if (ok) setQuestion("");
   }
@@ -405,28 +427,46 @@ function PushPromptForm({
                 </SelectContent>
               </Select>
             </label>
-            <label className="min-w-0 flex-1 text-sm">
-              <span className="sr-only">Question (optional)</span>
+            <ToggleGroup
+              aria-label="Prompt type"
+              variant="outline"
+              spacing={0}
+              value={[kind]}
+              onValueChange={(v) => v[0] && setKind(v[0] as PromptKind)}
+              className="bg-background"
+            >
+              <ToggleGroupItem value="rating" className="aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90">Rating</ToggleGroupItem>
+              <ToggleGroupItem value="open" className="aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90">Open-ended</ToggleGroupItem>
+            </ToggleGroup>
+            <label className="min-w-48 flex-1 text-sm">
+              <span className="sr-only">{kind === "open" ? "Question" : "Question (optional)"}</span>
               <Input
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 maxLength={MAX_PROMPT_LENGTH}
-                placeholder="Optional question, e.g. Why does fib(1) not recurse?"
+                required={kind === "open"}
+                placeholder={kind === "open" ? "Question for students to answer" : "Optional question"}
                 className="bg-background"
               />
             </label>
-            <Button type="submit" disabled={busy || !target}>
+            <Button type="submit" disabled={busy || !target || needsQuestion}>
               Push prompt
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            {activePrompt ? (
+            {activePrompt?.question ? (
               <>
-                Students now see: <span className="font-medium text-foreground">{activePrompt}</span>
+                Students now see{activePrompt.kind === "open" ? " (open-ended)" : ""}:{" "}
+                <span className="font-medium text-foreground">{activePrompt.question}</span>
               </>
             ) : (
-              "Students see the current concept; add a question to show it under the description. Pushing without a question clears the previous one. Ratings are per concept, so a new question on the same concept keeps its existing answers."
-            )}
+              "Students see the current concept and rate it; add a question to show it under the description."
+            )}{" "}
+            Each push starts a new prompt with its own responses; earlier ones stay in{" "}
+            <button type="button" onClick={onViewResponses} className="font-medium text-foreground underline underline-offset-2">
+              Prompts
+            </button>
+            .
           </p>
           <InlineError message={error} />
         </CardContent>

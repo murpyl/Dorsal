@@ -14,6 +14,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { PublishedClusters } from "@/components/PublishedClusters";
 import { QuestionComposer } from "@/components/QuestionComposer";
 import { HelperOptIn } from "@/components/HelperOptIn";
+import { OpenResponse } from "@/components/OpenResponse";
 import { RoomList } from "@/components/RoomList";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,8 +38,8 @@ export function StudentCockpit() {
   }, [code, token, join]);
 
   const view = useQuery(api.sessions.getStudentView, token ? { code, token } : "skip");
-  // Identifies what is currently being asked: the concept plus the optional pushed question.
-  const promptKey = view?.activeConceptId ? `${view.activeConceptId}\n${view.activePrompt ?? ""}` : null;
+  // Identifies what is currently being asked: every push is a new prompt (sessions from before prompts existed: the concept).
+  const promptKey = view?.activePrompt?._id ?? view?.activeConceptId ?? null;
 
   // "New prompt" cue: shown for a few seconds after the prompt changes while the page is open.
   const previousPrompt = useRef<string | null | undefined>(undefined);
@@ -119,8 +120,22 @@ export function StudentCockpit() {
             <CardDescription>{current.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {view.activePrompt && <p className="rounded-lg bg-muted px-4 py-3 text-base font-medium">{view.activePrompt}</p>}
-            <ConfidenceSelector value={current.myLevel} disabled={disabled} onChange={(level) => sendSignal(current._id, level)} />
+            {view.activePrompt?.question && <p className="rounded-lg bg-muted px-4 py-3 text-base font-medium">{view.activePrompt.question}</p>}
+            {view.activePrompt?.kind === "open" ? (
+              <OpenResponse
+                key={view.activePrompt._id}
+                sessionId={view.sessionId}
+                token={token}
+                myText={view.activePrompt.myText}
+                disabled={disabled}
+              />
+            ) : (
+              <ConfidenceSelector
+                value={view.activePrompt ? view.activePrompt.myLevel : current.myLevel}
+                disabled={disabled}
+                onChange={(level) => sendSignal(current._id, level)}
+              />
+            )}
           </CardContent>
         </Card>
       ) : (

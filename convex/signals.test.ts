@@ -195,23 +195,23 @@ describe("live prompt (phase 6: only covered concepts can be rated)", () => {
     expect((await instructorView())!.coveredConceptIds).toEqual([concepts[0]._id]);
   });
 
-  test("setActiveConcept stores a trimmed question as activePrompt, clears it when omitted and rejects long ones", async () => {
+  test("setActiveConcept stores a trimmed question on a new prompt, omits it when blank and rejects long ones", async () => {
     const { t, sessionId, code, instructorView } = await setup();
     const concepts = (await instructorView())!.concepts;
     const creds = { sessionId, instructorSecret: SECRET };
     await t.mutation(api.sessions.join, { code, token: TOKEN_A });
-    const studentPrompt = async () => (await t.query(api.sessions.getStudentView, { code, token: TOKEN_A }))!.activePrompt;
+    const studentPrompt = async () => (await t.query(api.sessions.getStudentView, { code, token: TOKEN_A }))!.activePrompt!;
 
     await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id, question: "  Why does fib(1) not recurse?  " });
-    expect(await studentPrompt()).toBe("Why does fib(1) not recurse?");
-    expect((await instructorView())!.activePrompt).toBe("Why does fib(1) not recurse?");
+    expect(await studentPrompt()).toMatchObject({ kind: "rating", question: "Why does fib(1) not recurse?" });
+    expect((await instructorView())!.activePrompt).toMatchObject({ kind: "rating", question: "Why does fib(1) not recurse?" });
 
     await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id, question: "   " });
-    expect(await studentPrompt()).toBeUndefined();
+    expect((await studentPrompt()).question).toBeUndefined();
 
     await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[2]._id, question: "Draw the call stack" });
     await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[0]._id });
-    expect(await studentPrompt()).toBeUndefined();
+    expect((await studentPrompt()).question).toBeUndefined();
 
     await expect(
       t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[0]._id, question: "x".repeat(201) }),

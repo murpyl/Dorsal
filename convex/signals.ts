@@ -3,7 +3,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { getInstructorSession, requireParticipant } from "./credentials";
 import { level } from "./schema";
-import { hasBeenActive } from "./sessions";
+import { currentPrompt, hasBeenActive } from "./sessions";
 
 async function writeSignal(
   ctx: MutationCtx,
@@ -24,6 +24,7 @@ async function writeSignal(
 /**
  * The student's rating on the session page; always recorded as `pre` (before peer help).
  * Only the current concept or one the instructor has already made current can be rated here.
+ * A rating for the current rating prompt's concept is also recorded as that prompt's response.
  */
 export const upsert = mutation({
   args: { sessionId: v.id("sessions"), token: v.string(), conceptId: v.id("concepts"), level },
@@ -35,6 +36,14 @@ export const upsert = mutation({
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
     if (!hasBeenActive(session, conceptId)) throw new ConvexError("That concept hasn't been covered yet");
     await writeSignal(ctx, sessionId, participant._id, conceptId, level, "pre");
+    const prompt = await currentPrompt(ctx, session);
+    if (prompt?.kind !== "rating" || prompt.conceptId !== conceptId) return;
+    const response = await ctx.db
+      .query("promptResponses")
+      .withIndex("by_prompt_participant", (q) => q.eq("promptId", prompt._id).eq("participantId", participant._id))
+      .unique();
+    if (response) await ctx.db.patch(response._id, { level, updatedAt: Date.now() });
+    else await ctx.db.insert("promptResponses", { sessionId, promptId: prompt._id, participantId: participant._id, level, updatedAt: Date.now() });
   },
 });
 
