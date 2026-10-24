@@ -18,7 +18,6 @@ export default defineSchema({
     title: v.string(),
     code: v.string(),
     state: v.union(v.literal("open"), v.literal("closed")),
-    phase,
     instructorSecretHash: v.string(),
     activeConceptId: v.optional(v.id("concepts")),
     createdAt: v.number(),

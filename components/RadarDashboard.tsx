@@ -13,7 +13,7 @@ import { PrePostComparison, SessionControls } from "@/components/PrePostComparis
 import { RoomStatus } from "@/components/RoomList";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, useStoredCredential } from "@/lib/credentials";
-import { LEVELS, PHASE_LABEL } from "@/lib/levels";
+import { LEVELS } from "@/lib/levels";
 import { btnPrimary } from "@/lib/ui";
 
 export function RadarDashboard() {
@@ -48,13 +48,13 @@ export function RadarDashboard() {
     <main className="w-full space-y-6 px-4 py-6 md:px-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-zinc-500">Instructor · signals: {PHASE_LABEL[view.phase]}</p>
+          <p className="text-sm text-zinc-500">Instructor</p>
           <h1 className="text-3xl font-semibold">{view.title}</h1>
         </div>
         <div className="text-right">
           <p className="text-sm text-zinc-500">Students join at /join/{view.code}</p>
           <p className="font-mono text-4xl font-bold tracking-widest">{view.code}</p>
-          <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} phase={view.phase} state={view.state} />
+          <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} state={view.state} />
         </div>
       </header>
       <ConnectionStatus />
@@ -65,7 +65,7 @@ export function RadarDashboard() {
           value={view.participantCount}
           detail={view.simulatedCount > 0 ? `incl. ${view.simulatedCount} simulated` : undefined}
         />
-        <Metric label="Responses" value={responses} detail={`this phase`} />
+        <Metric label="Responses" value={responses} />
         <Metric label="Confused responses" value={confused} detail={`of ${responses}`} />
         <Metric label="Open clusters" value={view.publishedClusterCount} detail="published" />
       </section>
@@ -165,8 +165,8 @@ export function RadarDashboard() {
       </section>
 
 
-      <section className="grid gap-4 lg:grid-cols-2" aria-label="Pre/post comparison and help rooms">
-        <ErrorBoundary label="the pre/post comparison">
+      <section className="grid gap-4 lg:grid-cols-2" aria-label="Peer help comparison and help rooms">
+        <ErrorBoundary label="the peer help comparison">
           <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
         </ErrorBoundary>
         <ErrorBoundary label="help rooms">

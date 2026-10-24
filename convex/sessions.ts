@@ -2,7 +2,6 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { findParticipant, isValidSecret, getInstructorSession, sha256 } from "./credentials";
-import { phase } from "./schema";
 
 export const SEED_CONCEPTS = [
   { label: "Base case", description: "When the function stops recursing and returns directly.", x: 0, y: 0 },
@@ -35,7 +34,6 @@ export const create = mutation({
       title: trimmed,
       code,
       state: "open",
-      phase: "pre",
       instructorSecretHash: await sha256(instructorSecret),
       createdAt: Date.now(),
     });
@@ -106,7 +104,7 @@ export const getStudentView = query({
         const mine = await ctx.db
           .query("signals")
           .withIndex("by_participant_concept_phase", (q) =>
-            q.eq("participantId", participant._id).eq("conceptId", c._id).eq("phase", session.phase),
+            q.eq("participantId", participant._id).eq("conceptId", c._id).eq("phase", "pre"),
           )
           .unique();
         return { _id: c._id, label: c.label, description: c.description, myLevel: mine?.level ?? null };
@@ -148,7 +146,7 @@ export const getInstructorView = query({
       concepts.map(async (c) => {
         const signals = await ctx.db
           .query("signals")
-          .withIndex("by_concept_phase", (q) => q.eq("conceptId", c._id).eq("phase", session.phase))
+          .withIndex("by_concept_phase", (q) => q.eq("conceptId", c._id).eq("phase", "pre"))
           .collect();
         const counts = { confused: 0, partial: 0, can_explain: 0 };
         for (const s of signals) counts[s.level]++;
@@ -164,7 +162,6 @@ export const getInstructorView = query({
       title: session.title,
       code: session.code,
       state: session.state,
-      phase: session.phase,
       activeConceptId: session.activeConceptId ?? null,
       participantCount: participants.length,
       simulatedCount: participants.filter((p) => p.isSimulated).length,
@@ -183,16 +180,6 @@ export const setActiveConcept = mutation({
     const concept = await ctx.db.get(conceptId);
     if (!concept || concept.sessionId !== sessionId) throw new ConvexError("Concept not in this session");
     await ctx.db.patch(sessionId, { activeConceptId: conceptId });
-  },
-});
-
-export const setPhase = mutation({
-  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), phase },
-  handler: async (ctx, { sessionId, instructorSecret, phase }) => {
-    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
-    if (!session) throw new ConvexError("Instructor access required");
-    if (session.state !== "open") throw new ConvexError("Session is closed");
-    if (session.phase !== phase) await ctx.db.patch(sessionId, { phase });
   },
 });
 
