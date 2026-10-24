@@ -34,10 +34,13 @@ function FocusFlowRoom() {
   const concept = conceptById(room.conceptId)!;
   const cluster = clusters.find((k) => k._id === room.clusterId) ?? null;
   const fixtureMembers = roomMembersById[room._id] ?? [];
-  const joinedAs = params.get("as") === "helper" ? "helper" : "learner";
-  const roomMembers = fixtureMembers.some((m) => m.isMe)
-    ? fixtureMembers
-    : [...fixtureMembers, { alias: session.me.alias, role: joinedAs, isMe: true, isSimulated: false } as const];
+  const joinedAs = params.get("as");
+  const joinedHere = joinedAs === "helper" || joinedAs === "learner";
+  const isMember = fixtureMembers.some((m) => m.isMe) || joinedHere;
+  const roomMembers =
+    joinedHere && !fixtureMembers.some((m) => m.isMe)
+      ? [...fixtureMembers, { alias: session.me.alias, role: joinedAs, isMe: true, isSimulated: false } as const]
+      : fixtureMembers;
   const [messages, setMessages] = useState<Message[]>(roomMessagesById[room._id] ?? []);
   const [draft, setDraft] = useState("");
   const [checkedIn, setCheckedIn] = useState<Level | null>(null);
@@ -56,6 +59,16 @@ function FocusFlowRoom() {
     setDraft("");
   }
 
+  if (!isMember)
+    return (
+      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+        <Brand />
+        <p className="text-muted-foreground">You&apos;re not a member of “{room.title}”. Join it from your session page.</p>
+        <Button nativeButton={false} render={<Link href="/mock/focus-flow/student" />}>
+          Back to session {session.code}
+        </Button>
+      </main>
+    );
   if (left)
     return (
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
