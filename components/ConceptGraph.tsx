@@ -29,9 +29,10 @@ export function understandingScore(c: { counts: Counts; total: number }) {
 
 /** Red → amber → green on the understanding score; soft fill, saturated accent bar. */
 export function scoreColors(score: number | null) {
-  if (score === null) return { fill: "var(--color-neutral-100)", accent: "var(--color-neutral-400)" };
-  const hue = Math.round(score * 130);
-  return { fill: `oklch(0.96 0.03 ${hue + 10})`, accent: `hsl(${hue} 72% 48%)` };
+  if (score === null) return { fill: "oklch(1 0 0 / 0.7)", accent: "oklch(0.75 0.03 294)" };
+  // rose (20) -> amber (~80) -> teal-green (170): same red -> amber -> green reading, aurora saturation
+  const hue = 20 + Math.round(score * 150);
+  return { fill: `oklch(0.95 0.045 ${hue})`, accent: `oklch(0.6 0.16 ${hue})` };
 }
 
 function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
@@ -62,8 +63,8 @@ function ConceptNodeView({ id, data }: NodeProps<ConceptNode>) {
         }
       }}
       className={cn(
-        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        low ? "border-dashed border-neutral-300" : "border-neutral-200",
+        "pressable relative w-48 cursor-pointer overflow-visible rounded-xl border-2 bg-card px-3 py-2.5 text-left text-foreground shadow-glass-sm backdrop-blur-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        low ? "border-dashed border-foreground/20" : "border-white/70",
         active && "ring-4 ring-foreground/15 border-foreground",
         selected && "border-foreground shadow-md",
       )}
@@ -135,7 +136,7 @@ export function ConceptGraph({
         id: e._id,
         source: e.fromId,
         target: e.toId,
-        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-neutral-400)" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "oklch(0.6 0.08 294 / 0.6)" },
         label: "prerequisite",
         labelStyle: { fontSize: 10, fill: "var(--color-muted-foreground)" },
         labelBgStyle: { fill: "var(--color-background)" },
@@ -153,13 +154,13 @@ export function ConceptGraph({
           confused
           <span
             className="inline-block h-1.5 w-16 rounded-full"
-            style={{ background: "linear-gradient(to right, hsl(0 72% 48%), hsl(65 72% 48%), hsl(130 72% 48%))" }}
+            style={{ background: "linear-gradient(to right, oklch(0.6 0.16 20), oklch(0.6 0.16 95), oklch(0.6 0.16 170))" }}
             aria-hidden
           />
           can explain
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded border border-neutral-300 bg-neutral-100" aria-hidden /> no responses
+          <span className="inline-block size-3 rounded border border-foreground/20 bg-white/70" aria-hidden /> no responses
         </span>
         <span>dashed border = N &lt; {LOW_SAMPLE}</span>
         <span className="flex items-center gap-1.5">
@@ -186,7 +187,7 @@ export function ConceptGraph({
           fitView
           proOptions={{ hideAttribution: true }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="var(--color-neutral-300)" />
+          <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} color="oklch(0.6 0.08 294 / 0.35)" />
         </ReactFlow>
       </div>
     </figure>
