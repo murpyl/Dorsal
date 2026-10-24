@@ -89,6 +89,7 @@ export function PeerRoom() {
           <h1 className="text-2xl font-semibold">{room.title}</h1>
           <p className="text-sm text-zinc-500">
             Help room · {room.conceptLabel} · {room.members.length} / {room.capacity}
+            {room.clusterTitle && <> · for cluster “{room.clusterTitle}”</>}
             {!open && <span className="ml-2 font-medium text-amber-700">closed</span>}
           </p>
         </div>

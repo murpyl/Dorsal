@@ -49,18 +49,28 @@ async function openRoomsWithCounts(ctx: QueryCtx, sessionId: Id<"sessions">) {
   const open = rooms.filter((r) => r.status === "open").sort((a, b) => a.createdAt - b.createdAt);
   return Promise.all(
     open.map(async (room) => {
-      const [concept, members] = await Promise.all([ctx.db.get(room.conceptId), listMembers(ctx, room._id)]);
-      return { room, concept, members };
+      const [concept, members, cluster] = await Promise.all([
+        ctx.db.get(room.conceptId),
+        listMembers(ctx, room._id),
+        room.clusterId ? ctx.db.get(room.clusterId) : null,
+      ]);
+      return { room, concept, members, clusterTitle: cluster?.title ?? null };
     }),
   );
 }
 
-const publicRoom = (room: Doc<"rooms">, concept: Doc<"concepts"> | null, members: Doc<"roomMembers">[]) => ({
+const publicRoom = (
+  room: Doc<"rooms">,
+  concept: Doc<"concepts"> | null,
+  members: Doc<"roomMembers">[],
+  clusterTitle: string | null,
+) => ({
   _id: room._id,
   title: room.title,
   conceptId: room.conceptId,
   conceptLabel: concept?.label ?? "Unknown concept",
   clusterId: room.clusterId ?? null,
+  clusterTitle,
   capacity: room.capacity,
   memberCount: members.length,
   helperCount: members.filter((m) => m.role === "helper").length,
@@ -132,9 +142,9 @@ export const listBySession = query({
     const participant = await findParticipant(ctx, sessionId, token);
     if (!participant) return null;
     const rooms = await openRoomsWithCounts(ctx, sessionId);
-    return rooms.map(({ room, concept, members }) => {
+    return rooms.map(({ room, concept, members, clusterTitle }) => {
       const mine = members.find((m) => m.participantId === participant._id);
-      return { ...publicRoom(room, concept, members), isMember: !!mine, myRole: mine?.role ?? null };
+      return { ...publicRoom(room, concept, members, clusterTitle), isMember: !!mine, myRole: mine?.role ?? null };
     });
   },
 });
@@ -145,7 +155,7 @@ export const listInstructor = query({
     const session = await getInstructorSession(ctx, sessionId, instructorSecret);
     if (!session) return null;
     const rooms = await openRoomsWithCounts(ctx, sessionId);
-    return rooms.map(({ room, concept, members }) => publicRoom(room, concept, members));
+    return rooms.map(({ room, concept, members, clusterTitle }) => publicRoom(room, concept, members, clusterTitle));
   },
 });
 
@@ -158,10 +168,11 @@ export const get = query({
     if (!participant) return null;
     const mine = await findMembership(ctx, roomId, participant._id);
     if (!mine) return null;
-    const [session, concept, memberRows] = await Promise.all([
+    const [session, concept, memberRows, cluster] = await Promise.all([
       ctx.db.get(room.sessionId),
       ctx.db.get(room.conceptId),
       listMembers(ctx, roomId),
+      room.clusterId ? ctx.db.get(room.clusterId) : null,
     ]);
     if (!session) return null;
     memberRows.sort((a, b) => a.joinedAt - b.joinedAt);
@@ -177,6 +188,7 @@ export const get = query({
       status: room.status,
       capacity: room.capacity,
       clusterId: room.clusterId ?? null,
+      clusterTitle: cluster?.title ?? null,
       conceptId: room.conceptId,
       conceptLabel: concept?.label ?? "Unknown concept",
       conceptDescription: concept?.description ?? "",

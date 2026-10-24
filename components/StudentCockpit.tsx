@@ -64,7 +64,7 @@ export function StudentCockpit() {
           />
         </section>
       ))}
-      <PublishedClusters sessionId={view.sessionId} token={token} />
+      <PublishedClusters sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
       <HelperOptIn sessionId={view.sessionId} token={token} concepts={view.concepts} />
       <RoomList sessionId={view.sessionId} token={token} code={code} concepts={view.concepts} />
     </main>
