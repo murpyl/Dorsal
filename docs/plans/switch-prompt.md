@@ -14,6 +14,10 @@ Request: instructors and TAs can switch which prompt is current, not just which 
 - Students can't call it; TAs can.
 - `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` clean.
 
+## Follow-up: reuse the oldest prompt
+
+- `sessions.setActiveConcept` with `kind: "rating"` reuses the concept's oldest rating prompt with the same question (both blank counts as the same) instead of inserting a new row. Open-ended pushes always insert a new prompt.
+
 ## Follow-up: concept bar
 
 - A searchable concept dropdown (shadcn `Combobox` on Base UI: `All concepts` + every concept, filtered by a search box in the popup) sits above the dashboard side-panel tabs; clicking a graph node selects the same concept.
