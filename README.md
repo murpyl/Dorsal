@@ -5,6 +5,14 @@ Live classroom **confusion radar** (A) + **peer help** (B) + **concept knowledge
 - Product spec: `docs/MVP_Outline.md` · implementation plan: `docs/Build_Instructions.md` · per-phase plans: `docs/plans/`
 - Two-minute judging script: `docs/demo-script.md`
 
+## How we use Convex
+
+Convex is the only backend: 15 tables with explicit indexes, every screen a reactive `useQuery`.
+Student taps hit `signals.upsert`; the instructor radar, graph and projector recolour live, no refresh.
+Claude clustering runs as a scheduled `"use node"` action; lesson PDFs live in Convex file storage with a purge cron.
+Capacity, rate limits and privacy are enforced inside mutations, not in the UI.
+Full evidence (features, files, commit log): [hackathon.md](hackathon.md).
+
 ## Status
 
 | Phase | Scope | Status |
