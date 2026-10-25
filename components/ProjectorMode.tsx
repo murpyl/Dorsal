@@ -24,9 +24,10 @@ export function ProjectorMode() {
   const secret = instructorSecret === undefined || taSecret === undefined ? undefined : (taSecret ?? instructorSecret);
   const view = useQuery(api.sessions.getInstructorView, secret ? { sessionId, instructorSecret: secret } : "skip");
   // A chip click overrides the live concept only until the instructor pushes a new one.
-  const [override, setOverride] = useState<{ conceptId: string; forActive: string | null } | null>(null);
-  const selectedId = override && override.forActive === (view?.activeConceptId ?? null) ? override.conceptId : view?.activeConceptId ?? null;
-  const setSelectedId = (conceptId: string) => setOverride({ conceptId, forActive: view?.activeConceptId ?? null });
+  const liveKey = `${view?.activeConceptId ?? ""}:${view?.activePrompt?._id ?? ""}`;
+  const [override, setOverride] = useState<{ conceptId: string; forLive: string } | null>(null);
+  const selectedId = override && override.forLive === liveKey ? override.conceptId : view?.activeConceptId ?? null;
+  const setSelectedId = (conceptId: string) => setOverride({ conceptId, forLive: liveKey });
 
   if (secret === null || view === null) {
     return (
@@ -45,6 +46,8 @@ export function ProjectorMode() {
   const total = selected.total;
   const participation = view.participantCount ? view.answeredCount / view.participantCount : 0;
   const covered = new Set(view.coveredConceptIds);
+  const isLive = selected._id === view.activeConceptId;
+  const openPrompt = isLive && view.activePrompt?.kind === "open";
   const prompt = selected._id === view.activeConceptId && view.activePrompt?.question
     ? view.activePrompt.question
     : selected.description;
@@ -90,6 +93,15 @@ export function ProjectorMode() {
           </p>
         </div>
 
+        {openPrompt ? (
+          <div key={`open-${view.activePrompt?._id}`} className="projector-enter mx-auto max-w-3xl rounded-3xl border border-border bg-card/40 px-10 py-12 text-center">
+            <p className="text-sm font-semibold tracking-[0.24em] text-muted-foreground uppercase">Open-ended question</p>
+            <p className="mt-4 text-6xl font-semibold tabular-nums xl:text-7xl">
+              {view.answeredCount} <span className="text-3xl font-medium text-muted-foreground">/ {view.participantCount} responded</span>
+            </p>
+            <p className="mt-4 text-lg text-muted-foreground">Written answers are reviewed by the instructor, not shown here.</p>
+          </div>
+        ) : (
         <div className="space-y-5" key={`bars-${selected._id}`}>
           {LEVELS.map((level, index) => {
             const count = selected.counts[level.value];
@@ -108,7 +120,12 @@ export function ProjectorMode() {
             );
           })}
         </div>
-        <p className="mt-6 text-center font-mono text-lg tracking-[0.18em] text-muted-foreground">N = {total}</p>
+        )}
+        {!openPrompt && (
+          <p className="mt-6 text-center font-mono text-lg tracking-[0.18em] text-muted-foreground">
+            N = {total}{!isLive && " · earlier ratings (preview)"}
+          </p>
+        )}
       </section>
 
       <footer className="relative z-10 px-10 pb-9 xl:px-14 xl:pb-11">
@@ -119,8 +136,8 @@ export function ProjectorMode() {
             Select a concept to preview
           </p>
         </div>
-        <div className="grid grid-cols-5 gap-3">
-          {view.concepts.slice(0, 5).map((concept, index) => {
+        <div className="flex flex-wrap gap-3 [&>*]:min-w-[12rem] [&>*]:flex-1">
+          {view.concepts.map((concept, index) => {
             const current = concept._id === selected._id;
             return (
               <Button
