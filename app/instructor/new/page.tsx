@@ -168,7 +168,7 @@ export default function NewSession() {
             multiple
             accept=".pdf,.txt,.md,.png,.jpg,.jpeg,application/pdf,text/plain,text/markdown,image/png,image/jpeg"
             onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-            className="mt-1 block w-full text-sm"
+            className="mt-2 block w-full cursor-pointer text-sm text-zinc-600 file:mr-3 file:h-9 file:cursor-pointer file:rounded-full file:border file:border-border file:bg-card file:px-4 file:text-sm file:font-semibold file:text-foreground file:shadow-sm file:transition-colors hover:file:bg-muted"
           />
         </label>
         {files.length > 0 && (
