@@ -396,7 +396,7 @@ function ClusterCard({
           </ul>
         </details>
       </CardContent>
-      <CardFooter className="gap-2">{actions}</CardFooter>
+      <CardFooter className="flex-wrap gap-2">{actions}</CardFooter>
     </Card>
   );
 }
