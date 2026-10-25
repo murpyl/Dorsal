@@ -122,7 +122,7 @@ export function RadarDashboard() {
         }}
         error={error}
       />
-        <section className="grid grid-cols-5 gap-3" aria-label="Session metrics">
+        <section className="grid grid-cols-5 divide-x divide-border overflow-hidden rounded-full bg-card ring-1 ring-foreground/10" aria-label="Session metrics">
           <Stat label="Participants" value={view.participantCount} detail={view.simulatedCount > 0 ? `${view.simulatedCount} simulated` : undefined} />
           <Stat label="Answered now" value={`${view.answeredCount}/${view.participantCount}`} detail={`${participation}%`} />
           <Stat label="Responses" value={responses} />
@@ -408,7 +408,7 @@ function JoinCode({ code }: { code: string }) {
 
 function Stat({ label, value, detail, tone }: { label: string; value: number | string; detail?: string; tone?: "warn" }) {
   return (
-    <div className="min-w-0 rounded-xl bg-card px-4 py-3 ring-1 ring-foreground/10">
+    <div className="min-w-0 px-5 py-2.5">
       <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className={cn("text-xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</p>
       {detail && <p className="truncate text-[11px] text-muted-foreground">{detail}</p>}
