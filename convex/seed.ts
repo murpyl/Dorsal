@@ -54,7 +54,7 @@ async function deleteAll(ctx: MutationCtx, docs: { _id: Id<TableNames> }[]) {
   for (const doc of docs) await ctx.db.delete(doc._id);
 }
 
-async function deleteSession(ctx: MutationCtx, session: Doc<"sessions">) {
+export async function deleteSession(ctx: MutationCtx, session: Doc<"sessions">) {
   const sessionId = session._id;
   const rooms = await ctx.db.query("rooms").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
   for (const room of rooms) {
