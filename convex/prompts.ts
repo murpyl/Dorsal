@@ -25,6 +25,18 @@ export const respond = mutation({
   },
 });
 
+/** Staff: make an earlier prompt current again; new answers join its existing responses. */
+export const makeCurrent = mutation({
+  args: { sessionId: v.id("sessions"), instructorSecret: v.string(), promptId: v.id("prompts") },
+  handler: async (ctx, { sessionId, instructorSecret, promptId }) => {
+    const session = await getInstructorSession(ctx, sessionId, instructorSecret);
+    if (!session) throw new ConvexError("Instructor access required");
+    const prompt = await ctx.db.get(promptId);
+    if (!prompt || prompt.sessionId !== sessionId) throw new ConvexError("Prompt not in this session");
+    await ctx.db.patch(sessionId, { activePromptId: promptId, activeConceptId: prompt.conceptId });
+  },
+});
+
 /** Staff only: every prompt pushed in the session, newest first, with its response count. */
 export const list = query({
   args: { sessionId: v.id("sessions"), instructorSecret: v.string() },

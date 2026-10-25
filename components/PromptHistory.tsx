@@ -1,15 +1,18 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { MessageSquareText } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { LOW_SAMPLE } from "@/components/ConceptGraph";
 import { DistributionBar } from "@/components/PrePostComparison";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LEVELS } from "@/lib/levels";
+import { errorMessage } from "@/lib/errors";
 
 const KIND_LABEL = { rating: "Rating", open: "Open-ended" } as const;
 
@@ -26,6 +29,9 @@ export function PromptHistory({
   onSelect: (id: Id<"prompts">) => void;
 }) {
   const prompts = useQuery(api.prompts.list, { sessionId, instructorSecret });
+  const makeCurrent = useMutation(api.prompts.makeCurrent);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!prompts) return null;
   if (prompts.length === 0) return <p className="p-4 text-sm text-muted-foreground">No prompts pushed yet.</p>;
   const selected = prompts.find((p) => p._id === selectedId) ?? prompts.find((p) => p.current) ?? prompts[0];
@@ -64,6 +70,30 @@ export function PromptHistory({
           </div>
           <p className="font-medium">{selected.conceptLabel}</p>
           {selected.question && <p className="rounded-lg bg-muted px-4 py-3 text-sm">{selected.question}</p>}
+          {!selected.current && (
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setError(null);
+                try {
+                  await makeCurrent({ sessionId, instructorSecret, promptId: selected._id });
+                } catch (err) {
+                  setError(errorMessage(err));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Make current
+            </Button>
+          )}
+          {error && (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
         </div>
         <PromptResponses sessionId={sessionId} instructorSecret={instructorSecret} promptId={selected._id} />
       </CardContent>
