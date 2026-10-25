@@ -74,6 +74,7 @@ export function ClusterQueue({
   const questions = allQuestions.filter((q) => !conceptId || q.conceptId === conceptId);
 
   const pending = questions.filter((q) => q.state === "pending");
+  const allPendingCount = allQuestions.filter((q) => q.state === "pending").length;
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;
   const selectedQuestions = pending.filter((q) => selected.includes(q._id));
 
@@ -99,11 +100,11 @@ export function ClusterQueue({
         </div>
         <Button
           onClick={() => run(() => requestSuggestions(creds))}
-          disabled={running || pending.length === 0}
-          title={pending.length === 0 ? "No pending questions" : undefined}
+          disabled={running || allPendingCount === 0}
+          title={allPendingCount === 0 ? "No pending questions" : undefined}
         >
           <Sparkles data-icon="inline-start" aria-hidden className={cn(running && "animate-pulse")} />
-          {running ? "Claude is grouping…" : `Suggest clusters (${pending.length} pending)`}
+          {running ? "Claude is grouping…" : `Suggest clusters (${allPendingCount} pending${conceptId ? ", all concepts" : ""})`}
         </Button>
       </div>
       <InlineError message={error} />
@@ -152,7 +153,7 @@ export function ClusterQueue({
                   <>
                     <Button
                       size="sm"
-                      onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: c.conceptIds[0] }))}
+                      onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: conceptId && c.conceptIds.includes(conceptId) ? conceptId : c.conceptIds[0] }))}
                       disabled={c.conceptIds.length === 0}
                     >
                       Open help room

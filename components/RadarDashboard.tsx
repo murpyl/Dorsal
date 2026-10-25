@@ -428,6 +428,11 @@ function PushPromptForm({
   error: string | null;
 }) {
   const [conceptId, setConceptId] = useState<string>("");
+  const [seenActiveId, setSeenActiveId] = useState(activeConceptId);
+  if (seenActiveId !== activeConceptId) {
+    setSeenActiveId(activeConceptId);
+    setConceptId("");
+  }
   const [kind, setKind] = useState<PromptKind>("rating");
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
