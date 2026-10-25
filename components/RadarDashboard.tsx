@@ -122,12 +122,12 @@ export function RadarDashboard() {
         }}
         error={error}
       />
-        <section className="grid grid-cols-5 divide-x divide-border overflow-hidden rounded-full bg-card ring-1 ring-foreground/10" aria-label="Session metrics">
+        <section className="grid grid-cols-6 gap-px overflow-hidden rounded-2xl bg-border ring-1 ring-foreground/10 sm:grid-cols-5 sm:rounded-full" aria-label="Session metrics">
           <Stat label="Participants" value={view.participantCount} detail={view.simulatedCount > 0 ? `${view.simulatedCount} simulated` : undefined} />
           <Stat label="Answered now" value={`${view.answeredCount}/${view.participantCount}`} detail={`${participation}%`} />
           <Stat label="Responses" value={responses} />
-          <Stat label="Confused" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} />
-          <Stat label="Open clusters" value={view.publishedClusterCount} />
+          <Stat label="Confused" value={confused} detail={`of ${responses}`} tone={confused > 0 ? "warn" : undefined} className="col-span-3" />
+          <Stat label="Open clusters" value={view.publishedClusterCount} className="col-span-3" />
         </section>
       </div>
 
@@ -406,9 +406,21 @@ function JoinCode({ code }: { code: string }) {
   );
 }
 
-function Stat({ label, value, detail, tone }: { label: string; value: number | string; detail?: string; tone?: "warn" }) {
+function Stat({
+  label,
+  value,
+  detail,
+  tone,
+  className,
+}: {
+  label: string;
+  value: number | string;
+  detail?: string;
+  tone?: "warn";
+  className?: string;
+}) {
   return (
-    <div className="min-w-0 px-5 py-2.5">
+    <div className={cn("col-span-2 min-w-0 bg-card px-2.5 py-2 sm:col-span-1 sm:px-5 sm:py-2.5", className)}>
       <p className="truncate text-xs text-muted-foreground">{label}</p>
       <p className={cn("text-xl font-semibold tracking-tight tabular-nums", tone === "warn" && "text-red-600")}>{value}</p>
       {detail && <p className="truncate text-[11px] text-muted-foreground">{detail}</p>}
