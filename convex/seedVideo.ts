@@ -143,7 +143,7 @@ export const reset = internalMutation({
           createdAt: t,
         });
         for (const [k, text] of OPEN_PROMPT.answers.entries()) {
-          await ctx.db.insert("promptResponses", { sessionId, promptId: openId, participantId: participantIds[(k * 3) % PARTICIPANTS], text, updatedAt: t + 20_000 + k * 4_000 });
+          await ctx.db.insert("promptResponses", { sessionId, promptId: openId, participantId: participantIds[k * 2], text, updatedAt: t + 20_000 + k * 4_000 });
         }
         t += 4 * minute;
       }
