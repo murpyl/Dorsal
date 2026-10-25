@@ -66,40 +66,40 @@ Timestamps are approximate. **SAY** is the voice-over. **DO** is the on-screen a
 
 ### Scene 0: Hook (0:00–0:15)
 - **DO:** Instructor dashboard, full screen, a still frame of the graph.
-- **SAY:** "In a 300-person lecture, the professor finds out who's lost when the midterm grades come back. Dorsal is a live confusion radar, so they find out while they can still do something about it."
+- **SAY:** "Hello! We're Dorsal, a Convex-based Claude-native app to make professors better understand students' confusion in large lectures and reduce friction for student participation. In hundred-kid lectures, professors only find out what students are stuck on once midterm grades are released. Dorsal is a live confusion radar so they can find out DURING lecture and adjust as necessary."
 - **SHOW:** Logo, session title, and the `DORSAL` join code.
 
 ### Scene 1: Lesson setup (0:15–0:35) · frame `S1b-setup-concepts`
 - **DO:** On `/instructor/new`, type the title and upload `lecture-notes-recursion.md`. Click **Suggest concepts**, wait, and scroll the five suggested concepts and their prerequisite links. Optionally rename one so the instructor's edit is visible.
-- **SAY:** "The instructor drops in their lecture notes. Claude proposes the concepts and how they depend on each other, and the instructor edits that into the lesson map."
+- **SAY:** "The instructor uploads their lecture material. Claude will propose the concepts and how they depend on each other into a graph, and the instructor edits that into the lesson map."
 - **SHOW:** Material upload, the AI-suggested concept list with prerequisites, and that the list is editable.
 - **CUT:** "…forty minutes into lecture." Switch to the seeded `DORSAL` session. Don't create the session for real; the seed stands in for it.
 
 ### Scene 2: The radar (0:35–0:55) · frame `S2-instructor-start`
 - **DO:** Slow pan across the concept graph, left to right. Hover over the metrics.
-- **SAY:** "Each node is a concept from today's lesson, coloured by how well students say they understand it. Base case is green. By the call stack it's turning red, and that's where the room is right now. Everything here is simulated for the demo, labelled as such. And it's self-reported confidence, not graded mastery."
+- **SAY:** "Here we have some seed data. Each node is a concept from today's lesson, colored by how well students say they understand it. Base case is green. By the call stack it's turning red, and that's how the lecture hall feels right now. It's self-reported, with anonymous results and pseudonymous questions so students don't have to feel embarrassed about being confused."
 - **SHOW:** Prerequisite edges, the red/yellow/green counts and N on each node, `CURRENT TOPIC` on Call stack & frames, the metrics strip (`42 simulated`), and the legend text "Student confidence, not measured mastery".
 
 ### Scene 3: A student signals (0:55–1:25) · frames `S3b-studentA-joined`, `S4b-studentA-new-prompt`, `S4c-instructor-answered`
 1. **DO (Student A):** Join `DORSAL` and land on the cockpit (*Prompt 3 of 5 · Call stack & frames*). Tap **Confused**.
    **DO (Instructor):** Participants changes 42 → 43, and the Call stack red count goes up.
-   - **SAY:** "A student joins with the code. No account, just a pseudonym. One tap, and the professor's radar moves."
+   - **SAY:** "A student joins with the code under a pseudonym. One response and the professor's radar will move."
 2. **DO (Student B):** Join, then tap **Can explain it** on Call stack.
 3. **DO (Instructor):** In **Push prompt**, choose concept *Return values*, keep **Rating**, enter "factorial(3) returns 6. Where does the 6 come from?", and click **Push prompt**.
    **DO (Student A):** A `New prompt` badge appears with Prompt 4 of 5. Tap **Confused**. **Student B:** taps **Can explain it**.
    **DO (Instructor):** *Answered now* reads 2/44 (A and B are the first answers to the new prompt). Open the **Prompts** tab to show the history.
-   - **SAY:** "The instructor moves on and pushes a check-in to every phone at once. They can watch answers come in live, and every earlier prompt is kept."
+   - **SAY:** "The instructor moves on and pushes a check-in to students' devices. They can watch answers come in live."
 - **SHOW:** Realtime updates with no refresh, the push-prompt flow, the Rating/Open-ended toggle, and the Prompts history.
 
 ### Scene 4: Anonymous questions → Claude clusters (1:25–2:10) · frames `S5d-moderation-queue`, `S5f-claude-suggestions`, `S5h-node-focused`
 1. **DO (Student A):** Open the **Ask** tab, type "I don't get how the answer gets back to the first call once we hit the base case", and send it.
-   - **SAY:** "Questions are anonymous to classmates, so nobody has to raise their hand and admit they're lost."
+   - **SAY:** "Again, questions are anonymous to classmates, so nobody has to raise their hand and admit they're lost."
 2. **DO (Instructor):** On the **Questions** tab, the new question sits on top of 16 others. Click **Hide** on "Will this be on the midterm?".
    - **SAY:** "There are seventeen questions here, worded seventeen different ways. The instructor can hide off-topic ones."
 3. **DO:** Click **Suggest clusters** and wait 5–15 s. Expect about 3 clusters, such as *How returned values travel back up the recursion*, *Frames after the base case*, and *Repeated subproblems in naive fib*. Claude's wording varies from run to run.
-   - **SAY:** "Claude groups them into the real misunderstandings and maps each one onto the lesson graph. These are suggestions. Nothing reaches students until the instructor reviews it."
+   - **SAY:** "We call Claude to group them into the real misunderstandings and maps each one onto the lesson graph. These are suggestions. Instructors can review these clusters and push them back to students with help rooms"
 4. **DO:** Edit one title slightly, then click **Publish** on 2–3 clusters. The `n clusters` badges show up on Call stack, Return values, and Tree recursion. Click the **Return values** node to focus the side panel.
-   - **SAY:** "Publish, and the hotspots light up on the map. The instructor now knows exactly what to re-explain."
+   - **SAY:** "Publish the cluster questions and the hotspots appear on the map. The instructor now knows exactly what to re-explain."
 - **SHOW:** Moderation (Hide), the suggestion review UI (edit, publish, dismiss), the cluster→concept mapping, graph badges, and node focus.
 - **FALLBACK:** If Claude errors or takes more than about 20 s, cut. Tick 3–4 return-value questions and use the manual cluster form to group them under *Return values* with the same title. Then say "or the instructor can group them by hand" and publish. The rest of the video doesn't change.
 
@@ -108,13 +108,13 @@ Timestamps are approximate. **SAY** is the voice-over. **DO** is the on-screen a
 2. **DO (Student A):** The **Class Q&A** tab shows the published cluster. Raw questions and authors are not shown.
 3. **DO (Instructor or Student B):** On the published Return values cluster, click **Open help room**. B joins as `helper`. A sees the room under **Help rooms**, taps it, and joins as `learner`.
 4. **DO:** Chat. B: "Each call waits for the one below it. When fact(1) returns 1, fact(2) can finish: 2×1." A: "ohh so the multiplication happens on the way back up".
-   - **SAY:** "Students who've got it volunteer, with no AI ranking or credential, and Dorsal opens a small room around that exact misunderstanding. The confused student gets help in under a minute, and the instructor can see every room."
+   - **SAY:** "Students who understand can volunteer to help and Dorsal opens a small room around that exact question. The confused student gets help in under a minute, and T.A.s can pop in and help"
 - **SHOW:** Helper opt-in, the published cluster from the student's side, the room with roles, live chat, and the instructor **Rooms** tab (`S6g`).
 
 ### Scene 6: Closing the loop (2:45–3:00) · frame `S7b-before-after`
 - **DO (Student A):** In the room, under **Update your rating for Return values**, tap **Can explain it**.
   **DO (Instructor):** Open the **Before/after** tab. Return values now has an After bar, and Recursive call shows the seeded N=5 after-help row.
-- **SAY:** "After the help, the student updates their rating, and the instructor sees before and after for each concept. It's what students *say*, not a test score. We're honest about that, but it's a signal they never had during lecture."
+- **SAY:** "After the help, the student updates their rating, and the instructor sees before and after for each concept."
 - **SHOW:** The after-help rating, the Before/after bars with separate N values, and the caveat paragraph.
 
 ### Scene 7 (optional, +15 s): TAs (3:00–3:15) · frames `S8a-ta-invite`, `S8c-ta-in-room`
@@ -123,7 +123,7 @@ Timestamps are approximate. **SAY** is the voice-over. **DO** is the on-screen a
 
 ### Outro (last 10 s)
 - **DO:** Return to the full instructor graph, now with badges and less red if you re-rated.
-- **SAY:** "Dorsal: see confusion as it happens, group it with Claude, and turn the students who get it into help for the ones who don't."
+- **SAY:** "Dorsal:  help students participate by tackling confusion as it happens because confused students don't have to swim alone."
 
 ---
 
