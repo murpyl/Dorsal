@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Check, Copy, Megaphone, MousePointerClick, UserPlus } from "lucide-react";
+import { Check, Copy, Maximize2, Megaphone, MousePointerClick, UserPlus } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Brand } from "@/components/Brand";
@@ -105,6 +106,10 @@ export function RadarDashboard() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" nativeButton={false} render={<Link href={`/instructor/${sessionId}/projector`} />}>
+            <Maximize2 aria-hidden />
+            Projector mode
+          </Button>
           <JoinCode code={view.code} />
           <SessionControls sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} state={view.state} />
         </div>
