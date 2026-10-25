@@ -228,20 +228,25 @@ export function RoomStatus({
   instructorSecret,
   concepts,
   role,
+  conceptFilter,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
   concepts: Concept[];
   role: "instructor" | "ta";
+  /** Only rooms on this concept; null for all concepts. */
+  conceptFilter: Id<"concepts"> | null;
 }) {
-  const rooms = useQuery(api.rooms.listInstructor, { sessionId, instructorSecret });
+  const rooms = useQuery(api.rooms.listInstructor, { sessionId, instructorSecret })?.filter(
+    (r) => !conceptFilter || r.conceptId === conceptFilter,
+  );
   const createForCluster = useMutation(api.rooms.createForCluster);
   const close = useMutation(api.rooms.close);
   const joinAsTa = useMutation(api.rooms.joinAsTa);
   const router = useRouter();
   const [conceptId, setConceptId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const chosen = concepts.find((c) => c._id === conceptId) ?? concepts[0] ?? null;
+  const chosen = concepts.find((c) => c._id === (conceptFilter ?? conceptId)) ?? concepts[0] ?? null;
 
   async function guard(action: () => Promise<unknown>) {
     setError(null);
@@ -268,7 +273,11 @@ export function RoomStatus({
             }}
           >
             <label htmlFor="instructor-room-concept">Open help room for</label>
-            <ConceptSelect id="instructor-room-concept" concepts={concepts} value={chosen._id} onChange={setConceptId} label="Topic" />
+            {conceptFilter ? (
+              <strong>{chosen.label}</strong>
+            ) : (
+              <ConceptSelect id="instructor-room-concept" concepts={concepts} value={chosen._id} onChange={setConceptId} label="Topic" />
+            )}
             <Button type="submit" size="sm">
               Open help room
             </Button>

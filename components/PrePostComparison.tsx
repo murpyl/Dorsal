@@ -83,8 +83,19 @@ export function SessionControls({
   );
 }
 
-export function PrePostComparison({ sessionId, instructorSecret }: { sessionId: Id<"sessions">; instructorSecret: string }) {
-  const rows = useQuery(api.signals.prePostByConcept, { sessionId, instructorSecret });
+export function PrePostComparison({
+  sessionId,
+  instructorSecret,
+  conceptId,
+}: {
+  sessionId: Id<"sessions">;
+  instructorSecret: string;
+  /** Only this concept's row; null for all concepts. */
+  conceptId: Id<"concepts"> | null;
+}) {
+  const rows = useQuery(api.signals.prePostByConcept, { sessionId, instructorSecret })?.filter(
+    (r) => !conceptId || r.conceptId === conceptId,
+  );
 
   return (
     <Card aria-labelledby="pre-post">

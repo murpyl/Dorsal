@@ -13,3 +13,9 @@ Request: instructors and TAs can switch which prompt is current, not just which 
 - Switching back to an earlier prompt shows it to students with their previous answer; new answers update that prompt's responses only.
 - Students can't call it; TAs can.
 - `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build` clean.
+
+## Follow-up: concept bar
+
+- A concept bar (`All concepts` + every concept) sits above the dashboard side-panel tabs; clicking a graph node selects the same concept.
+- *Overview* (was *Concept*): the selected concept's breakdown, or every concept's distribution for `All concepts`.
+- *Prompts*, *Questions* (clusters + moderation queue), *Rooms* and *Before/after* show only the selected concept's items (client-side filter; `prompts.list` now returns `conceptId`). *TAs* stays session-wide.

@@ -38,14 +38,17 @@ export function ClusterQueue({
   sessionId,
   instructorSecret,
   concepts,
+  conceptId,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
   concepts: Concept[];
+  /** Only clusters and questions on this concept; null for all concepts. */
+  conceptId: Id<"concepts"> | null;
 }) {
   const creds = { sessionId, instructorSecret };
-  const data = useQuery(api.clusters.listInstructor, creds);
-  const questions = useQuery(api.questions.listInstructor, creds);
+  const allData = useQuery(api.clusters.listInstructor, creds);
+  const allQuestions = useQuery(api.questions.listInstructor, creds);
   const requestSuggestions = useMutation(api.clusters.requestSuggestions);
   const publish = useMutation(api.clusters.publish);
   const discard = useMutation(api.clusters.discard);
@@ -63,8 +66,12 @@ export function ClusterQueue({
     return () => clearInterval(t);
   }, []);
 
-  if (data === undefined || questions === undefined) return <Skeleton className="h-48" />;
-  if (data === null || questions === null) return <p className="text-sm text-muted-foreground">Couldn’t load questions (no instructor access).</p>;
+  if (allData === undefined || allQuestions === undefined) return <Skeleton className="h-48" />;
+  if (allData === null || allQuestions === null) return <p className="text-sm text-muted-foreground">Couldn’t load questions (no instructor access).</p>;
+
+  const onConcept = (c: { conceptIds: Id<"concepts">[] }) => !conceptId || c.conceptIds.includes(conceptId);
+  const data = { ...allData, suggested: allData.suggested.filter(onConcept), published: allData.published.filter(onConcept) };
+  const questions = allQuestions.filter((q) => !conceptId || q.conceptId === conceptId);
 
   const pending = questions.filter((q) => q.state === "pending");
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;

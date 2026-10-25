@@ -32,6 +32,8 @@ import { TA_NAME_MAX } from "@/lib/staff";
 import { cn } from "@/lib/utils";
 
 type DashTab = "concept" | "prompts" | "questions" | "rooms" | "results" | "staff";
+const ALL_CONCEPTS = "all";
+const PRESSED = "aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90";
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -72,6 +74,11 @@ export function RadarDashboard() {
   const responses = view.concepts.reduce((sum, c) => sum + c.total, 0);
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
+  const conceptFilter = selected?._id ?? null;
+  const selectConcept = (id: string | null) => {
+    setSelectedId(id);
+    setViewedPromptId(null);
+  };
   const participation = view.participantCount > 0 ? Math.round((view.answeredCount / view.participantCount) * 100) : 0;
 
   async function makeCurrent(conceptId: Id<"concepts">, question?: string, kind?: PromptKind) {
@@ -108,7 +115,7 @@ export function RadarDashboard() {
         activePrompt={view.activePrompt}
         onPush={makeCurrent}
         onViewResponses={() => {
-          setViewedPromptId(null);
+          selectConcept(view.activeConceptId ?? null);
           setTab("prompts");
         }}
         error={error}
@@ -129,17 +136,32 @@ export function RadarDashboard() {
           edges={view.edges}
           activeConceptId={view.activeConceptId}
           selectedId={selectedId}
-          onSelect={(id) => {
-            setSelectedId(id);
-            setTab("concept");
-          }}
+          onSelect={selectConcept}
           className="min-h-72 flex-1"
         />
         </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
+          <ToggleGroup
+            aria-label="Concept"
+            variant="outline"
+            size="sm"
+            spacing={1}
+            value={[selected?._id ?? ALL_CONCEPTS]}
+            onValueChange={(v) => v[0] && selectConcept(v[0] === ALL_CONCEPTS ? null : v[0])}
+            className="shrink-0 flex-wrap justify-start"
+          >
+            <ToggleGroupItem value={ALL_CONCEPTS} className={PRESSED}>
+              All concepts
+            </ToggleGroupItem>
+            {view.concepts.map((c) => (
+              <ToggleGroupItem key={c._id} value={c._id} className={PRESSED}>
+                {c.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
           <TabsList className="w-full shrink-0">
-            <TabsTrigger value="concept">Concept</TabsTrigger>
+            <TabsTrigger value="concept">Overview</TabsTrigger>
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="rooms">Rooms</TabsTrigger>
@@ -185,13 +207,29 @@ export function RadarDashboard() {
                   )}
                   <InlineError message={error} />
                   <Separator />
+                  <Separator />
                   <ConceptClusters sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={selected._id} />
                 </CardContent>
               </>
             ) : (
-              <CardContent className="flex flex-col items-center gap-3 py-10 text-center text-sm text-muted-foreground">
-                <MousePointerClick className="size-5" aria-hidden />
-                Click a concept (or Tab to it and press Enter) to see its signal breakdown.
+              <CardContent className="space-y-3">
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MousePointerClick className="size-4 shrink-0" aria-hidden />
+                  Pick a concept above or on the graph to focus every tab on it.
+                </p>
+                <ul className="space-y-2">
+                  {view.concepts.map((c) => (
+                    <li key={c._id}>
+                      <button type="button" onClick={() => selectConcept(c._id)} className="w-full space-y-1.5 rounded-md p-2 text-left text-sm hover:bg-muted">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate font-medium">{c.label}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">N = {c.total}</span>
+                        </span>
+                        <DistributionBar tally={c} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             )}
           </Card>
@@ -203,22 +241,23 @@ export function RadarDashboard() {
                 instructorSecret={secret!}
                 selectedId={viewedPromptId}
                 onSelect={setViewedPromptId}
+                conceptId={conceptFilter}
               />
             </ErrorBoundary>
           </TabsContent>
           <TabsContent value="questions" className="min-h-0 overflow-y-auto px-1">
           <ErrorBoundary label="the cluster queue">
-            <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} />
+            <ClusterQueue sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} conceptId={conceptFilter} />
           </ErrorBoundary>
           </TabsContent>
           <TabsContent value="rooms" className="min-h-0 overflow-y-auto">
             <ErrorBoundary label="help rooms">
-              <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} role={view.role} />
+              <RoomStatus sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} concepts={view.concepts} role={view.role} conceptFilter={conceptFilter} />
             </ErrorBoundary>
           </TabsContent>
           <TabsContent value="results" className="min-h-0 overflow-y-auto">
             <ErrorBoundary label="the peer help comparison">
-              <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} />
+              <PrePostComparison sessionId={sessionId as Id<"sessions">} instructorSecret={secret!} conceptId={conceptFilter} />
             </ErrorBoundary>
           </TabsContent>
           {view.role === "instructor" && (

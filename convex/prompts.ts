@@ -53,6 +53,7 @@ export const list = query({
           number: prompts.length - i,
           kind: p.kind,
           question: p.question,
+          conceptId: p.conceptId,
           conceptLabel: labels.get(p.conceptId)!,
           createdAt: p.createdAt,
           current: p._id === session.activePromptId,

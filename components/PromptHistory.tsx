@@ -22,20 +22,24 @@ export function PromptHistory({
   instructorSecret,
   selectedId,
   onSelect,
+  conceptId,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
   selectedId: Id<"prompts"> | null;
   onSelect: (id: Id<"prompts">) => void;
+  /** Only this concept's prompts; null for all concepts. */
+  conceptId: Id<"concepts"> | null;
 }) {
   const prompts = useQuery(api.prompts.list, { sessionId, instructorSecret });
   const makeCurrent = useMutation(api.prompts.makeCurrent);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!prompts) return null;
-  if (prompts.length === 0) return <p className="p-4 text-sm text-muted-foreground">No prompts pushed yet.</p>;
-  const selected = prompts.find((p) => p._id === selectedId) ?? prompts.find((p) => p.current) ?? prompts[0];
-  const items = prompts.map((p) => ({
+  const shown = prompts.filter((p) => !conceptId || p.conceptId === conceptId);
+  if (shown.length === 0) return <p className="p-4 text-sm text-muted-foreground">No prompts pushed on this concept yet.</p>;
+  const selected = shown.find((p) => p._id === selectedId) ?? shown.find((p) => p.current) ?? shown[0];
+  const items = shown.map((p) => ({
     value: p._id,
     label: `#${p.number} · ${p.conceptLabel}${p.question ? ` — ${p.question}` : ""}${p.current ? " (current)" : ""}`,
   }));
