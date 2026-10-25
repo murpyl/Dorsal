@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxTrigger, ComboboxValue } from "@/components/ui/combobox";
 import { errorMessage } from "@/lib/errors";
 import { instructorSecretKey, newSecret, taSecretKey, useStoredCredential } from "@/lib/credentials";
 import { LEVELS } from "@/lib/levels";
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
 
 type DashTab = "concept" | "prompts" | "questions" | "rooms" | "results" | "staff";
 const ALL_CONCEPTS = "all";
-const PRESSED = "aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-primary/90";
+type ConceptItem = { value: string; label: string };
 
 export function RadarDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -75,6 +76,7 @@ export function RadarDashboard() {
   const confused = view.concepts.reduce((sum, c) => sum + c.counts.confused, 0);
   const selected = view.concepts.find((c) => c._id === selectedId) ?? null;
   const conceptFilter = selected?._id ?? null;
+  const conceptItems: ConceptItem[] = [{ value: ALL_CONCEPTS, label: "All concepts" }, ...view.concepts.map((c) => ({ value: c._id, label: c.label }))];
   const selectConcept = (id: string | null) => {
     setSelectedId(id);
     setViewedPromptId(null);
@@ -142,24 +144,27 @@ export function RadarDashboard() {
         </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as DashTab)} className="flex min-h-0 flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10">
-          <ToggleGroup
-            aria-label="Concept"
-            variant="outline"
-            size="sm"
-            spacing={1}
-            value={[selected?._id ?? ALL_CONCEPTS]}
-            onValueChange={(v) => v[0] && selectConcept(v[0] === ALL_CONCEPTS ? null : v[0])}
-            className="shrink-0 flex-wrap justify-start"
+          <Combobox
+            items={conceptItems}
+            value={conceptItems.find((i) => i.value === (selected?._id ?? ALL_CONCEPTS)) ?? conceptItems[0]}
+            onValueChange={(i) => i && selectConcept(i.value === ALL_CONCEPTS ? null : i.value)}
+            isItemEqualToValue={(a, b) => a.value === b.value}
           >
-            <ToggleGroupItem value={ALL_CONCEPTS} className={PRESSED}>
-              All concepts
-            </ToggleGroupItem>
-            {view.concepts.map((c) => (
-              <ToggleGroupItem key={c._id} value={c._id} className={PRESSED}>
-                {c.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            <ComboboxTrigger render={<Button variant="outline" className="w-full shrink-0 justify-between font-normal" aria-label="Concept" />}>
+              <ComboboxValue />
+            </ComboboxTrigger>
+            <ComboboxContent>
+              <ComboboxInput showTrigger={false} placeholder="Search concepts" />
+              <ComboboxEmpty>No matching concept.</ComboboxEmpty>
+              <ComboboxList>
+                {(i: ConceptItem) => (
+                  <ComboboxItem key={i.value} value={i}>
+                    {i.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
           <TabsList className="w-full shrink-0">
             <TabsTrigger value="concept">Overview</TabsTrigger>
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
