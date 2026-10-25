@@ -38,14 +38,17 @@ export function ClusterQueue({
   sessionId,
   instructorSecret,
   concepts,
+  conceptId,
 }: {
   sessionId: Id<"sessions">;
   instructorSecret: string;
   concepts: Concept[];
+  /** Only clusters and questions on this concept; null for all concepts. */
+  conceptId: Id<"concepts"> | null;
 }) {
   const creds = { sessionId, instructorSecret };
-  const data = useQuery(api.clusters.listInstructor, creds);
-  const questions = useQuery(api.questions.listInstructor, creds);
+  const allData = useQuery(api.clusters.listInstructor, creds);
+  const allQuestions = useQuery(api.questions.listInstructor, creds);
   const requestSuggestions = useMutation(api.clusters.requestSuggestions);
   const publish = useMutation(api.clusters.publish);
   const discard = useMutation(api.clusters.discard);
@@ -63,10 +66,15 @@ export function ClusterQueue({
     return () => clearInterval(t);
   }, []);
 
-  if (data === undefined || questions === undefined) return <Skeleton className="h-48" />;
-  if (data === null || questions === null) return <p className="text-sm text-muted-foreground">Couldn’t load questions (no instructor access).</p>;
+  if (allData === undefined || allQuestions === undefined) return <Skeleton className="h-48" />;
+  if (allData === null || allQuestions === null) return <p className="text-sm text-muted-foreground">Couldn’t load questions (no instructor access).</p>;
+
+  const onConcept = (c: { conceptIds: Id<"concepts">[] }) => !conceptId || c.conceptIds.includes(conceptId);
+  const data = { ...allData, suggested: allData.suggested.filter(onConcept), published: allData.published.filter(onConcept) };
+  const questions = allQuestions.filter((q) => !conceptId || q.conceptId === conceptId);
 
   const pending = questions.filter((q) => q.state === "pending");
+  const allPendingCount = allQuestions.filter((q) => q.state === "pending").length;
   const running = data.latestRun?.status === "running" && now - data.latestRun.createdAt < RUN_STALE_MS;
   const selectedQuestions = pending.filter((q) => selected.includes(q._id));
 
@@ -92,11 +100,11 @@ export function ClusterQueue({
         </div>
         <Button
           onClick={() => run(() => requestSuggestions(creds))}
-          disabled={running || pending.length === 0}
-          title={pending.length === 0 ? "No pending questions" : undefined}
+          disabled={running || allPendingCount === 0}
+          title={allPendingCount === 0 ? "No pending questions" : undefined}
         >
           <Sparkles data-icon="inline-start" aria-hidden className={cn(running && "animate-pulse")} />
-          {running ? "Claude is grouping…" : `Suggest clusters (${pending.length} pending)`}
+          {running ? "Claude is grouping…" : `Suggest clusters (${allPendingCount} pending${conceptId ? ", all concepts" : ""})`}
         </Button>
       </div>
       <InlineError message={error} />
@@ -145,7 +153,7 @@ export function ClusterQueue({
                   <>
                     <Button
                       size="sm"
-                      onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: c.conceptIds[0] }))}
+                      onClick={() => run(() => createForCluster({ ...creds, clusterId: c._id, conceptId: conceptId && c.conceptIds.includes(conceptId) ? conceptId : c.conceptIds[0] }))}
                       disabled={c.conceptIds.length === 0}
                     >
                       Open help room

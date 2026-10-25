@@ -93,3 +93,56 @@ describe("prompt history", () => {
     expect(JSON.stringify(view)).not.toContain(first._id);
   });
 });
+
+describe("switching the current prompt", () => {
+  test("staff make an earlier prompt current; students see it with their earlier answer and new answers join its responses", async () => {
+    const { t, sessionId, creds, concepts, list, responses, student } = await setup();
+    const first = (await list())![0];
+    await t.mutation(api.signals.upsert, { sessionId, token: TOKEN_A, conceptId: concepts[0]._id, level: "confused" });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id, kind: "open", question: "Why recurse?" });
+    await t.mutation(api.prompts.respond, { sessionId, token: TOKEN_A, text: "Smaller problem" });
+
+    await t.mutation(api.prompts.makeCurrent, { ...creds, promptId: first._id });
+    const view = (await student(TOKEN_A))!;
+    expect(view.activeConceptId).toBe(concepts[0]._id);
+    expect(view.activePrompt).toMatchObject({ _id: first._id, kind: "rating", myLevel: "confused" });
+    expect(await list()).toHaveLength(2);
+
+    await t.mutation(api.signals.upsert, { sessionId, token: TOKEN_B, conceptId: concepts[0]._id, level: "can_explain" });
+    expect(await responses(first._id)).toMatchObject({ kind: "rating", total: 2 });
+    expect((await t.query(api.sessions.getInstructorView, creds))!.answeredCount).toBe(2);
+    await expect(t.mutation(api.prompts.respond, { sessionId, token: TOKEN_A, text: "late" })).rejects.toThrow(/open-ended/);
+
+    const open = (await list())!.find((p) => p.kind === "open")!;
+    await t.mutation(api.prompts.makeCurrent, { ...creds, promptId: open._id });
+    expect((await student(TOKEN_A))!.activePrompt).toMatchObject({ kind: "open", myText: "Smaller problem" });
+  });
+
+  test("re-pushing a rating prompt on a concept reuses its oldest one; open-ended pushes don't", async () => {
+    const { t, sessionId, creds, concepts, list, responses, student } = await setup();
+    const first = (await list())![0];
+    await t.mutation(api.signals.upsert, { sessionId, token: TOKEN_A, conceptId: first.conceptId, level: "partial" });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: first.conceptId });
+    expect(await list()).toHaveLength(2);
+    expect((await list())!.find((p) => p._id === first._id)!.current).toBe(true);
+    expect((await student(TOKEN_A))!.activePrompt).toMatchObject({ kind: "rating", myLevel: "partial" });
+    await t.mutation(api.signals.upsert, { sessionId, token: TOKEN_B, conceptId: first.conceptId, level: "confused" });
+    expect(await responses(first._id)).toMatchObject({ kind: "rating", total: 2 });
+
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: first.conceptId, question: "Which call stops?" });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: first.conceptId, kind: "open", question: "Why?" });
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: first.conceptId, kind: "open", question: "Why?" });
+    expect(await list()).toHaveLength(5);
+  });
+
+  test("only staff can switch; TAs can", async () => {
+    const { t, creds, concepts, list } = await setup();
+    const first = (await list())![0];
+    await t.mutation(api.sessions.setActiveConcept, { ...creds, conceptId: concepts[1]._id });
+    await expect(t.mutation(api.prompts.makeCurrent, { ...creds, instructorSecret: TOKEN_A, promptId: first._id })).rejects.toThrow(/Instructor access/);
+    await t.mutation(api.tas.invite, { ...creds, name: "Sam", taSecret: TA });
+    await t.mutation(api.prompts.makeCurrent, { ...creds, instructorSecret: TA, promptId: first._id });
+    expect((await list())!.find((p) => p._id === first._id)!.current).toBe(true);
+  });
+});

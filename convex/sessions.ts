@@ -255,9 +255,11 @@ export const setActiveConcept = mutation({
     if (text && text.length > MAX_PROMPT_LENGTH) throw new ConvexError(`Keep the prompt under ${MAX_PROMPT_LENGTH} characters`);
     if (kind === "open" && !text) throw new ConvexError("Open-ended prompts need a question");
     const pushed = await ctx.db.query("prompts").withIndex("by_session", (q) => q.eq("sessionId", sessionId)).collect();
-    if (pushed.length >= MAX_PROMPTS) throw new ConvexError(`A session can have at most ${MAX_PROMPTS} prompts`);
+    // Re-pushing the same rating prompt on a concept reuses its oldest copy so answers accumulate in one place.
+    const existing = kind === "rating" ? pushed.find((p) => p.conceptId === conceptId && p.kind === "rating" && p.question === text) : undefined;
+    if (!existing && pushed.length >= MAX_PROMPTS) throw new ConvexError(`A session can have at most ${MAX_PROMPTS} prompts`);
     const now = Date.now();
-    const activePromptId = await ctx.db.insert("prompts", { sessionId, conceptId, kind, question: text, createdAt: now });
+    const activePromptId = existing?._id ?? (await ctx.db.insert("prompts", { sessionId, conceptId, kind, question: text, createdAt: now }));
     await ctx.db.patch(sessionId, {
       activeConceptId: conceptId,
       activePromptId,
